@@ -1,0 +1,69 @@
+{
+  "name": "explore-forge-twg-cx-remote-jira",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "changelog": "git cliff",
+    "check": "lefthook run pre-push --force",
+    "clean": "rm -rf ./node_modules && rm -f package-lock.json && rm -rf ./dist",
+    "dev": "tsdown --watch",
+    "forge:deploy": "secretspec run --reason \"npm run forge:deploy\" -- sh -c 'forge deploy --environment \"$FORGE_ENVIRONMENT\"'",
+    "forge:install": "secretspec run --reason \"npm run forge:install\" -- sh -c 'forge install --site \"$FORGE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
+    "forge:register": "forge register",
+    "forge:uninstall": "secretspec run --reason \"npm run forge:uninstall\" -- sh -c 'forge uninstall --site \"$FORGE_SITE\" --product \"$FORGE_PRODUCT\"'",
+    "forge:upgrade": "secretspec run --reason \"npm run forge:upgrade\" -- sh -c 'forge install --upgrade --site \"$FORGE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
+    "forge:variables:set": "secretspec run --reason \"npm run forge:variables:set\" -- sh -c 'forge variables set --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
+    "forge:variables:set-encrypted": "secretspec run --reason \"npm run forge:variables:set-encrypted\" -- sh -c 'forge variables set --encrypt --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
+    "forge:variables:set:secretspec": "./scripts/forge-vars-from-secretspec.sh",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "generate": "npm run generate:rovo",
+    "generate:rovo": "echo 'Not implemented'",
+    "lint": "lefthook run lint",
+    "lint:check": "biome lint",
+    "lint:fix": "biome lint --write",
+    "lint:forge": "forge lint",
+    "prepare": "lefthook install",
+    "preview": "echo 'Not implemented'",
+    "start": "echo 'Not implemented'",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch",
+    "todo": "grep -rn 'TODO' --exclude='package.json' . --color=auto || echo 'No TODOs found!'",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "lint:prelint": "ast-grep scan --config node_modules/tool-forge-prelint-ast-grep/sgconfig.ecosol.yml --globs '!node_modules/**'",
+    "size": "npm run build && size-limit"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "devDependencies": {
+    "git-cliff": "*",
+    "@biomejs/biome": "2.4.15",
+    "tool-forge-prelint-ast-grep": "github:ibuchanan/tool-forge-prelint-ast-grep",
+    "@ast-grep/cli": "^0.44",
+    "typescript": "5",
+    "@types/node": "*",
+    "vitest": "*",
+    "archunit": "*",
+    "size-limit": "^12.1",
+    "@size-limit/file": "^12.1",
+    "lefthook": "^2.1"
+  },
+  "dependencies": {
+    "@forge-ahead/atlassian-api-types": "github:ibuchanan/forge-ahead-atlassian-api-types#c1120db3d1b1a2455acd72b05238d3a48226b983",
+    "@forge-ahead/errors": "github:ibuchanan/forge-ahead-errors#0.1.0",
+    "@forge-ahead/logging": "github:ibuchanan/forge-ahead-logging#0.2.0"
+  },
+  "size-limit": [
+    {
+      "name": "Forge app bundle",
+      "path": [
+        "dist/**/*.js"
+      ],
+      "limit": "10 kB"
+    }
+  ]
+}
