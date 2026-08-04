@@ -5,6 +5,7 @@ output:
   - failure
 
 lint:
+  parallel: true
   commands:
     prelint:
       run: npm run lint:prelint
@@ -30,6 +31,7 @@ pre-commit:
       stage_fixed: true
 
 pre-push:
+  parallel: true
   commands:
     format:
       run: npm run format:check
