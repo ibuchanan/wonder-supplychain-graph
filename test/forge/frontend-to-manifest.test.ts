@@ -196,10 +196,6 @@ describe("Frontend Invoke Validation", () => {
 
     const declaredFunctions = functions.map((f) => f.key);
 
-    // Also check if functions are defined in the module's resolver
-    const resolversPath = join(projectRoot, "src/resolvers/index.ts");
-    const resolversSource = parseSourceFile(resolversPath);
-
     // Get invoked functions from all frontend files
     const frontendFiles = getAllTypeScriptFiles(frontendPath);
     const invokeCalls = frontendFiles.flatMap((frontendPath) =>
@@ -210,7 +206,12 @@ describe("Frontend Invoke Validation", () => {
     // 1. Declared as standalone functions in manifest.yml
     // 2. Defined in a resolver that's used by the module
     const missingFunctions: string[] = [];
-    const resolverDefinitions = findResolverDefinitions(resolversSource);
+    const resolversPath = join(projectRoot, "src/resolvers/index.ts");
+    const resolverDefinitions = directoryExists(
+      join(projectRoot, "src/resolvers"),
+    )
+      ? findResolverDefinitions(parseSourceFile(resolversPath))
+      : new Set<string>();
 
     for (const invoked of invokeCalls) {
       const inManifest = declaredFunctions.includes(invoked.functionName);

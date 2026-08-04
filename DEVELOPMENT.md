@@ -1,203 +1,82 @@
-# Development for [Explore Forge TWG CX Remote Jira]
+# Developing Supplychain Graph
 
-<!-- cspell:words ast-grep Biome git-cliff prelint SecretSpec secretspec -->
-
-This guide is for contributors who are changing the code. Keep `README.md`
-focused on what the project does, first-run setup, basic usage, and links.
-Keep pull request process and community expectations in `CONTRIBUTING.md`.
-
-Delete any generated notes that do not match this repository before publishing.
+This guide describes the local development loop for Supplychain Graph. Product
+and architecture decisions live in [`specs/`](specs/).
 
 ## Prerequisites
 
-- [Node.js 24.x][node-download] and [npm][npm-install]. Do not use pnpm or
-  yarn unless this project deliberately changes package managers.
-- [Atlassian Forge CLI][forge-cli-install], authenticated with the Atlassian
-  account used for local development. See [Forge getting started][forge-start]
-  for the full setup flow.
-- Access to the Forge app, target site, and any Atlassian Cloud organization or
-  product resources this app needs.
-- [SecretSpec][secretspec-quick-start], when this repository uses the generated
-  `secretspec.toml` workflow for Forge command configuration and app secrets.
+- Node.js 24 and npm, matching [`.nvmrc`](.nvmrc).
+- The Forge CLI, authenticated only when you need to register, deploy, install,
+  tunnel, or inspect a hosted app.
+- SecretSpec when running the Forge scripts that read `FORGE_*` configuration.
 
-Run one-time local setup for secret storage when using `secretspec`:
-
-```sh
-secretspec config init
-```
-
-## Initial Setup
-
-Install dependencies and run the default verification path:
+## First-time setup
 
 ```sh
 npm install
-secretspec check
 npm run check
 ```
 
-If this app has project-specific Forge variables, add their definitions to
-`secretspec.toml`, set the real values in your local secret backend, and keep
-secret values out of git.
+The repository commits `package-lock.json`; use npm to keep it current.
 
-## Common Commands
-
-Keep this table synchronized with `package.json`.
+## Everyday loop
 
 | Command | Purpose |
 | --- | --- |
-| `npm run check` | Run the default local quality gate. |
-| `npm run build` | Compile the Forge app into `dist/` with TypeScript. |
-| `npm run dev` | Compile in watch mode while editing. |
-| `npm run typecheck` | Run [TypeScript][typescript-docs] without emitting files. |
-| `npm run format` | Format files with [Biome][biome-docs]. |
-| `npm run format:check` | Check formatting without writing changes. |
-| `npm run lint` | Run static checks, Forge linting, and prelint rules. |
-| `npm run lint:fix` | Apply safe lint fixes where supported. |
-| `npm run test` | Run [Vitest][vitest-docs] once. |
-| `npm run test:watch` | Run Vitest in watch mode. |
-| `npm run test:coverage` | Run tests with coverage. |
-| `npm run size` | Check the [size-limit][size-limit-docs] bundle budget. |
-| `npm run changelog` | Generate changelog output with [git-cliff][git-cliff-docs]. |
-| `npm run todo` | Search for TODO markers. |
+| `npm run test` | Run project-owned tests once. |
+| `npm run test:watch` | Re-run project-owned tests while editing. |
+| `npm run typecheck` | Type-check production application TypeScript. |
+| `npm run lint` | Run prelint checks, Biome, Forge lint, and type-checking. |
+| `npm run format` | Apply Biome formatting. |
+| `npm run format:check` | Verify formatting without writing. |
+| `npm run build` | Compile the TypeScript application into `dist/`. |
+| `npm run check` | Run the normal pre-push quality gate. |
 
-## Forge Environment Workflow
+The `vendor/` directory is reference material, not a workspace. Root commands
+must not lint, type-check, or run its test suites.
 
-[`manifest.yml`][forge-manifest] is the source of truth for Forge modules,
-functions, resources, scopes, runtime settings, and external access. Review it
-with code changes that touch handlers, UI resources, permissions, or egress.
+## Forge baseline
 
-Default Forge command configuration lives in `secretspec.toml`:
+`manifest.yml` declares a minimal Jira issue panel and retains this app's Forge
+identity. The collaboration core is intentionally pure and has no Forge I/O.
+When a product capability needs a backend handler, Jira API access, or another
+Forge surface, add the least-privilege module and permissions in the same
+change.
 
-- `FORGE_SITE` is the target Atlassian site hostname.
-- `FORGE_PRODUCT` is the product for installation, such as `jira` or
-  `confluence`.
-- `FORGE_ENVIRONMENT` is the Forge environment name.
-
-Use these scripts from the Forge app root:
+Before modifying `manifest.yml`, verify the relevant Forge module and scope in
+the current Forge documentation. After any permissions or egress change, deploy
+and upgrade the installation:
 
 ```sh
-npm run forge:register
-npm run forge:variables:set:secretspec
 npm run forge:deploy
-npm run forge:install
+npm run forge:upgrade
 ```
 
-`forge:register` wraps [`forge register`][forge-register] and is normally a
-one-time step for a new app. Run `forge:variables:set:secretspec` whenever
-committed variable definitions or local secret values change; it publishes
-variables through the Forge [variables command][forge-variables]. Run
-`forge:deploy` for [`forge deploy`][forge-deploy]. Run `forge:upgrade` instead
-of `forge:install` when an already-installed app needs an installation upgrade;
-both use [`forge install`][forge-install].
+Run `npm run forge:register` only when deliberately adopting this source tree as
+a new Forge app. It changes the app ID and should not be a normal setup step.
 
-## Project Structure
+## Forge configuration
 
-- `manifest.yml`: Forge modules, handlers, resources, scopes, runtime settings,
-  and egress declarations.
-- `src/index.ts`: handler exports referenced by `manifest.yml`.
-- `src/frontend/`: Forge UI resource code, when the app has a UI surface.
-- `src/`: application code, domain logic, API clients, configuration loading,
-  and Forge boundary adapters.
-- `test/`: Vitest tests, including Forge architecture and manifest wiring
-  checks when generated by `repo-init`.
-- `scripts/`: local helper scripts such as Forge variable publishing.
-- `docs/`: design specs, architecture notes, ADRs, or longer how-to material.
-- `CONTEXT.md`: domain glossary, if the repository keeps one.
+`secretspec.toml` declares non-secret Forge command configuration:
 
-## Working on Code
+- `FORGE_SITE`
+- `FORGE_PRODUCT`
+- `FORGE_ENVIRONMENT`
 
-- Keep Forge SDK calls and platform I/O near the edges of the codebase. Prefer
-  small, deterministic functions for parsing, planning, validation, and result
-  shaping so they can be tested without Forge.
-- Update `manifest.yml`, handler exports, and manifest wiring tests together.
-- Update `secretspec.toml`, README configuration notes, and tests together when
-  adding or changing configuration.
-- Update architecture tests when changing boundaries between frontend, backend,
-  storage, API clients, or generated Forge handlers.
-- Keep TypeScript on `^5.x` until Forge bundler support for later major
-  versions is confirmed.
+Use the `forge:*` scripts only after configuring those values with SecretSpec.
+Keep real credentials and secret values outside the repository.
 
-## Testing Expectations
+## Testing expectations
 
-- Unit tests should cover pure domain behavior, API response handling, config
-  validation, and error mapping.
-- Forge architecture tests should cover manifest wiring and forbidden imports or
-  boundary violations that would otherwise fail late during deployment.
-- Run `npm run check` before opening a pull request.
-- Run `npm run size` when changing runtime dependencies or code that affects the
-  deployed Forge bundle.
+Add behavior tests at an agreed public seam. The collaboration core should be
+deterministic and free of Forge, network, storage, Jira-content, and credential
+dependencies. Add manifest-wiring tests when a Forge module or handler is
+introduced.
 
-## Generated and Built Files
+## Repository boundaries
 
-- Do not edit `dist/` by hand.
-- Treat generated config and tests as source once committed. If a generated file
-  is no longer appropriate, update it deliberately and keep this guide current.
-- When changing `repo-init` template-driven behavior upstream, keep generator
-  code, templates, and tests synchronized.
-
-## Documentation Boundaries
-
-- `README.md`: purpose, status, prerequisites, first-run setup, basic usage,
-  essential configuration, support, contribution entry point, and license.
-- `DEVELOPMENT.md`: local development environment, inner loop, commands,
-  structure, testing, debugging, and contributor troubleshooting.
-- `CONTRIBUTING.md`: pull request process, CLA, issue workflow, and community
-  expectations.
-- `docs/`: detailed design specs, ADRs, tutorials, how-to guides, references,
-  and longer explanations.
-
-## Tool References
-
-- [Forge getting started][forge-start]
-- [Forge CLI overview][forge-cli-overview]
-- [Forge CLI installation][forge-cli-install]
-- [Forge manifest reference][forge-manifest]
-- Forge commands: [`register`][forge-register], [`deploy`][forge-deploy],
-  [`install`][forge-install], [`variables`][forge-variables],
-  [`lint`][forge-lint], [`tunnel`][forge-tunnel], [`logs`][forge-logs]
-- [SecretSpec quick start][secretspec-quick-start]
-- [Node.js downloads][node-download] and [npm installation][npm-install]
-- [TypeScript][typescript-docs], [Biome][biome-docs],
-  [Vitest][vitest-docs], [size-limit][size-limit-docs],
-  [git-cliff][git-cliff-docs], and [ast-grep][ast-grep-docs]
-
-## Troubleshooting
-
-Forge CLI cannot find the app:
-Run Forge commands from the directory containing `manifest.yml`.
-
-`secretspec check` reports unresolved values:
-Add missing values to your local secret backend or make optional values explicit
-in `secretspec.toml`.
-
-`forge lint` fails after a manifest change:
-Check module keys, handler names, scopes, egress declarations, and runtime
-settings.
-
-`npm run lint:prelint` cannot find rules:
-Run `npm install` and confirm `tool-forge-prelint-ast-grep` is installed.
-
-Bundle size check fails:
-Inspect new runtime dependencies and generated output before raising the budget.
-
-[ast-grep-docs]: https://ast-grep.github.io/
-[biome-docs]: https://biomejs.dev/
-[forge-cli-install]: https://developer.atlassian.com/platform/forge/getting-started/#install-the-forge-cli
-[forge-cli-overview]: https://developer.atlassian.com/platform/forge/cli-reference/
-[forge-deploy]: https://developer.atlassian.com/platform/forge/cli-reference/deploy/
-[forge-install]: https://developer.atlassian.com/platform/forge/cli-reference/install/
-[forge-lint]: https://developer.atlassian.com/platform/forge/cli-reference/lint/
-[forge-logs]: https://developer.atlassian.com/platform/forge/cli-reference/logs/
-[forge-manifest]: https://developer.atlassian.com/platform/forge/manifest-reference/
-[forge-register]: https://developer.atlassian.com/platform/forge/cli-reference/register/
-[forge-start]: https://developer.atlassian.com/platform/forge/getting-started/
-[forge-tunnel]: https://developer.atlassian.com/platform/forge/cli-reference/tunnel/
-[forge-variables]: https://developer.atlassian.com/platform/forge/cli-reference/variables/
-[git-cliff-docs]: https://git-cliff.org/docs/
-[node-download]: https://nodejs.org/en/download
-[npm-install]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
-[secretspec-quick-start]: https://secretspec.dev/quick-start/
-[size-limit-docs]: https://github.com/ai/size-limit
-[typescript-docs]: https://www.typescriptlang.org/docs/
-[vitest-docs]: https://vitest.dev/
+- Keep feature requirements and decisions in `specs/`.
+- Treat `vendor/` as read-only reference material unless intentionally updating
+  a submodule or imported example.
+- Do not retain generated Hello World modules, placeholder scripts, or template
+  documentation once a real project convention replaces them.
