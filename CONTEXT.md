@@ -8,8 +8,14 @@
   it is never an authenticator or authorization credential.
 - **Invitation**: a pending proposal to establish a Pairing through a pairing
   reference.
+- **Outbound pairing**: the manufacturer-local pending record created when a
+  Pairing reference is issued and awaiting supplier acceptance.
+- **Inbound pairing**: the supplier-local pending record created from a received
+  Pairing reference before the supplier binds its existing Paired Epic.
 - **Acceptance**: the supplier administrator's explicit decision to activate a
   pending Invitation.
+- **Pairing activation**: the manufacturer-local application of a supplier
+  Acceptance, which changes its Outbound pairing from pending to active.
 - **Correlation ID**: the shared opaque identifier joining both tenants' records
   of one collaboration operation.
 - **Idempotency key**: an opaque identifier that makes repeated delivery of one

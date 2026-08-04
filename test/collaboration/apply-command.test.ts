@@ -1,7 +1,21 @@
+import { type Result } from "@forge-ahead/errors";
+
 import {
   applyCollaborationCommand,
   type CollaborationState,
 } from "../../src/collaboration/apply-command";
+
+function expectOk<T, E>(result: Result<T, E>): T {
+  expect(result.isOk()).toBe(true);
+
+  if (result.isErr()) {
+    expect.unreachable(
+      `Expected success, received ${JSON.stringify(result.error)}`,
+    );
+  }
+
+  return result.value;
+}
 
 const pendingInvitationState = (): CollaborationState => ({
   invitations: [
@@ -28,9 +42,8 @@ const acceptanceCommand = {
 
 describe("applyCollaborationCommand", () => {
   it("accepts a pending invitation and records an immutable non-content audit event", () => {
-    const result = applyCollaborationCommand(
-      pendingInvitationState(),
-      acceptanceCommand,
+    const result = expectOk(
+      applyCollaborationCommand(pendingInvitationState(), acceptanceCommand),
     );
 
     expect(result.decision).toEqual({
@@ -62,14 +75,12 @@ describe("applyCollaborationCommand", () => {
   });
 
   it("replays an accepted invitation without appending another audit event", () => {
-    const firstResult = applyCollaborationCommand(
-      pendingInvitationState(),
-      acceptanceCommand,
+    const firstResult = expectOk(
+      applyCollaborationCommand(pendingInvitationState(), acceptanceCommand),
     );
 
-    const replayResult = applyCollaborationCommand(
-      firstResult.nextState,
-      acceptanceCommand,
+    const replayResult = expectOk(
+      applyCollaborationCommand(firstResult.nextState, acceptanceCommand),
     );
 
     expect(replayResult.decision).toEqual({
@@ -79,5 +90,23 @@ describe("applyCollaborationCommand", () => {
     });
     expect(replayResult.auditEvents).toEqual([]);
     expect(replayResult.nextState).toEqual(firstResult.nextState);
+  });
+
+  it("returns a typed error when the command has no matching pending invitation", () => {
+    const result = applyCollaborationCommand(
+      { invitations: [], processedIdempotencyKeys: [] },
+      acceptanceCommand,
+    );
+
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) {
+      expect.unreachable("Expected a missing invitation to fail");
+    }
+    expect(result.error).toEqual({
+      code: "pending-invitation-not-found",
+      correlationId: "corr-001",
+      invitationId: "invite-001",
+      pairingId: "pairing-001",
+    });
   });
 });

@@ -1,3 +1,5 @@
+import { err, ok, type Result } from "@forge-ahead/errors";
+
 import type { ProtocolVersion } from "./protocol";
 
 export type InvitationStatus = "pending" | "accepted";
@@ -46,12 +48,21 @@ export interface CollaborationCommandResult {
   readonly nextState: CollaborationState;
 }
 
+export interface PendingInvitationNotFoundError {
+  readonly code: "pending-invitation-not-found";
+  readonly correlationId: string;
+  readonly invitationId: string;
+  readonly pairingId: string;
+}
+
+export type CollaborationCommandError = PendingInvitationNotFoundError;
+
 export function applyCollaborationCommand(
   state: CollaborationState,
   command: InvitationAcceptanceCommand,
-): CollaborationCommandResult {
+): Result<CollaborationCommandResult, CollaborationCommandError> {
   if (state.processedIdempotencyKeys.includes(command.idempotencyKey)) {
-    return {
+    return ok({
       auditEvents: [],
       decision: {
         idempotency: "replayed",
@@ -59,7 +70,7 @@ export function applyCollaborationCommand(
         status: "active",
       },
       nextState: state,
-    };
+    });
   }
 
   const invitation = state.invitations.find(
@@ -70,7 +81,12 @@ export function applyCollaborationCommand(
   );
 
   if (invitation?.status !== "pending") {
-    throw new Error("A pending invitation matching this command is required");
+    return err({
+      code: "pending-invitation-not-found",
+      correlationId: command.correlationId,
+      invitationId: command.invitationId,
+      pairingId: command.pairingId,
+    });
   }
 
   const auditEvent = Object.freeze({
@@ -84,7 +100,7 @@ export function applyCollaborationCommand(
     protocolVersion: command.protocolVersion,
   });
 
-  return {
+  return ok({
     auditEvents: [auditEvent],
     decision: {
       idempotency: "applied",
@@ -102,5 +118,5 @@ export function applyCollaborationCommand(
         command.idempotencyKey,
       ],
     },
-  };
+  });
 }
