@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { loadManifest } from "./manifest-helpers";
@@ -21,5 +24,17 @@ describe("Supplychain Graph simulator page", () => {
       resource: "simulator",
       title: "Supplychain Graph Simulator",
     });
+  });
+
+  it("lets a developer run the deterministic delivery and inspect replay plus audit evidence", () => {
+    const pageSource = readFileSync(
+      join(process.cwd(), "src/frontend/simulator.tsx"),
+      "utf8",
+    );
+
+    expect(pageSource).toContain("applyDeterministicSupplierReceipt");
+    expect(pageSource).toContain("Deliver deterministic package");
+    expect(pageSource).toContain("Latest delivery");
+    expect(pageSource).toContain("Audit evidence");
   });
 });
