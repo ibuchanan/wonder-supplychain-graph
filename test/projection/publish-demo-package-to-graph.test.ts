@@ -77,7 +77,11 @@ describe("publishDemoPackageToGraph", () => {
     expect(graph.set).toHaveLength(1);
 
     const request = graph.set[0] as {
-      objects: Array<{ description: string; id: string }>;
+      objects: Array<{
+        description: string;
+        id: string;
+        permissions: { accessControls: unknown[] };
+      }>;
     };
     expect(request.objects.map((object) => object.id)).toEqual([
       "demo-pairing:MFG-17:MFG-17",
@@ -89,6 +93,9 @@ describe("publishDemoPackageToGraph", () => {
     expect(request.objects[0]?.description).toContain(
       "Published: 2026-08-05T12:00:00.000Z",
     );
+    expect(request.objects[0]?.permissions).toEqual({
+      accessControls: [{ principals: [{ type: "EVERYONE" }] }],
+    });
   });
 
   it("updates stable graph object IDs when the package is re-published", async () => {

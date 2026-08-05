@@ -45,6 +45,8 @@ export async function publishDemoPackageToGraph(
   const ingestion = await ingestPackageProjection(graph, {
     connectionId: request.connectionId,
     state,
+    // The demo action must be discoverable to the demo user through Rovo.
+    visibility: "everyone",
   });
 
   if (ingestion.outcome === "suppressed") {

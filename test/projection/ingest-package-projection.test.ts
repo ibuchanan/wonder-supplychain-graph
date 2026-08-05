@@ -89,6 +89,7 @@ describe("ingestPackageProjection", () => {
         description: string;
         displayName: string;
         id: string;
+        permissions: { accessControls: unknown[] };
         "atlassian:work-item": { status: string; subtype: string };
       }[];
       properties?: Record<string, string>;
@@ -116,6 +117,9 @@ describe("ingestPackageProjection", () => {
     expect(request.objects[1]["atlassian:work-item"]).toEqual({
       status: "To Do",
       subtype: "task",
+    });
+    expect(request.objects[0].permissions).toEqual({
+      accessControls: [{ principals: [{ id: "SUP-42", type: "CONTAINER" }] }],
     });
   });
 

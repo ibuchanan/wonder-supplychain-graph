@@ -22,9 +22,13 @@ export interface PackageGraphPort {
   ) => Promise<types.BulkObjectResponse>;
 }
 
+export type PackageProjectionVisibility = "container" | "everyone";
+
 export interface PackageIngestionRequest {
   readonly connectionId: string;
   readonly state: SupplierReceiptState;
+  /** Defaults to paired-container visibility for normal connector ingestion. */
+  readonly visibility?: PackageProjectionVisibility;
 }
 
 export type PackageIngestionOutcome =
@@ -54,6 +58,7 @@ function toRovoDescription(object: PackageProjectionObject): string {
 
 function toWorkItemObject(
   object: PackageProjectionObject,
+  visibility: PackageProjectionVisibility,
 ): types.WorkItemObject {
   return {
     "atlassian:work-item": {
@@ -65,12 +70,15 @@ function toWorkItemObject(
     displayName: object.summary,
     id: object.id,
     lastUpdatedAt: object.publishedAt,
-    // Discovery is bounded to the supplier Paired Epic, not the whole site.
-    permissions: {
-      accessControls: [
-        { principals: [{ id: object.pairedEpicId, type: "CONTAINER" }] },
-      ],
-    },
+    permissions:
+      visibility === "everyone"
+        ? { accessControls: [{ principals: [{ type: "EVERYONE" }] }] }
+        : {
+            // Normal connector ingestion remains bounded to the paired Epic.
+            accessControls: [
+              { principals: [{ id: object.pairedEpicId, type: "CONTAINER" }] },
+            ],
+          },
     schemaVersion: "1",
     // The Published version doubles as the update sequence, so a superseded
     // package can never overwrite a newer one.
@@ -104,7 +112,9 @@ export async function ingestPackageProjection(
 
   await graph.setObjects({
     connectionId: request.connectionId,
-    objects: projection.objects.map(toWorkItemObject),
+    objects: projection.objects.map((object) =>
+      toWorkItemObject(object, request.visibility ?? "container"),
+    ),
     properties: { pairingId },
   });
 
