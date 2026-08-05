@@ -10,7 +10,23 @@ import {
   type SupplierReceiptState,
 } from "../receipt/apply-command";
 
+export type SupplierPackageScenario =
+  | "authorized"
+  | "empty"
+  | "pending-candidate"
+  | "authorization-denied"
+  | "malformed"
+  | "unavailable";
+
+export type NoCurrentAuthorizedPackageStatus =
+  | "No current authorized package exists."
+  | "A candidate is pending; no current authorized package is available."
+  | "Peer authorization was denied; no current authorized package is available."
+  | "The received candidate is malformed; no current authorized package is available."
+  | "The supplier relationship is unavailable; no current authorized package is available.";
+
 export interface AuthorizedSupplierScenario {
+  readonly noCurrentAuthorizedPackageStatus?: NoCurrentAuthorizedPackageStatus;
   readonly receiptState: SupplierReceiptState;
 }
 
@@ -20,7 +36,7 @@ export interface SupplierReceiptDelivery {
   readonly nextScenario: AuthorizedSupplierScenario;
 }
 
-export interface SupplierPackageView {
+export interface CurrentSupplierPackageView {
   readonly children: readonly Pick<
     SnapshotIssue,
     | "description"
@@ -43,6 +59,14 @@ export interface SupplierPackageView {
     readonly sourceSiteId: string;
   };
 }
+
+export interface NoCurrentAuthorizedPackageView {
+  readonly status: NoCurrentAuthorizedPackageStatus;
+}
+
+export type SupplierPackageView =
+  | CurrentSupplierPackageView
+  | NoCurrentAuthorizedPackageView;
 
 const supplierReleaseContent = Object.freeze({
   children: Object.freeze([
@@ -143,6 +167,39 @@ export function createAuthorizedSupplierScenario(): AuthorizedSupplierScenario {
   };
 }
 
+const noCurrentAuthorizedPackageStatuses = {
+  empty: "No current authorized package exists.",
+  "pending-candidate":
+    "A candidate is pending; no current authorized package is available.",
+  "authorization-denied":
+    "Peer authorization was denied; no current authorized package is available.",
+  malformed:
+    "The received candidate is malformed; no current authorized package is available.",
+  unavailable:
+    "The supplier relationship is unavailable; no current authorized package is available.",
+} as const satisfies Record<
+  Exclude<SupplierPackageScenario, "authorized">,
+  NoCurrentAuthorizedPackageStatus
+>;
+
+export function createSupplierPackageScenario(
+  scenario: SupplierPackageScenario,
+): AuthorizedSupplierScenario {
+  if (scenario === "authorized") {
+    return createAuthorizedSupplierScenario();
+  }
+
+  return {
+    noCurrentAuthorizedPackageStatus:
+      noCurrentAuthorizedPackageStatuses[scenario],
+    receiptState: {
+      currentPackage: undefined,
+      pairings: [],
+      processedIdempotencyKeys: [],
+    },
+  };
+}
+
 export function applyDeterministicSupplierReceipt(
   scenario: AuthorizedSupplierScenario,
 ): Result<SupplierReceiptDelivery, SupplierReceiptError> {
@@ -168,7 +225,11 @@ export function toSupplierPackageView(
   const { currentPackage } = scenario.receiptState;
 
   if (!currentPackage) {
-    throw new Error("Simulator scenario must contain a current package");
+    return {
+      status:
+        scenario.noCurrentAuthorizedPackageStatus ??
+        "No current authorized package exists.",
+    };
   }
 
   return {

@@ -5,6 +5,7 @@ import type { Result } from "@forge-ahead/errors";
 import {
   applyDeterministicSupplierReceipt,
   createAuthorizedSupplierScenario,
+  createSupplierPackageScenario,
   toSupplierPackageView,
 } from "../../src/simulator/authorized-supplier-package";
 
@@ -108,4 +109,43 @@ describe("authorized supplier simulator scenario", () => {
     expect(replayed.auditEvents).toEqual([]);
     expect(replayed.nextScenario).toEqual(promoted.nextScenario);
   });
+
+  it.each([
+    {
+      scenario: "empty",
+      status: "No current authorized package exists.",
+    },
+    {
+      scenario: "pending-candidate",
+      status:
+        "A candidate is pending; no current authorized package is available.",
+    },
+    {
+      scenario: "authorization-denied",
+      status:
+        "Peer authorization was denied; no current authorized package is available.",
+    },
+    {
+      scenario: "malformed",
+      status:
+        "The received candidate is malformed; no current authorized package is available.",
+    },
+    {
+      scenario: "unavailable",
+      status:
+        "The supplier relationship is unavailable; no current authorized package is available.",
+    },
+  ] as const)(
+    "keeps source package content hidden for the $scenario scenario",
+    ({ scenario, status }) => {
+      const packageView = toSupplierPackageView(
+        createSupplierPackageScenario(scenario),
+      );
+
+      expect(packageView).toEqual({ status });
+      expect(packageView).not.toHaveProperty("children");
+      expect(packageView).not.toHaveProperty("current");
+      expect(packageView).not.toHaveProperty("provenance");
+    },
+  );
 });

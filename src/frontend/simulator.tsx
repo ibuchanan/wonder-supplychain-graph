@@ -4,11 +4,15 @@ import ForgeReconciler, { Button, Heading, Stack, Text } from "@forge/react";
 import {
   applyDeterministicSupplierReceipt,
   createAuthorizedSupplierScenario,
+  createSupplierPackageScenario,
   toSupplierPackageView,
+  type SupplierPackageScenario,
   type SupplierReceiptDelivery,
 } from "../simulator/authorized-supplier-package";
 
 const Simulator = () => {
+  const [selectedScenario, setSelectedScenario] =
+    React.useState<SupplierPackageScenario>("authorized");
   const [scenario, setScenario] = React.useState(
     createAuthorizedSupplierScenario,
   );
@@ -22,6 +26,14 @@ const Simulator = () => {
     undefined,
   );
   const simulatorView = toSupplierPackageView(scenario);
+
+  const selectScenario = (nextScenario: SupplierPackageScenario) => {
+    setSelectedScenario(nextScenario);
+    setScenario(createSupplierPackageScenario(nextScenario));
+    setLatestDelivery(undefined);
+    setAuditEvents([]);
+    setErrorCode(undefined);
+  };
 
   const deliver = () => {
     const result = applyDeterministicSupplierReceipt(scenario);
@@ -43,13 +55,47 @@ const Simulator = () => {
   return (
     <Stack space="space.200">
       <Text>
-        Development-only deterministic scenario. No peer endpoint or partner
+        Development-only deterministic scenarios. No peer endpoint or partner
         data is used.
       </Text>
 
-      <Button appearance="primary" onClick={deliver} type="button">
-        Deliver deterministic package
-      </Button>
+      <Stack space="space.050">
+        <Heading size="medium">Select deterministic scenario</Heading>
+        <Button
+          appearance="primary"
+          onClick={() => selectScenario("authorized")}
+          type="button"
+        >
+          Show current authorized package
+        </Button>
+        <Button onClick={() => selectScenario("empty")} type="button">
+          Show empty state
+        </Button>
+        <Button
+          onClick={() => selectScenario("pending-candidate")}
+          type="button"
+        >
+          Show pending candidate
+        </Button>
+        <Button
+          onClick={() => selectScenario("authorization-denied")}
+          type="button"
+        >
+          Show authorization denied
+        </Button>
+        <Button onClick={() => selectScenario("malformed")} type="button">
+          Show malformed candidate
+        </Button>
+        <Button onClick={() => selectScenario("unavailable")} type="button">
+          Show unavailable relationship
+        </Button>
+      </Stack>
+
+      {selectedScenario === "authorized" ? (
+        <Button appearance="primary" onClick={deliver} type="button">
+          Deliver deterministic package
+        </Button>
+      ) : null}
 
       <Stack space="space.050">
         <Heading size="medium">Latest delivery</Heading>
@@ -68,27 +114,36 @@ const Simulator = () => {
         {errorCode ? <Text>Delivery error: {errorCode}</Text> : null}
       </Stack>
 
-      <Stack space="space.050">
-        <Heading size="medium">Current package</Heading>
-        <Text>
-          {simulatorView.current.sourceEpic.key} ·{" "}
-          {simulatorView.current.sourceEpic.summary}
-        </Text>
-        <Text>
-          Version {simulatorView.current.version} published{" "}
-          {simulatorView.current.publishedAt}
-        </Text>
-        <Text>
-          {simulatorView.current.sourceEpic.statusCategory} ·{" "}
-          {simulatorView.current.sourceEpic.priority}
-        </Text>
-      </Stack>
+      {"current" in simulatorView ? (
+        <>
+          <Stack space="space.050">
+            <Heading size="medium">Current package</Heading>
+            <Text>
+              {simulatorView.current.sourceEpic.key} ·{" "}
+              {simulatorView.current.sourceEpic.summary}
+            </Text>
+            <Text>
+              Version {simulatorView.current.version} published{" "}
+              {simulatorView.current.publishedAt}
+            </Text>
+            <Text>
+              {simulatorView.current.sourceEpic.statusCategory} ·{" "}
+              {simulatorView.current.sourceEpic.priority}
+            </Text>
+          </Stack>
 
-      <Stack space="space.050">
-        <Heading size="medium">Provenance</Heading>
-        <Text>Source site: {simulatorView.provenance.sourceSiteId}</Text>
-        <Text>Publisher: {simulatorView.provenance.publisherId}</Text>
-      </Stack>
+          <Stack space="space.050">
+            <Heading size="medium">Provenance</Heading>
+            <Text>Source site: {simulatorView.provenance.sourceSiteId}</Text>
+            <Text>Publisher: {simulatorView.provenance.publisherId}</Text>
+          </Stack>
+        </>
+      ) : (
+        <Stack space="space.050">
+          <Heading size="medium">Package status</Heading>
+          <Text>{simulatorView.status}</Text>
+        </Stack>
+      )}
 
       <Stack space="space.100">
         <Heading size="medium">Audit evidence</Heading>
@@ -104,20 +159,22 @@ const Simulator = () => {
         )}
       </Stack>
 
-      <Stack space="space.100">
-        <Heading size="medium">Direct children</Heading>
-        {simulatorView.children.map((child) => (
-          <Stack key={child.key} space="space.025">
-            <Text>
-              {child.key} · {child.issueType} · {child.summary}
-            </Text>
-            <Text>
-              {child.statusCategory} · {child.priority}
-            </Text>
-            <Text>{child.description}</Text>
-          </Stack>
-        ))}
-      </Stack>
+      {"children" in simulatorView ? (
+        <Stack space="space.100">
+          <Heading size="medium">Direct children</Heading>
+          {simulatorView.children.map((child) => (
+            <Stack key={child.key} space="space.025">
+              <Text>
+                {child.key} · {child.issueType} · {child.summary}
+              </Text>
+              <Text>
+                {child.statusCategory} · {child.priority}
+              </Text>
+              <Text>{child.description}</Text>
+            </Stack>
+          ))}
+        </Stack>
+      ) : null}
     </Stack>
   );
 };

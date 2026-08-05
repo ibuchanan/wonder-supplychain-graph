@@ -36,5 +36,11 @@ describe("Supplychain Graph simulator page", () => {
     expect(pageSource).toContain("Deliver deterministic package");
     expect(pageSource).toContain("Latest delivery");
     expect(pageSource).toContain("Audit evidence");
+    expect(pageSource).toContain("Select deterministic scenario");
+    expect(pageSource).toContain("Show empty state");
+    expect(pageSource).toContain("Show pending candidate");
+    expect(pageSource).toContain("Show authorization denied");
+    expect(pageSource).toContain("Show malformed candidate");
+    expect(pageSource).toContain("Show unavailable relationship");
   });
 });
