@@ -47,6 +47,8 @@ describe("authorized supplier simulator scenario", () => {
       current: {
         publishedAt: "2026-08-03T16:00:00.000Z",
         sourceEpic: {
+          description: "Approved supplier release package.",
+          issueType: "Epic",
           key: "MFG-17",
           priority: "High",
           statusCategory: "In Progress",

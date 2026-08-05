@@ -50,7 +50,12 @@ export interface CurrentSupplierPackageView {
     readonly publishedAt: string;
     readonly sourceEpic: Pick<
       SnapshotIssue,
-      "key" | "priority" | "statusCategory" | "summary"
+      | "description"
+      | "issueType"
+      | "key"
+      | "priority"
+      | "statusCategory"
+      | "summary"
     >;
     readonly version: string;
   };
@@ -236,12 +241,7 @@ export function toSupplierPackageView(
     children: currentPackage.content.children.map(toIssueView),
     current: {
       publishedAt: currentPackage.publishedAt,
-      sourceEpic: {
-        key: currentPackage.content.epic.key,
-        priority: currentPackage.content.epic.priority,
-        statusCategory: currentPackage.content.epic.statusCategory,
-        summary: currentPackage.content.epic.summary,
-      },
+      sourceEpic: toIssueView(currentPackage.content.epic),
       version: currentPackage.version,
     },
     provenance: {
