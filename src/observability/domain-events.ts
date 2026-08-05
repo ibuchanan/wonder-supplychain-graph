@@ -47,7 +47,7 @@ export function logGraphConnectionResult(
 }
 
 export interface GraphPublishResultEvent {
-  readonly connectionId: string;
+  readonly connectionId?: string;
   readonly correlationId: string;
   readonly ingested?: number;
   readonly reason?: string;
@@ -62,7 +62,7 @@ export function logGraphPublishResult(
 ): void {
   logger.info(
     {
-      connectionId: event.connectionId,
+      ...(event.connectionId ? { connectionId: event.connectionId } : {}),
       correlationId: event.correlationId,
       event: "scg.graph.publish.completed",
       ingested: event.ingested,
@@ -77,7 +77,7 @@ export function logGraphPublishResult(
 
 export interface RovoCommentResultEvent {
   readonly commentId?: string;
-  readonly connectionId: string;
+  readonly connectionId?: string;
   readonly reason?: string;
   readonly sourceEpicId?: string;
   readonly status: "commented" | "failed";
@@ -91,7 +91,7 @@ export function logRovoCommentResult(
   logger.info(
     {
       commentId: event.commentId,
-      connectionId: event.connectionId,
+      ...(event.connectionId ? { connectionId: event.connectionId } : {}),
       event: "scg.rovo.comment.completed",
       reason: event.reason,
       sourceEpicId: event.sourceEpicId,

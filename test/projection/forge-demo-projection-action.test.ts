@@ -19,14 +19,17 @@ vi.mock("@forge/teamwork-graph", () => ({
 import { publishPackageToGraph } from "../../src/projection/forge-demo-projection-action";
 
 describe("publishPackageToGraph", () => {
-  let storedState: unknown;
+  const storedValues = new Map<string, unknown>();
 
   beforeEach(() => {
     vi.resetAllMocks();
-    storedState = undefined;
-    vi.mocked(kvs.get).mockImplementation(async () => storedState as never);
-    vi.mocked(kvs.set).mockImplementation(async (_key, value) => {
-      storedState = value;
+    storedValues.clear();
+    storedValues.set("active-graph-connection-id", "connection-001");
+    vi.mocked(kvs.get).mockImplementation(
+      async (key) => storedValues.get(key) as never,
+    );
+    vi.mocked(kvs.set).mockImplementation(async (key, value) => {
+      storedValues.set(key, value);
     });
     vi.mocked(graph.setObjects).mockResolvedValue({ success: true });
   });
@@ -34,7 +37,6 @@ describe("publishPackageToGraph", () => {
   it("returns an Automation-visible indexed result after persisting and projecting the current package", async () => {
     await expect(
       publishPackageToGraph({
-        connectionId: "connection-001",
         publisherId: "account:automation-001",
         sourceEpicId: "MFG-17",
       }),
@@ -47,5 +49,23 @@ describe("publishPackageToGraph", () => {
 
     expect(kvs.set).toHaveBeenCalledOnce();
     expect(graph.setObjects).toHaveBeenCalledOnce();
+  });
+
+  it("returns no-active-connection without writing or indexing when the app has no active graph connection", async () => {
+    storedValues.clear();
+
+    await expect(
+      publishPackageToGraph({
+        publisherId: "account:automation-001",
+        sourceEpicId: "MFG-17",
+      }),
+    ).resolves.toEqual({
+      reason: "no-active-connection",
+      sourceEpicId: "MFG-17",
+      status: "failed",
+    });
+
+    expect(kvs.set).not.toHaveBeenCalled();
+    expect(graph.setObjects).not.toHaveBeenCalled();
   });
 });

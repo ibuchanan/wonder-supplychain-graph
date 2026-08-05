@@ -72,11 +72,6 @@ modules:
       function: publishPackageToGraph
       description: Promotes and indexes the current demo work package for Rovo discovery.
       inputs:
-        connectionId:
-          title: Graph connection ID
-          type: string
-          description: The Supplychain Graph connector connection ID.
-          required: true
         sourceEpicId:
           title: Source Epic ID
           type: string
@@ -99,11 +94,6 @@ modules:
       actionVerb: CREATE
       description: Adds a package-related comment to the Source Epic resolved from current package provenance.
       inputs:
-        connectionId:
-          title: Graph connection ID
-          type: string
-          required: true
-          description: The connection ID for the current Supplychain Graph package.
         commentText:
           title: Comment text
           type: string
@@ -113,7 +103,7 @@ modules:
     - key: scg-package-agent
       name: Supplychain Graph
       description: Find the current Supplychain Graph package and add attributable comments to its originating Epic.
-      prompt: You help users comment on the originating Epic for a current Supplychain Graph package. Use the Comment on originating Epic action only when the user provides a graph connection ID and comment text. Never ask the user for, infer, or accept a destination issue key; the action resolves it from current-package provenance. Explain failures precisely and do not claim a comment was created unless the action confirms it.
+      prompt: You help users comment on the originating Epic for a current Supplychain Graph package. Use the Comment on originating Epic action when the user provides comment text. Never ask the user for, infer, or accept a connection ID or destination issue key; the action resolves both from tenant-local current-package provenance. Explain failures precisely and do not claim a comment was created unless the action confirms it.
       conversationStarters:
         - Add a comment about the current Supplychain Graph package to its originating Epic.
       actions:

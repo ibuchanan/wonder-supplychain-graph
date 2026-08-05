@@ -12,10 +12,6 @@ describe("Rovo demo graph discovery Automation Action", () => {
           actionVerb: "CREATE",
           function: "publishPackageToGraph",
           inputs: {
-            connectionId: expect.objectContaining({
-              required: true,
-              type: "string",
-            }),
             publisherId: expect.objectContaining({
               required: true,
               type: "string",

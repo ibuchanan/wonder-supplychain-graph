@@ -12,7 +12,6 @@ import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
 
 export interface RovoCommentActionPayload {
   readonly commentText: string;
-  readonly connectionId: string;
 }
 
 function toAtlassianDocument(body: string) {
@@ -62,20 +61,32 @@ const jiraCommentPort: JiraCommentPort = {
 
 /**
  * Rovo action entry point. The Jira comment is made as the initiating user;
- * the action accepts a connection reference rather than an issue key so the
- * destination always comes from trusted current-package provenance.
+ * the action resolves the active connection rather than accepting an issue
+ * key or connection ID, so the destination always comes from trusted package
+ * provenance.
  */
 export async function commentOnOriginatingEpicFromRovo(
   payload: RovoCommentActionPayload,
 ) {
+  const connectionId = await kvsPackageConnectionStore.getActiveConnectionId();
+
+  if (!connectionId) {
+    logRovoCommentResult(logger, {
+      reason: "no-active-connection",
+      status: "failed",
+    });
+
+    return { output: "Unable to add package comment: no-active-connection." };
+  }
+
   const outcome = await commentOnOriginatingEpic(
     { jira: jiraCommentPort, store: kvsPackageConnectionStore },
-    payload,
+    { ...payload, connectionId },
   );
 
   if (outcome.isErr()) {
     logRovoCommentResult(logger, {
-      connectionId: payload.connectionId,
+      connectionId,
       reason: outcome.error.code,
       status: "failed",
     });
@@ -85,7 +96,7 @@ export async function commentOnOriginatingEpicFromRovo(
 
   logRovoCommentResult(logger, {
     commentId: outcome.value.commentId,
-    connectionId: payload.connectionId,
+    connectionId,
     sourceEpicId: outcome.value.sourceEpicId,
     status: "commented",
     version: outcome.value.version,

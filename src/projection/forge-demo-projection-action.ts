@@ -50,7 +50,6 @@ function toActionResult(
  * connector; real peer delivery remains outside this demo-only adapter.
  */
 export interface PublishPackageToGraphInput {
-  readonly connectionId: string;
   readonly publisherId: string;
   readonly sourceEpicId: string;
 }
@@ -58,9 +57,28 @@ export interface PublishPackageToGraphInput {
 export async function publishPackageToGraph(
   payload: PublishPackageToGraphInput,
 ): Promise<PublishPackageToGraphResult> {
+  const metadata = createActionExecutionMetadata(payload.sourceEpicId);
+  const connectionId = await kvsPackageConnectionStore.getActiveConnectionId();
+
+  if (!connectionId) {
+    logGraphPublishResult(logger, {
+      correlationId: metadata.correlationId,
+      reason: "no-active-connection",
+      sourceEpicId: payload.sourceEpicId,
+      status: "failed",
+    });
+
+    return {
+      reason: "no-active-connection",
+      sourceEpicId: payload.sourceEpicId,
+      status: "failed",
+    };
+  }
+
   const actionRequest: DemoPackagePromotionRequest = {
     ...payload,
-    ...createActionExecutionMetadata(payload.sourceEpicId),
+    ...metadata,
+    connectionId,
   };
   const outcome = await publishDemoPackageToGraph(
     { graph, store: kvsPackageConnectionStore },
@@ -69,7 +87,7 @@ export async function publishPackageToGraph(
 
   if (outcome.isErr()) {
     logGraphPublishResult(logger, {
-      connectionId: payload.connectionId,
+      connectionId,
       correlationId: actionRequest.correlationId,
       reason: outcome.error.code,
       sourceEpicId: payload.sourceEpicId,
@@ -85,7 +103,7 @@ export async function publishPackageToGraph(
 
   const result = toActionResult(outcome.value);
   logGraphPublishResult(logger, {
-    connectionId: payload.connectionId,
+    connectionId,
     correlationId: actionRequest.correlationId,
     ...(result.status === "indexed"
       ? { ingested: result.ingested }

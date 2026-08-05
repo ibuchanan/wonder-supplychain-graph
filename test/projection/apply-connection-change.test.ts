@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  applyPackageConnectionChange,
+  onConfigChange,
   type PackageConnectionStore,
-} from "../../src/projection/apply-connection-change";
+} from "../../src/cx-management";
 import type { PackageGraphPort } from "../../src/projection/ingest-package-projection";
 import type { SupplierReceiptState } from "../../src/receipt/apply-command";
 
@@ -54,23 +54,30 @@ function recordingDependencies() {
     },
   };
   const store: PackageConnectionStore = {
+    clearActiveConnectionId: async () => {
+      calls.push("store.clearActiveConnectionId");
+    },
     forget: async () => {
       calls.push("store.forget");
     },
+    getActiveConnectionId: async () => undefined,
     read: async () => {
       calls.push("store.read");
       return activeSupplierState();
+    },
+    setActiveConnectionId: async () => {
+      calls.push("store.setActiveConnectionId");
     },
   };
 
   return { calls, graph, store };
 }
 
-describe("applyPackageConnectionChange", () => {
+describe("onConfigChange", () => {
   it("indexes the current package when the connection is created", async () => {
     const { calls, graph, store } = recordingDependencies();
 
-    const response = await applyPackageConnectionChange(
+    const response = await onConfigChange(
       { graph, store },
       {
         action: "CREATED",
@@ -84,13 +91,17 @@ describe("applyPackageConnectionChange", () => {
       message: "Indexed 1 current package object.",
       success: true,
     });
-    expect(calls).toEqual(["store.read", "graph.setObjects"]);
+    expect(calls).toEqual([
+      "store.setActiveConnectionId",
+      "store.read",
+      "graph.setObjects",
+    ]);
   });
 
   it("reports suppression without indexing when no authorized package exists", async () => {
     const { calls, graph, store } = recordingDependencies();
 
-    const response = await applyPackageConnectionChange(
+    const response = await onConfigChange(
       {
         graph,
         store: {
@@ -113,13 +124,13 @@ describe("applyPackageConnectionChange", () => {
       message: "Suppressed discovery: no-current-package.",
       success: true,
     });
-    expect(calls).toEqual([]);
+    expect(calls).toEqual(["store.setActiveConnectionId"]);
   });
 
   it("forgets the stored connection when the connection is deleted", async () => {
     const { calls, graph, store } = recordingDependencies();
 
-    const response = await applyPackageConnectionChange(
+    const response = await onConfigChange(
       { graph, store },
       {
         action: "DELETED",
@@ -133,6 +144,6 @@ describe("applyPackageConnectionChange", () => {
       message: "Forgot the connection.",
       success: true,
     });
-    expect(calls).toEqual(["store.forget"]);
+    expect(calls).toEqual(["store.clearActiveConnectionId", "store.forget"]);
   });
 });

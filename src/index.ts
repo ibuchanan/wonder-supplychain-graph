@@ -19,23 +19,22 @@ import {
 // resolves this value from resolvers/index.handler.
 export { handler } from "./resolvers";
 
-import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
 import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
+import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
 import {
-  publishWorkPackage as publishAutomationWorkPackage,
-  type PublishWorkPackageActionInput,
-} from "./publication/forge-automation-action";
+  onConfigChange,
+  type OnConfigChangeRequest,
+  type OnConfigChangeResponse,
+} from "./cx-management";
 import {
-  publishPackageToGraph as publishDemoPackageToGraph,
   type PublishPackageToGraphInput,
+  publishPackageToGraph as publishDemoPackageToGraph,
 } from "./projection/forge-demo-projection-action";
-
-import {
-  applyPackageConnectionChange,
-  type PackageConnectionChangeRequest,
-  type PackageConnectionChangeResponse,
-} from "./projection/apply-connection-change";
 import { kvsPackageConnectionStore } from "./projection/kvs-connection-store";
+import {
+  type PublishWorkPackageActionInput,
+  publishWorkPackage as publishAutomationWorkPackage,
+} from "./publication/forge-automation-action";
 
 /**
  * Thin Forge entry point for the Supplychain Graph Rovo comment action.
@@ -102,14 +101,14 @@ export async function onUpgraded(event: ForgeLifecycleEvent): Promise<void> {
 }
 
 export async function onPackageConnectionChange(
-  request: PackageConnectionChangeRequest,
-): Promise<PackageConnectionChangeResponse> {
+  request: OnConfigChangeRequest,
+): Promise<OnConfigChangeResponse> {
   logGraphConnectionChanged(logger, {
     action: request.action,
     connectionId: request.connectionId,
     connectionName: request.name,
   });
-  const response = await applyPackageConnectionChange(
+  const response = await onConfigChange(
     { graph, store: kvsPackageConnectionStore },
     request,
   );

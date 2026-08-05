@@ -25,10 +25,6 @@ describe("Rovo originating Epic comment action", () => {
               required: true,
               type: "string",
             }),
-            connectionId: expect.objectContaining({
-              required: true,
-              type: "string",
-            }),
           },
           key: "scg-comment-origin",
           name: "Comment on originating Epic",

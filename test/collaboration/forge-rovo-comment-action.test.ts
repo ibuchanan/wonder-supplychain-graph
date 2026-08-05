@@ -24,7 +24,9 @@ import { commentOnOriginatingEpicFromRovo } from "../../src/collaboration/forge-
 describe("commentOnOriginatingEpicFromRovo", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    vi.mocked(kvs.get).mockResolvedValue({
+    const values = new Map<string, unknown>();
+    values.set("active-graph-connection-id", "connection-001");
+    values.set("supplier-receipt-state:connection-001", {
       currentPackage: {
         content: {
           children: [],
@@ -57,9 +59,12 @@ describe("commentOnOriginatingEpicFromRovo", () => {
       ],
       processedIdempotencyKeys: [],
     });
+    vi.mocked(kvs.get).mockImplementation(
+      async (key) => values.get(key) as never,
+    );
   });
 
-  it("creates an as-user Jira comment on the Source Epic and returns a Rovo confirmation", async () => {
+  it("creates an as-user Jira comment on the active package Source Epic and returns a Rovo confirmation", async () => {
     const requestJira = vi.fn().mockResolvedValue({
       json: async () => ({ id: "10001" }),
       ok: true,
@@ -69,7 +74,6 @@ describe("commentOnOriginatingEpicFromRovo", () => {
     await expect(
       commentOnOriginatingEpicFromRovo({
         commentText: "Please confirm the material tolerance before release.",
-        connectionId: "connection-001",
       }),
     ).resolves.toEqual({
       output:
@@ -103,5 +107,21 @@ describe("commentOnOriginatingEpicFromRovo", () => {
         method: "POST",
       }),
     );
+  });
+
+  it("returns no-active-connection without calling Jira when no graph connection is active", async () => {
+    vi.mocked(kvs.get).mockResolvedValue(undefined);
+    const requestJira = vi.fn();
+    vi.mocked(api.asUser).mockReturnValue({ requestJira } as never);
+
+    await expect(
+      commentOnOriginatingEpicFromRovo({
+        commentText: "Please confirm release.",
+      }),
+    ).resolves.toEqual({
+      output: "Unable to add package comment: no-active-connection.",
+    });
+
+    expect(requestJira).not.toHaveBeenCalled();
   });
 });
