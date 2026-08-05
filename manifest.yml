@@ -1,4 +1,19 @@
 modules:
+  graph:connector:
+    - key: scg-package-connector
+      name: Supplychain Graph Package
+      capabilities:
+        replicatesPermissions: false
+        syncFidelity: mirror
+        supportsIncrementalSync: false
+      icons:
+        light: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+        dark: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      objectTypes:
+        - atlassian:work-item
+      datasource:
+        onConnectionChange:
+          function: scg-connection-change
   jira:issuePanel:
     - key: scg-epic-panel
       resource: main
@@ -10,6 +25,9 @@ modules:
       resource: simulator
       render: native
       title: Supplychain Graph Simulator
+  function:
+    - key: scg-connection-change
+      handler: index.onPackageConnectionChange
 app:
   runtime:
     name: nodejs24.x
@@ -17,7 +35,11 @@ app:
     architecture: arm64
   id: ari:cloud:ecosystem::app/5c6de3cf-cb86-4873-8621-3f28f2537757
 permissions:
-  scopes: []
+  scopes:
+    - delete:object:jira
+    - read:object:jira
+    - storage:app
+    - write:object:jira
 resources:
   - key: main
     path: src/frontend/index.tsx

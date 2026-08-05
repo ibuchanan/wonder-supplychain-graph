@@ -62,9 +62,35 @@ export interface JiraWorkflowAutomationModule {
   description: string;
 }
 
+export interface GraphConnectorModule {
+  key: string;
+  name: string;
+  icons?: {
+    light?: string;
+    dark?: string;
+  };
+  objectTypes?: string[];
+  datasource?: {
+    onConnectionChange?: {
+      function: string;
+    };
+    formConfiguration?: {
+      validateConnection?: {
+        function: string;
+      };
+    };
+  };
+  orchestration?: {
+    taskRunner?: {
+      function: string;
+    };
+  };
+}
+
 export interface ParsedManifest {
   modules: {
     function?: ManifestFunction[];
+    "graph:connector"?: GraphConnectorModule[];
     consumer?: ConsumerModule[];
     scheduledTrigger?: ScheduledTriggerModule[];
     webtrigger?: WebTriggerModule[];
