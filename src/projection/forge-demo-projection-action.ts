@@ -1,5 +1,7 @@
 import { graph } from "@forge/teamwork-graph";
 
+import { logger } from "../logging";
+import { logGraphPublishResult } from "../observability/domain-events";
 import { createActionExecutionMetadata } from "../publication/action-execution-metadata";
 import { kvsPackageConnectionStore } from "./kvs-connection-store";
 import {
@@ -66,6 +68,14 @@ export async function publishPackageToGraph(
   );
 
   if (outcome.isErr()) {
+    logGraphPublishResult(logger, {
+      connectionId: payload.connectionId,
+      correlationId: actionRequest.correlationId,
+      reason: outcome.error.code,
+      sourceEpicId: payload.sourceEpicId,
+      status: "failed",
+    });
+
     return {
       reason: outcome.error.code,
       sourceEpicId: payload.sourceEpicId,
@@ -73,5 +83,17 @@ export async function publishPackageToGraph(
     };
   }
 
-  return toActionResult(outcome.value);
+  const result = toActionResult(outcome.value);
+  logGraphPublishResult(logger, {
+    connectionId: payload.connectionId,
+    correlationId: actionRequest.correlationId,
+    ...(result.status === "indexed"
+      ? { ingested: result.ingested }
+      : { reason: result.reason }),
+    sourceEpicId: result.sourceEpicId,
+    status: result.status,
+    ...(result.version ? { version: result.version } : {}),
+  });
+
+  return result;
 }

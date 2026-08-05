@@ -1,6 +1,9 @@
 import api, { route } from "@forge/api";
 import { err, ok } from "@forge-ahead/errors";
 
+import { logger } from "../logging";
+import { logRovoCommentResult } from "../observability/domain-events";
+
 import {
   commentOnOriginatingEpic,
   type JiraCommentPort,
@@ -71,8 +74,22 @@ export async function commentOnOriginatingEpicFromRovo(
   );
 
   if (outcome.isErr()) {
+    logRovoCommentResult(logger, {
+      connectionId: payload.connectionId,
+      reason: outcome.error.code,
+      status: "failed",
+    });
+
     return { output: `Unable to add package comment: ${outcome.error.code}.` };
   }
+
+  logRovoCommentResult(logger, {
+    commentId: outcome.value.commentId,
+    connectionId: payload.connectionId,
+    sourceEpicId: outcome.value.sourceEpicId,
+    status: "commented",
+    version: outcome.value.version,
+  });
 
   return {
     output: `Added Supplychain Graph package comment to ${outcome.value.sourceEpicId} (comment ${outcome.value.commentId}; package version ${outcome.value.version}).`,

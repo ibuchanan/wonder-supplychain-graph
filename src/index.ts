@@ -7,6 +7,12 @@
 
 import { graph } from "@forge/teamwork-graph";
 
+import { logger } from "./logging";
+import {
+  logGraphConnectionChanged,
+  logGraphConnectionResult,
+} from "./observability/domain-events";
+
 // Re-exported for repository-wide Forge handler contract tests; the manifest
 // resolves this value from resolvers/index.handler.
 export { handler } from "./resolvers";
@@ -57,8 +63,21 @@ export async function publishPackageToGraph(
 export async function onPackageConnectionChange(
   request: PackageConnectionChangeRequest,
 ): Promise<PackageConnectionChangeResponse> {
-  return applyPackageConnectionChange(
+  logGraphConnectionChanged(logger, {
+    action: request.action,
+    connectionId: request.connectionId,
+    connectionName: request.name,
+  });
+  const response = await applyPackageConnectionChange(
     { graph, store: kvsPackageConnectionStore },
     request,
   );
+  logGraphConnectionResult(logger, {
+    action: request.action,
+    connectionId: request.connectionId,
+    connectionName: request.name,
+    ...response,
+  });
+
+  return response;
 }
