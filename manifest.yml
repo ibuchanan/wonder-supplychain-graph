@@ -5,6 +5,11 @@ modules:
       render: native
       title: Supplychain Graph
       icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  jira:globalPage:
+    - key: scg-simulator
+      resource: simulator
+      render: native
+      title: Supplychain Graph Simulator
 app:
   runtime:
     name: nodejs24.x
@@ -16,3 +21,5 @@ permissions:
 resources:
   - key: main
     path: src/frontend/index.tsx
+  - key: simulator
+    path: src/frontend/simulator.tsx

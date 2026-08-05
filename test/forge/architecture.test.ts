@@ -44,11 +44,15 @@ describe("Forge Architecture", () => {
             // Any import that goes up to parent directories could import backend code
             for (const importedModule of importedModules) {
               if (importedModule.startsWith("../")) {
-                // Allow imports from src/util/** (shared utilities)
-                if (importedModule.startsWith("../util/")) {
+                // Allow pure shared utilities and simulator projections. Both
+                // directories are frontend-safe and must not depend on Forge APIs.
+                if (
+                  importedModule.startsWith("../util/") ||
+                  importedModule.startsWith("../simulator/")
+                ) {
                   continue;
                 }
-                // Importing from parent directory - potential backend code
+                // Importing from another parent directory may reach backend code.
                 return false;
               }
             }
