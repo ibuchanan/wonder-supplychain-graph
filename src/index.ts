@@ -13,10 +13,14 @@ export { handler } from "./resolvers";
 
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
 import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
-import { publishWorkPackage as publishAutomationWorkPackage } from "./publication/forge-automation-action";
-import type { PublishWorkPackageActionPayload } from "./publication/automation-action";
-import { publishPackageToGraph as publishDemoPackageToGraph } from "./projection/forge-demo-projection-action";
-import type { DemoPackagePromotionRequest } from "./projection/promote-demo-package";
+import {
+  publishWorkPackage as publishAutomationWorkPackage,
+  type PublishWorkPackageActionInput,
+} from "./publication/forge-automation-action";
+import {
+  publishPackageToGraph as publishDemoPackageToGraph,
+  type PublishPackageToGraphInput,
+} from "./projection/forge-demo-projection-action";
 
 import {
   applyPackageConnectionChange,
@@ -36,7 +40,7 @@ export async function commentOnOriginEpic(payload: RovoCommentActionPayload) {
  * Thin Forge entry point for the demo Jira Automation action.
  */
 export async function publishWorkPackage(
-  payload: PublishWorkPackageActionPayload,
+  payload: PublishWorkPackageActionInput,
 ) {
   return publishAutomationWorkPackage(payload);
 }
@@ -45,7 +49,7 @@ export async function publishWorkPackage(
  * Thin Forge entry point for the Rovo graph-discovery demo action.
  */
 export async function publishPackageToGraph(
-  payload: DemoPackagePromotionRequest,
+  payload: PublishPackageToGraphInput,
 ) {
   return publishDemoPackageToGraph(payload);
 }

@@ -1,5 +1,6 @@
 import { graph } from "@forge/teamwork-graph";
 
+import { createActionExecutionMetadata } from "../publication/action-execution-metadata";
 import { kvsPackageConnectionStore } from "./kvs-connection-store";
 import {
   publishDemoPackageToGraph,
@@ -46,12 +47,22 @@ function toActionResult(
  * a deterministic current package and indexes it through the Teamwork Graph
  * connector; real peer delivery remains outside this demo-only adapter.
  */
+export interface PublishPackageToGraphInput {
+  readonly connectionId: string;
+  readonly publisherId: string;
+  readonly sourceEpicId: string;
+}
+
 export async function publishPackageToGraph(
-  payload: DemoPackagePromotionRequest,
+  payload: PublishPackageToGraphInput,
 ): Promise<PublishPackageToGraphResult> {
+  const actionRequest: DemoPackagePromotionRequest = {
+    ...payload,
+    ...createActionExecutionMetadata(payload.sourceEpicId),
+  };
   const outcome = await publishDemoPackageToGraph(
     { graph, store: kvsPackageConnectionStore },
-    payload,
+    actionRequest,
   );
 
   if (outcome.isErr()) {

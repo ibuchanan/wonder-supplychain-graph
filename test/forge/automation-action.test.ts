@@ -18,14 +18,6 @@ describe("publish work package Automation Action", () => {
           actionVerb: "CREATE",
           function: "publishWorkPackage",
           inputs: {
-            correlationId: expect.objectContaining({
-              required: true,
-              type: "string",
-            }),
-            idempotencyKey: expect.objectContaining({
-              required: true,
-              type: "string",
-            }),
             publisherId: expect.objectContaining({
               required: true,
               type: "string",

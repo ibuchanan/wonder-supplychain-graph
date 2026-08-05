@@ -16,17 +16,5 @@ renderAutomationActionConfig({
       label: "Publisher account ID",
       name: "publisherId",
     },
-    {
-      description:
-        "A value that correlates this publication request with Automation execution.",
-      label: "Correlation ID",
-      name: "correlationId",
-    },
-    {
-      description:
-        "A stable key used to make repeat Automation execution safe.",
-      label: "Idempotency key",
-      name: "idempotencyKey",
-    },
   ],
 });

@@ -1,5 +1,6 @@
 import { kvs } from "@forge/kvs";
 
+import { createActionExecutionMetadata } from "./action-execution-metadata";
 import type { PublicationState } from "./apply-command";
 import {
   createDemoPublishWorkPackageAction,
@@ -46,8 +47,16 @@ const publishDemoWorkPackage = createDemoPublishWorkPackageAction({
  * handshake bypass: it is confined to this Forge adapter so the publication
  * core still applies its normal pairing, preflight, and idempotency rules.
  */
+export interface PublishWorkPackageActionInput {
+  readonly publisherId: string;
+  readonly sourceEpicId: string;
+}
+
 export async function publishWorkPackage(
-  payload: PublishWorkPackageActionPayload,
+  payload: PublishWorkPackageActionInput,
 ) {
-  return publishDemoWorkPackage(payload);
+  return publishDemoWorkPackage({
+    ...payload,
+    ...createActionExecutionMetadata(payload.sourceEpicId),
+  });
 }

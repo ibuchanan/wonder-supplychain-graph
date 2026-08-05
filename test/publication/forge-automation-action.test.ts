@@ -1,5 +1,5 @@
 import { kvs } from "@forge/kvs";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@forge/kvs", () => ({
   kvs: {
@@ -13,6 +13,14 @@ import { publishWorkPackage } from "../../src/publication/forge-automation-actio
 describe("publishWorkPackage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-05T14:30:00.000Z"));
+    vi.stubGlobal("crypto", { randomUUID: () => "execution-003" });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("seeds a demo pairing and persists the queued candidate for a Source Epic", async () => {
@@ -20,22 +28,20 @@ describe("publishWorkPackage", () => {
 
     await expect(
       publishWorkPackage({
-        correlationId: "corr-publish-003",
-        idempotencyKey: "automation-run-003",
         publisherId: "account:automation-001",
         sourceEpicId: "MFG-17",
       }),
     ).resolves.toEqual({
-      candidateId: "candidate:automation-run-003",
-      correlationId: "corr-publish-003",
+      candidateId: "candidate:scg:MFG-17:execution-003",
+      correlationId: "scg:execution-003",
       status: "queued",
     });
 
     expect(kvs.set).toHaveBeenCalledWith("demo-publication-state:MFG-17", {
       candidates: [
         {
-          candidateId: "candidate:automation-run-003",
-          correlationId: "corr-publish-003",
+          candidateId: "candidate:scg:MFG-17:execution-003",
+          correlationId: "scg:execution-003",
           pairedEpicId: "demo-paired:MFG-17",
           pairingId: "demo-pairing:MFG-17",
           publisherId: "account:automation-001",
@@ -52,7 +58,7 @@ describe("publishWorkPackage", () => {
           status: "active",
         },
       ],
-      processedIdempotencyKeys: ["automation-run-003"],
+      processedIdempotencyKeys: ["scg:MFG-17:execution-003"],
     });
   });
 });

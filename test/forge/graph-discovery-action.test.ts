@@ -16,18 +16,6 @@ describe("Rovo demo graph discovery Automation Action", () => {
               required: true,
               type: "string",
             }),
-            correlationId: expect.objectContaining({
-              required: true,
-              type: "string",
-            }),
-            idempotencyKey: expect.objectContaining({
-              required: true,
-              type: "string",
-            }),
-            publishedAt: expect.objectContaining({
-              required: true,
-              type: "string",
-            }),
             publisherId: expect.objectContaining({
               required: true,
               type: "string",

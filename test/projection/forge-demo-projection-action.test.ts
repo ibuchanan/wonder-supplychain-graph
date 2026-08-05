@@ -35,9 +35,6 @@ describe("publishPackageToGraph", () => {
     await expect(
       publishPackageToGraph({
         connectionId: "connection-001",
-        correlationId: "corr-publish-001",
-        idempotencyKey: "automation-run-001",
-        publishedAt: "2026-08-05T12:00:00.000Z",
         publisherId: "account:automation-001",
         sourceEpicId: "MFG-17",
       }),
