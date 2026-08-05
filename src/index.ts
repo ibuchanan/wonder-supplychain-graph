@@ -7,6 +7,8 @@
 
 import { graph } from "@forge/teamwork-graph";
 
+import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
+import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
 import { publishWorkPackage as publishAutomationWorkPackage } from "./publication/forge-automation-action";
 import type { PublishWorkPackageActionPayload } from "./publication/automation-action";
 import { publishPackageToGraph as publishDemoPackageToGraph } from "./projection/forge-demo-projection-action";
@@ -18,6 +20,13 @@ import {
   type PackageConnectionChangeResponse,
 } from "./projection/apply-connection-change";
 import { kvsPackageConnectionStore } from "./projection/kvs-connection-store";
+
+/**
+ * Thin Forge entry point for the Supplychain Graph Rovo comment action.
+ */
+export async function commentOnOriginEpic(payload: RovoCommentActionPayload) {
+  return commentOnOriginatingEpicFromRovo(payload);
+}
 
 /**
  * Thin Forge entry point for the demo Jira Automation action.

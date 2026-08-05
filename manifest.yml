@@ -32,6 +32,8 @@ modules:
       handler: index.publishWorkPackage
     - key: publishPackageToGraph
       handler: index.publishPackageToGraph
+    - key: commentOnOriginEpic
+      handler: index.commentOnOriginEpic
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -100,6 +102,31 @@ modules:
           description: The ISO-8601 timestamp to show for the published package.
           required: true
       actionVerb: CREATE
+    - key: scg-comment-origin
+      name: Comment on originating Epic
+      function: commentOnOriginEpic
+      actionVerb: CREATE
+      description: Adds a package-related comment to the Source Epic resolved from current package provenance.
+      inputs:
+        connectionId:
+          title: Graph connection ID
+          type: string
+          required: true
+          description: The connection ID for the current Supplychain Graph package.
+        commentText:
+          title: Comment text
+          type: string
+          required: true
+          description: The package-related comment to add to the originating Epic.
+  rovo:agent:
+    - key: scg-package-agent
+      name: Supplychain Graph
+      description: Find the current Supplychain Graph package and add attributable comments to its originating Epic.
+      prompt: You help users comment on the originating Epic for a current Supplychain Graph package. Use the Comment on originating Epic action only when the user provides a graph connection ID and comment text. Never ask the user for, infer, or accept a destination issue key; the action resolves it from current-package provenance. Explain failures precisely and do not claim a comment was created unless the action confirms it.
+      conversationStarters:
+        - Add a comment about the current Supplychain Graph package to its originating Epic.
+      actions:
+        - scg-comment-origin
 app:
   runtime:
     name: nodejs24.x
@@ -112,6 +139,7 @@ permissions:
     - read:object:jira
     - storage:app
     - write:object:jira
+    - write:jira-work
 resources:
   - key: main
     path: src/frontend/index.tsx
