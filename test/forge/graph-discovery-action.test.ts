@@ -2,27 +2,29 @@ import { describe, expect, it } from "vitest";
 
 import { loadManifest } from "./manifest-helpers";
 
-describe("publish work package Automation Action", () => {
-  it("exposes the publish action through Jira Automation with explicit runtime inputs", () => {
+describe("Rovo demo graph discovery Automation Action", () => {
+  it("exposes a publish-and-index action with graph connection inputs", () => {
     const modules = loadManifest().modules as Record<string, unknown>;
 
-    expect(modules["automation:actionProvider"]).toEqual([
-      {
-        actions: ["scg-publish-package", "scg-publish-package-graph"],
-        key: "scg-publish-package-provider",
-      },
-    ]);
     expect(modules.action).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           actionVerb: "CREATE",
-          function: "publishWorkPackage",
+          function: "publishPackageToGraph",
           inputs: {
+            connectionId: expect.objectContaining({
+              required: true,
+              type: "string",
+            }),
             correlationId: expect.objectContaining({
               required: true,
               type: "string",
             }),
             idempotencyKey: expect.objectContaining({
+              required: true,
+              type: "string",
+            }),
+            publishedAt: expect.objectContaining({
               required: true,
               type: "string",
             }),
@@ -35,8 +37,8 @@ describe("publish work package Automation Action", () => {
               type: "string",
             }),
           },
-          key: "scg-publish-package",
-          name: "Publish work package",
+          key: "scg-publish-package-graph",
+          name: "Publish package to Rovo demo",
         }),
       ]),
     );

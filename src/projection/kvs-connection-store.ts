@@ -2,6 +2,7 @@ import { kvs } from "@forge/kvs";
 
 import type { SupplierReceiptState } from "../receipt/apply-command";
 import type { PackageConnectionStore } from "./apply-connection-change";
+import type { SupplierReceiptStateStore } from "./promote-demo-package";
 
 const emptySupplierReceiptState: SupplierReceiptState = {
   currentPackage: undefined,
@@ -18,7 +19,7 @@ function storageKey(connectionId: string): string {
  * Graph connection projects. An unknown connection reads as empty so discovery
  * stays suppressed until a package has actually been received and promoted.
  */
-export const kvsPackageConnectionStore: PackageConnectionStore = {
+export const kvsPackageConnectionStore = {
   forget: async (connectionId) => {
     await kvs.delete(storageKey(connectionId));
   },
@@ -29,4 +30,7 @@ export const kvsPackageConnectionStore: PackageConnectionStore = {
 
     return stored ?? emptySupplierReceiptState;
   },
-};
+  write: async (connectionId, state) => {
+    await kvs.set(storageKey(connectionId), state);
+  },
+} satisfies PackageConnectionStore & SupplierReceiptStateStore;

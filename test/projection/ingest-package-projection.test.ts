@@ -101,8 +101,13 @@ describe("ingestPackageProjection", () => {
       "pairing-001:MFG-18",
     ]);
     expect(request.objects[0].displayName).toBe("Supplier release package");
-    expect(request.objects[0].description).toBe(
+    expect(request.objects[0].description).toContain(
       "Approved supplier release package.",
+    );
+    expect(request.objects[0].description).toContain("Source Epic: MFG-17");
+    expect(request.objects[0].description).toContain("Package version: 1");
+    expect(request.objects[0].description).toContain(
+      "Published: 2026-08-03T16:00:00.000Z",
     );
     expect(request.objects[0]["atlassian:work-item"]).toEqual({
       status: "In Progress",

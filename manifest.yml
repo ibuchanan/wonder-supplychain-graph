@@ -30,10 +30,13 @@ modules:
       handler: index.onPackageConnectionChange
     - key: publishWorkPackage
       handler: index.publishWorkPackage
+    - key: publishPackageToGraph
+      handler: index.publishPackageToGraph
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
         - scg-publish-package
+        - scg-publish-package-graph
   action:
     - key: scg-publish-package
       name: Publish work package
@@ -59,6 +62,42 @@ modules:
           title: Idempotency key
           type: string
           description: A stable Automation-run idempotency key.
+          required: true
+      actionVerb: CREATE
+    - key: scg-publish-package-graph
+      name: Publish package to Rovo demo
+      function: publishPackageToGraph
+      description: Promotes and indexes the current demo work package for Rovo discovery.
+      inputs:
+        connectionId:
+          title: Graph connection ID
+          type: string
+          description: The Supplychain Graph connector connection ID.
+          required: true
+        sourceEpicId:
+          title: Source Epic ID
+          type: string
+          description: The Source Epic key, for example {{issue.key}}.
+          required: true
+        publisherId:
+          title: Publisher account ID
+          type: string
+          description: The Automation publisher account ID.
+          required: true
+        correlationId:
+          title: Correlation ID
+          type: string
+          description: An Automation-run correlation ID.
+          required: true
+        idempotencyKey:
+          title: Idempotency key
+          type: string
+          description: A stable Automation-run idempotency key.
+          required: true
+        publishedAt:
+          title: Publication time
+          type: string
+          description: The ISO-8601 timestamp to show for the published package.
           required: true
       actionVerb: CREATE
 app:

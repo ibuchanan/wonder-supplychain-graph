@@ -9,6 +9,8 @@ import { graph } from "@forge/teamwork-graph";
 
 import { publishWorkPackage as publishAutomationWorkPackage } from "./publication/forge-automation-action";
 import type { PublishWorkPackageActionPayload } from "./publication/automation-action";
+import { publishPackageToGraph as publishDemoPackageToGraph } from "./projection/forge-demo-projection-action";
+import type { DemoPackagePromotionRequest } from "./projection/promote-demo-package";
 
 import {
   applyPackageConnectionChange,
@@ -24,6 +26,15 @@ export async function publishWorkPackage(
   payload: PublishWorkPackageActionPayload,
 ) {
   return publishAutomationWorkPackage(payload);
+}
+
+/**
+ * Thin Forge entry point for the Rovo graph-discovery demo action.
+ */
+export async function publishPackageToGraph(
+  payload: DemoPackagePromotionRequest,
+) {
+  return publishDemoPackageToGraph(payload);
 }
 
 export async function onPackageConnectionChange(

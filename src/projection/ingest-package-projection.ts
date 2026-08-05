@@ -48,6 +48,10 @@ const workItemSubtypes: Record<string, WorkItemSubtype> = {
   Task: "task",
 };
 
+function toRovoDescription(object: PackageProjectionObject): string {
+  return `${object.description}\n\nSupplychain Graph package provenance\nSource Epic: ${object.provenance.sourceEpicId}\nPackage version: ${object.version}\nPublished: ${object.publishedAt}\nPublisher: ${object.provenance.publisherId}\nSource site: ${object.provenance.sourceSiteId}\nPackage role: ${object.role}`;
+}
+
 function toWorkItemObject(
   object: PackageProjectionObject,
 ): types.WorkItemObject {
@@ -57,7 +61,7 @@ function toWorkItemObject(
       subtype: workItemSubtypes[object.issueType] ?? "work_item",
     },
     createdAt: object.publishedAt,
-    description: object.description,
+    description: toRovoDescription(object),
     displayName: object.summary,
     id: object.id,
     lastUpdatedAt: object.publishedAt,
