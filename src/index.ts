@@ -7,6 +7,10 @@
 
 import { graph } from "@forge/teamwork-graph";
 
+// Re-exported for repository-wide Forge handler contract tests; the manifest
+// resolves this value from resolvers/index.handler.
+export { handler } from "./resolvers";
+
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
 import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
 import { publishWorkPackage as publishAutomationWorkPackage } from "./publication/forge-automation-action";
