@@ -101,3 +101,53 @@ export function logRovoCommentResult(
     "Supplychain Graph Rovo comment completed",
   );
 }
+
+export interface AppInstalledEvent {
+  readonly appId: string;
+  readonly appVersion: string;
+  readonly environmentId?: string;
+  readonly installationId: string;
+  readonly installerAccountId?: string;
+}
+
+export function logAppInstalled(
+  logger: DomainEventLogger,
+  event: AppInstalledEvent,
+): void {
+  logger.info(
+    {
+      appId: event.appId,
+      appVersion: event.appVersion,
+      environmentId: event.environmentId,
+      event: "scg.app.installed",
+      installationId: event.installationId,
+      installerAccountId: event.installerAccountId,
+    },
+    "Supplychain Graph app installed",
+  );
+}
+
+export interface AppUpgradedEvent {
+  readonly appId: string;
+  readonly appVersion: string;
+  readonly environmentId?: string;
+  readonly installationId: string;
+  readonly upgraderAccountId?: string;
+}
+
+export function logAppUpgraded(
+  logger: DomainEventLogger,
+  event: AppUpgradedEvent,
+): void {
+  logger.info(
+    {
+      appId: event.appId,
+      appVersion: event.appVersion,
+      environmentId: event.environmentId,
+      event: "scg.app.upgraded",
+      installationId: event.installationId,
+      upgraderAccountId: event.upgraderAccountId,
+    },
+    "Supplychain Graph app upgraded",
+  );
+}

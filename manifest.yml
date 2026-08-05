@@ -36,6 +36,10 @@ modules:
       handler: index.commentOnOriginEpic
     - key: actionConfigResolver
       handler: resolvers/index.handler
+    - key: onInstalled
+      handler: index.onInstalled
+    - key: onUpgraded
+      handler: index.onUpgraded
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -114,6 +118,15 @@ modules:
         - Add a comment about the current Supplychain Graph package to its originating Epic.
       actions:
         - scg-comment-origin
+  trigger:
+    - key: scg-on-installed
+      function: onInstalled
+      events:
+        - avi:forge:installed:app
+    - key: scg-on-upgraded
+      function: onUpgraded
+      events:
+        - avi:forge:upgraded:app
 app:
   runtime:
     name: nodejs24.x

@@ -5,6 +5,8 @@ import {
   logGraphConnectionResult,
   logGraphPublishResult,
   logRovoCommentResult,
+  logAppInstalled,
+  logAppUpgraded,
 } from "../../src/observability/domain-events";
 
 describe("Supplychain Graph domain events", () => {
@@ -44,6 +46,20 @@ describe("Supplychain Graph domain events", () => {
       status: "commented",
       version: "1",
     });
+    logAppInstalled(logger, {
+      appId: "app-001",
+      appVersion: "4.4.0",
+      environmentId: "environment-001",
+      installationId: "installation-001",
+      installerAccountId: "account-installer",
+    });
+    logAppUpgraded(logger, {
+      appId: "app-001",
+      appVersion: "5.0.0",
+      environmentId: "environment-001",
+      installationId: "installation-001",
+      upgraderAccountId: "account-upgrader",
+    });
 
     expect(records).toEqual([
       expect.objectContaining({
@@ -76,6 +92,22 @@ describe("Supplychain Graph domain events", () => {
         sourceEpicId: "MFG-17",
         status: "commented",
         version: "1",
+      }),
+      expect.objectContaining({
+        appId: "app-001",
+        appVersion: "4.4.0",
+        environmentId: "environment-001",
+        event: "scg.app.installed",
+        installationId: "installation-001",
+        installerAccountId: "account-installer",
+      }),
+      expect.objectContaining({
+        appId: "app-001",
+        appVersion: "5.0.0",
+        environmentId: "environment-001",
+        event: "scg.app.upgraded",
+        installationId: "installation-001",
+        upgraderAccountId: "account-upgrader",
       }),
     ]);
   });

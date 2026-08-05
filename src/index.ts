@@ -9,6 +9,8 @@ import { graph } from "@forge/teamwork-graph";
 
 import { logger } from "./logging";
 import {
+  logAppInstalled,
+  logAppUpgraded,
   logGraphConnectionChanged,
   logGraphConnectionResult,
 } from "./observability/domain-events";
@@ -58,6 +60,45 @@ export async function publishPackageToGraph(
   payload: PublishPackageToGraphInput,
 ) {
   return publishDemoPackageToGraph(payload);
+}
+
+interface ForgeLifecycleEvent {
+  readonly app: {
+    readonly id: string;
+    readonly version: string;
+  };
+  readonly environment?: {
+    readonly id: string;
+  };
+  readonly id: string;
+  readonly installerAccountId?: string;
+  readonly upgraderAccountId?: string;
+}
+
+/** Logs installation only; initialization must remain eventually-consistent safe. */
+export async function onInstalled(event: ForgeLifecycleEvent): Promise<void> {
+  logAppInstalled(logger, {
+    appId: event.app.id,
+    appVersion: event.app.version,
+    installationId: event.id,
+    ...(event.environment ? { environmentId: event.environment.id } : {}),
+    ...(event.installerAccountId
+      ? { installerAccountId: event.installerAccountId }
+      : {}),
+  });
+}
+
+/** Logs major app upgrades only; no migration side effects are performed. */
+export async function onUpgraded(event: ForgeLifecycleEvent): Promise<void> {
+  logAppUpgraded(logger, {
+    appId: event.app.id,
+    appVersion: event.app.version,
+    installationId: event.id,
+    ...(event.environment ? { environmentId: event.environment.id } : {}),
+    ...(event.upgraderAccountId
+      ? { upgraderAccountId: event.upgraderAccountId }
+      : {}),
+  });
 }
 
 export async function onPackageConnectionChange(
