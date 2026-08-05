@@ -28,6 +28,39 @@ modules:
   function:
     - key: scg-connection-change
       handler: index.onPackageConnectionChange
+    - key: publishWorkPackage
+      handler: index.publishWorkPackage
+  automation:actionProvider:
+    - key: scg-publish-package-provider
+      actions:
+        - scg-publish-package
+  action:
+    - key: scg-publish-package
+      name: Publish work package
+      function: publishWorkPackage
+      description: Queues a governed work-package publication for a Source Epic.
+      inputs:
+        sourceEpicId:
+          title: Source Epic ID
+          type: string
+          description: The Source Epic key, for example {{issue.key}}.
+          required: true
+        publisherId:
+          title: Publisher account ID
+          type: string
+          description: The Automation publisher account ID.
+          required: true
+        correlationId:
+          title: Correlation ID
+          type: string
+          description: An Automation-run correlation ID.
+          required: true
+        idempotencyKey:
+          title: Idempotency key
+          type: string
+          description: A stable Automation-run idempotency key.
+          required: true
+      actionVerb: CREATE
 app:
   runtime:
     name: nodejs24.x

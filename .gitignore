@@ -31,4 +31,5 @@ yarn-error.log*
 .env.*
 .turbo/
 /.cocoindex_code/
-!/scripts/forge-vars-from-secretspec.sh
+package-lock.json
+.scratch/
