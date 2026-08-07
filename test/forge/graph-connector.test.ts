@@ -24,7 +24,10 @@ describe("Teamwork Graph connector wiring", () => {
     expect(connector.name).toBeTruthy();
     expect(connector.icons?.light).toBeTruthy();
     expect(connector.icons?.dark).toBeTruthy();
-    expect(connector.objectTypes).toEqual(["atlassian:work-item"]);
+    expect(connector.objectTypes).toEqual([
+      "atlassian:work-item",
+      "atlassian:document",
+    ]);
     // The datasource block is mandatory, and onConnectionChange within it is
     // required so suppression runs when the relationship becomes unavailable.
     expect(connector.datasource?.onConnectionChange?.function).toBeTruthy();

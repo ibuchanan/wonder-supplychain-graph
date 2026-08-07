@@ -11,6 +11,7 @@ modules:
         dark: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
       objectTypes:
         - atlassian:work-item
+        - atlassian:document
       datasource:
         onConnectionChange:
           function: scg-connection-change
@@ -44,6 +45,8 @@ modules:
       handler: index.seedSourcePairing
     - key: seedDestinationPairing
       handler: index.seedDestinationPairing
+    - key: receiveStarterDelivery
+      handler: index.receiveStarterDelivery
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -126,6 +129,8 @@ modules:
       function: seedSourcePairing
     - key: scg-seed-destination
       function: seedDestinationPairing
+    - key: scg-receive-starter
+      function: receiveStarterDelivery
 app:
   runtime:
     name: nodejs24.x
