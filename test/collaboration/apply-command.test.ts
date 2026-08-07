@@ -1,4 +1,4 @@
-import { type Result } from "@forge-ahead/errors";
+import type { Result } from "@forge-ahead/errors";
 
 import {
   applyCollaborationCommand,

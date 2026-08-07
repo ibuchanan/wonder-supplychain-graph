@@ -4,6 +4,10 @@
 
 - **Pairing**: the bilateral relationship between exactly one Source Epic and one
   Paired Epic.
+- **Local readiness**: the state in which the current tenant has the local
+  prerequisites for its role. A source tenant needs an active Pairing and peer
+  delivery endpoint. A destination tenant also needs an active Teamwork Graph
+  connection. Local readiness makes no claim about peer-tenant state.
 - **Pairing reference**: a non-secret, single-use setup correlation reference;
   it is never an authenticator or authorization credential.
 - **Invitation**: a pending proposal to establish a Pairing through a pairing
@@ -24,5 +28,15 @@
   collaboration operation. There is no central audit ledger.
 - **Source Epic**: the manufacturer-owned Epic whose approved subset may be
   published.
+- **Starter projection**: one workspace-visible `atlassian:document` that
+  represents the selected Source Epic only. It has no child issues or graph
+  associations. Its first content is limited to the Source Epic key and summary;
+  it does not yet flatten Jira descriptions from ADF.
+- **Starter delivery**: a direct request from the source Forge runtime to the
+  destination Forge runtime. The terminal triggers and verifies the flow but
+  does not relay Epic content.
+- **Peer delivery endpoint**: the destination's development webtrigger URL. It
+  is stored only in the source tenant's local Pairing and is never displayed or
+  logged.
 - **Paired Epic**: the supplier-owned existing Epic that represents supplier
   delivery work.
