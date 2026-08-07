@@ -47,6 +47,8 @@ modules:
       handler: index.seedDestinationPairing
     - key: receiveStarterDelivery
       handler: index.receiveStarterDelivery
+    - key: publishStarterDelivery
+      handler: index.publishStarterDelivery
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -131,6 +133,8 @@ modules:
       function: seedDestinationPairing
     - key: scg-receive-starter
       function: receiveStarterDelivery
+    - key: scg-publish-starter
+      function: publishStarterDelivery
 app:
   runtime:
     name: nodejs24.x
@@ -144,6 +148,11 @@ permissions:
     - storage:app
     - write:object:jira
     - write:jira-work
+    - read:jira-work
+  external:
+    fetch:
+      backend:
+        - '*.webtrigger.atlassian.app'
 resources:
   - key: main
     path: src/frontend/index.tsx

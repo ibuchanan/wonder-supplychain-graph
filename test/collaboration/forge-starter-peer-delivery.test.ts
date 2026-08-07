@@ -48,6 +48,7 @@ describe("receiveStarterDelivery", () => {
           pairingId: "pairing-001",
           protocolVersion: "v1",
           sourceEpic: {
+            createdAt: "2026-08-01T12:00:00.000Z",
             id: "10017",
             key: "MFG-17",
             summary: "Approve material source",
@@ -77,7 +78,7 @@ describe("receiveStarterDelivery", () => {
             },
             type: { category: "DOCUMENT" },
           },
-          createdAt: "2026-08-07T19:00:00.000Z",
+          createdAt: "2026-08-01T12:00:00.000Z",
           displayName: "MFG-17: Approve material source",
           id: "pairing-001:10017",
           lastUpdatedAt: "2026-08-07T19:00:00.000Z",

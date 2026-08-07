@@ -4,6 +4,7 @@ import type { ProtocolVersion } from "./protocol";
 
 export interface SourcePairing {
   readonly pairingId: string;
+  readonly peerDeliveryUrl: string;
   readonly sourceEpicId: string;
   readonly status: "active" | "inactive";
 }
@@ -19,6 +20,7 @@ export interface SourcePublicationRequest {
 
 export interface StarterPublication {
   readonly pairingId: string;
+  readonly peerDeliveryUrl: string;
   readonly sourceEpicId: string;
 }
 
@@ -46,6 +48,7 @@ export function prepareStarterPublication(
 
   return ok({
     pairingId: pairing.pairingId,
+    peerDeliveryUrl: pairing.peerDeliveryUrl,
     sourceEpicId: pairing.sourceEpicId,
   });
 }
@@ -62,6 +65,7 @@ export interface DestinationDeliveryState {
 }
 
 export interface StarterSourceEpic {
+  readonly createdAt?: string;
   readonly id: string;
   readonly key: string;
   readonly summary: string;

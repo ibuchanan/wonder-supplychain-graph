@@ -22,6 +22,7 @@ export { handler } from "./resolvers";
 import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
 import { receiveStarterDelivery as receiveStarterDeliveryFromPeer } from "./collaboration/forge-starter-peer-delivery";
+import { publishStarterDelivery as publishStarterDeliveryToPeer } from "./collaboration/forge-source-starter-publication";
 import {
   type OnConfigChangeRequest,
   type OnConfigChangeResponse,
@@ -64,6 +65,13 @@ export async function publishPackageToGraph(
   payload: PublishPackageToGraphInput,
 ) {
   return publishDemoPackageToGraph(payload);
+}
+
+/** Thin Forge entry point for one source-published starter document. */
+export async function publishStarterDelivery(request: {
+  readonly body?: string;
+}) {
+  return publishStarterDeliveryToPeer(request);
 }
 
 /** Thin Forge entry point for one peer-delivered starter document. */

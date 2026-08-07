@@ -23,6 +23,8 @@ const activeSourceState = (): SourcePublicationState => ({
   pairings: [
     {
       pairingId: "pairing-001",
+      peerDeliveryUrl:
+        "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
       sourceEpicId: "MFG-17",
       status: "active",
     },
@@ -39,6 +41,8 @@ describe("prepareStarterPublication", () => {
 
     expect(result).toEqual({
       pairingId: "pairing-001",
+      peerDeliveryUrl:
+        "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
       sourceEpicId: "MFG-17",
     });
   });
@@ -49,6 +53,8 @@ describe("prepareStarterPublication", () => {
         pairings: [
           {
             pairingId: "pairing-001",
+            peerDeliveryUrl:
+              "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
             sourceEpicId: "MFG-17",
             status: "inactive",
           },

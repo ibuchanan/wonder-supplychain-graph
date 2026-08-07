@@ -30,6 +30,7 @@ function response(
 }
 
 interface UntrustedStarterSourceEpic {
+  readonly createdAt?: unknown;
   readonly id?: unknown;
   readonly key?: unknown;
   readonly summary?: unknown;
@@ -63,6 +64,8 @@ function isStarterDeliveryRequest(
     typeof delivery.pairingId === "string" &&
     delivery.protocolVersion === "v1" &&
     isRecord(sourceEpic) &&
+    (sourceEpic.createdAt === undefined ||
+      typeof sourceEpic.createdAt === "string") &&
     typeof sourceEpic.id === "string" &&
     typeof sourceEpic.key === "string" &&
     typeof sourceEpic.summary === "string" &&
@@ -131,7 +134,7 @@ export async function receiveStarterDelivery(
       content: { mimeType: "text/plain", text: document.content },
       type: { category: "DOCUMENT" },
     },
-    createdAt: delivery.sourceEpic.updatedAt,
+    createdAt: delivery.sourceEpic.createdAt ?? delivery.sourceEpic.updatedAt,
     displayName: document.displayName,
     id: document.id,
     lastUpdatedAt: delivery.sourceEpic.updatedAt,
