@@ -1,12 +1,32 @@
 import Resolver from "@forge/resolver";
 
-/**
- * Read-only resolver for Automation Action configuration resources. Keeping it
- * separate from action handlers ensures config surfaces never acquire write
- * capabilities merely to render a form.
- */
+import {
+  determineLocalReadiness,
+  type LocalRole,
+} from "../pairing/local-readiness";
+import { kvsDemoPairingStore } from "../pairing/kvs-demo-pairing-store";
+import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
+
 const resolver = new Resolver();
 
 resolver.define("getActionConfigStatus", () => ({ ready: true }));
+
+resolver.define("getLocalReadiness", async () => {
+  const configuredRole = process.env["DEMO_LOCAL_ROLE"];
+  const role: LocalRole | undefined =
+    configuredRole === "source" || configuredRole === "destination"
+      ? configuredRole
+      : undefined;
+  const [pairingState, activeConnectionId] = await Promise.all([
+    kvsDemoPairingStore.read(),
+    kvsPackageConnectionStore.getActiveConnectionId(),
+  ]);
+
+  return determineLocalReadiness({
+    ...(activeConnectionId ? { activeConnectionId } : {}),
+    pairings: pairingState.pairings,
+    ...(role ? { role } : {}),
+  });
+});
 
 export const handler = resolver.getDefinitions();

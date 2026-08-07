@@ -1,57 +1,40 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { invoke } from "@forge/bridge";
 import ForgeReconciler, { Heading, Stack, Text } from "@forge/react";
 
-import {
-  createAuthorizedSupplierScenario,
-  toSupplierPackageView,
-} from "../simulator/authorized-supplier-package";
+type LocalReadinessStatus =
+  | "failed"
+  | "ready"
+  | "unconfigured"
+  | "waiting-for-pairing";
+
+const readinessText: Record<LocalReadinessStatus, string> = {
+  failed:
+    "Delivery failed. Check Forge logs for local troubleshooting details.",
+  ready: "Ready for starter publication or delivery.",
+  unconfigured: "Unconfigured. A local role has not been configured.",
+  "waiting-for-pairing": "Waiting for pairing.",
+};
 
 const App = () => {
-  const packageView = toSupplierPackageView(createAuthorizedSupplierScenario());
+  const [status, setStatus] = useState<LocalReadinessStatus | undefined>();
 
-  if (!("current" in packageView)) {
-    return <Text>{packageView.status}</Text>;
-  }
-
-  const { current, provenance } = packageView;
+  useEffect(() => {
+    void invoke<{ status: LocalReadinessStatus }>("getLocalReadiness").then(
+      (readiness) => {
+        const payload = "body" in readiness ? readiness.body : readiness;
+        setStatus(payload.status);
+      },
+      () => setStatus("failed"),
+    );
+  }, []);
 
   return (
     <Stack space="space.200">
-      <Stack space="space.050">
-        <Heading size="medium">Current package</Heading>
-        <Text>
-          Source Epic: {current.sourceEpic.key} · {current.sourceEpic.summary}
-        </Text>
-        <Text>
-          {current.sourceEpic.issueType} · {current.sourceEpic.statusCategory} ·{" "}
-          {current.sourceEpic.priority}
-        </Text>
-        <Text>{current.sourceEpic.description}</Text>
-      </Stack>
-
-      <Stack space="space.050">
-        <Heading size="medium">Provenance</Heading>
-        <Text>Source site: {provenance.sourceSiteId}</Text>
-        <Text>Publisher: {provenance.publisherId}</Text>
-        <Text>
-          Published: version {current.version} · {current.publishedAt}
-        </Text>
-      </Stack>
-
-      <Stack space="space.100">
-        <Heading size="medium">Direct children</Heading>
-        {packageView.children.map((child) => (
-          <Stack key={child.key} space="space.025">
-            <Text>
-              {child.key} · {child.issueType} · {child.summary}
-            </Text>
-            <Text>
-              {child.statusCategory} · {child.priority}
-            </Text>
-            <Text>{child.description}</Text>
-          </Stack>
-        ))}
-      </Stack>
+      <Heading size="medium">Supplychain Graph readiness</Heading>
+      <Text>
+        {status ? readinessText[status] : "Checking local readiness…"}
+      </Text>
     </Stack>
   );
 };

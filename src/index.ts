@@ -30,6 +30,10 @@ import {
   type PublishPackageToGraphInput,
   publishPackageToGraph as publishDemoPackageToGraph,
 } from "./projection/forge-demo-projection-action";
+import {
+  seedDestinationPairing,
+  seedSourcePairing,
+} from "./pairing/forge-demo-pairing-seed";
 import { kvsPackageConnectionStore } from "./projection/kvs-connection-store";
 import {
   type PublishWorkPackageActionInput,
@@ -60,6 +64,8 @@ export async function publishPackageToGraph(
 ) {
   return publishDemoPackageToGraph(payload);
 }
+
+export { seedDestinationPairing, seedSourcePairing };
 
 interface ForgeLifecycleEvent {
   readonly app: {

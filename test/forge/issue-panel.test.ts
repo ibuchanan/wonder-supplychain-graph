@@ -4,18 +4,21 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Supplychain Graph issue panel", () => {
-  it("shows the current authorized package on a supplier Paired Epic", () => {
+  it("renders only the current tenant's local readiness", () => {
     const panelSource = readFileSync(
       join(process.cwd(), "src/frontend/index.tsx"),
       "utf8",
     );
 
-    expect(panelSource).toContain("toSupplierPackageView");
-    expect(panelSource).toContain("Current package");
-    expect(panelSource).toContain("Source Epic:");
-    expect(panelSource).toContain("Source site:");
-    expect(panelSource).toContain("Publisher:");
-    expect(panelSource).toContain("Published:");
-    expect(panelSource).toContain("Direct children");
+    expect(panelSource).toContain(
+      'invoke<{ status: LocalReadinessStatus }>("getLocalReadiness")',
+    );
+    expect(panelSource).toContain("Unconfigured.");
+    expect(panelSource).toContain("Waiting for pairing.");
+    expect(panelSource).toContain("Ready for starter publication or delivery.");
+    expect(panelSource).toContain("Delivery failed.");
+    expect(panelSource).not.toContain("toSupplierPackageView");
+    expect(panelSource).not.toContain("peerDeliveryUrl");
+    expect(panelSource).not.toContain("Current package");
   });
 });

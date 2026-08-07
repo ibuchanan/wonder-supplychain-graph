@@ -40,6 +40,10 @@ modules:
       handler: index.onInstalled
     - key: onUpgraded
       handler: index.onUpgraded
+    - key: seedSourcePairing
+      handler: index.seedSourcePairing
+    - key: seedDestinationPairing
+      handler: index.seedDestinationPairing
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -117,6 +121,11 @@ modules:
       function: onUpgraded
       events:
         - avi:forge:upgraded:app
+  webtrigger:
+    - key: scg-seed-source
+      function: seedSourcePairing
+    - key: scg-seed-destination
+      function: seedDestinationPairing
 app:
   runtime:
     name: nodejs24.x
