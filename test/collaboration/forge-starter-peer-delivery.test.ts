@@ -61,7 +61,10 @@ describe("receiveStarterDelivery", () => {
       body: JSON.stringify({
         connectionId: "connection-001",
         correlationId: "corr-001",
+        documentId: "pairing-001:10017",
+        objectCount: 1,
         outcome: "accepted",
+        updateSequence: Date.parse("2026-08-07T19:00:00.000Z"),
       }),
       headers: { "Content-Type": "application/json" },
       statusCode: 200,

@@ -20,7 +20,7 @@ interface WebTriggerResponse {
 
 function response(
   statusCode: number,
-  body: Record<string, string>,
+  body: Record<string, string | number>,
 ): WebTriggerResponse {
   return {
     body: JSON.stringify(body),
@@ -159,6 +159,9 @@ export async function receiveStarterDelivery(
   return response(200, {
     connectionId: result.value.connectionId,
     correlationId: result.value.correlationId,
+    documentId: document.id,
+    objectCount: 1,
     outcome: result.value.outcome,
+    updateSequence: document.updateSequence,
   });
 }

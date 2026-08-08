@@ -26,7 +26,7 @@ interface JiraIssueResponse {
 
 function response(
   statusCode: number,
-  body: Record<string, string>,
+  body: Record<string, string | number>,
 ): WebTriggerResponse {
   return {
     body: JSON.stringify(body),
@@ -157,9 +157,32 @@ export async function publishStarterDelivery(
     return response(502, { error: "peer-starter-delivery-failed" });
   }
 
+  const deliveryResponse: unknown = await peerResponse.json();
+  if (
+    typeof deliveryResponse !== "object" ||
+    deliveryResponse === null ||
+    typeof (deliveryResponse as { documentId?: unknown }).documentId !==
+      "string" ||
+    typeof (deliveryResponse as { objectCount?: unknown }).objectCount !==
+      "number" ||
+    typeof (deliveryResponse as { updateSequence?: unknown }).updateSequence !==
+      "number"
+  ) {
+    return response(502, { error: "invalid-peer-starter-delivery-response" });
+  }
+
+  const { documentId, objectCount, updateSequence } = deliveryResponse as {
+    readonly documentId: string;
+    readonly objectCount: number;
+    readonly updateSequence: number;
+  };
+
   return response(200, {
     correlationId,
+    documentId,
+    objectCount,
     outcome: "delivered",
     sourceEpicKey: sourceEpic.key,
+    updateSequence,
   });
 }

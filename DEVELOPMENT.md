@@ -66,6 +66,24 @@ a new Forge app. It changes the app ID and should not be a normal setup step.
 Use the `forge:*` scripts only after configuring those values with SecretSpec.
 Keep real credentials and secret values outside the repository.
 
+## Controlled two-tenant starter delivery
+
+Use `bun run demo:starter-delivery` to run the controlled development harness after deploying the app to both tenants and creating a destination graph connection. Keep generated webtrigger URLs, site-specific Epic IDs, and the Pairing ID in your local environment; do not commit them.
+
+The harness requires these local environment variables:
+
+- `SCG_DESTINATION_SEED_URL`
+- `SCG_DESTINATION_DELIVERY_URL`
+- `SCG_SOURCE_SEED_URL`
+- `SCG_SOURCE_PUBLICATION_URL`
+- `SCG_PAIRING_ID`
+- `SCG_SOURCE_EPIC_ID`
+- `SCG_PAIRED_EPIC_ID`
+
+It seeds the destination Pairing, seeds the source Pairing with the destination delivery URL, and then invokes source publication. On success it prints the delivery correlation ID, document ID, source Epic key, update sequence, and object count. Use the correlation ID to join source and destination Forge logs. Then manually confirm that destination Search/Rovo finds the document and that its source URL opens the Source Epic for a normally authorized user.
+
+The supported clean reset is to delete and recreate the destination native graph connection, then rerun the harness to seed both Pairings again. This is necessary because `upsert` can leave a previously indexed document after its Source Epic or Pairing is removed.
+
 ## Testing expectations
 
 Add behavior tests at an agreed public seam. The collaboration core should be

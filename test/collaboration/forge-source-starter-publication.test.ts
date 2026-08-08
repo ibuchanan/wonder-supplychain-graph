@@ -51,7 +51,13 @@ describe("publishStarterDelivery", () => {
     });
     vi.mocked(api.asApp).mockReturnValue({ requestJira } as never);
     vi.mocked(fetch).mockResolvedValue({
-      json: async () => ({ outcome: "accepted" }),
+      json: async () => ({
+        correlationId: "corr-001",
+        documentId: "pairing-001:10017",
+        objectCount: 1,
+        outcome: "accepted",
+        updateSequence: Date.parse("2026-08-07T19:00:00.000Z"),
+      }),
       ok: true,
     } as never);
 
@@ -90,8 +96,11 @@ describe("publishStarterDelivery", () => {
     });
     expect(JSON.parse(response.body)).toEqual({
       correlationId: forwarded.correlationId,
+      documentId: "pairing-001:10017",
+      objectCount: 1,
       outcome: "delivered",
       sourceEpicKey: "MFG-17",
+      updateSequence: Date.parse("2026-08-07T19:00:00.000Z"),
     });
   });
 });

@@ -8,6 +8,7 @@
     "changelog": "git cliff",
     "check": "lefthook run pre-push",
     "clean": "rm -rf ./node_modules ./dist",
+    "demo:starter-delivery": "bun run scripts/run-starter-delivery-harness.ts",
     "dev": "tsc -p tsconfig.json --watch",
     "forge:deploy": "secretspec run --reason \"npm run forge:deploy\" -- sh -c 'forge deploy --environment \"$FORGE_ENVIRONMENT\"'",
     "forge:logs": "forge logs | sd \"^[^{]*\" \"\" | jq .",
