@@ -27,6 +27,7 @@ describe("applyDemoPairingSeed", () => {
         peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
         role: "source",
         sourceEpicKey: "MFG-17",
+        sourceSiteUrl: "https://source-example.atlassian.net/",
       }),
     );
 
@@ -37,6 +38,7 @@ describe("applyDemoPairingSeed", () => {
           peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
           role: "source",
           sourceEpicKey: "MFG-17",
+          sourceSiteUrl: "https://source-example.atlassian.net",
           status: "active",
         },
       ],
@@ -54,6 +56,7 @@ describe("applyDemoPairingSeed", () => {
                 "https://old-supplier.example/forge/webtrigger/deliver",
               role: "source",
               sourceEpicKey: "MFG-16",
+              sourceSiteUrl: "https://old-source-example.atlassian.net",
               status: "active",
             },
           ],
@@ -63,6 +66,7 @@ describe("applyDemoPairingSeed", () => {
           peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
           role: "source",
           sourceEpicKey: "MFG-17",
+          sourceSiteUrl: "https://source-example.atlassian.net",
         },
       ),
     );
@@ -73,6 +77,7 @@ describe("applyDemoPairingSeed", () => {
         peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
         role: "source",
         sourceEpicKey: "MFG-17",
+        sourceSiteUrl: "https://source-example.atlassian.net",
         status: "active",
       },
     ]);

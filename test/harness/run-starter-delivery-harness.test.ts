@@ -8,10 +8,12 @@ import {
 const config: StarterDeliveryHarnessConfig = {
   destinationDeliveryUrl: "destination-delivery",
   destinationSeedUrl: "destination-seed",
+  destinationSite: "destination-example.atlassian.net",
   pairedEpicKey: "SUP-42",
   pairingId: "pairing-001",
   sourceEpicKey: "MFG-17",
   sourcePublicationUrl: "source-publication",
+  sourceSiteUrl: "https://source-example.atlassian.net",
   sourceSeedUrl: "source-seed",
 };
 
@@ -37,6 +39,7 @@ describe("runStarterDeliveryHarness", () => {
           objectCount: 1,
           outcome: "delivered",
           sourceEpicKey: "MFG-17",
+          sourceUrl: "https://source-example.atlassian.net/browse/MFG-17",
           updateSequence: 1_786_129_200_000,
         }),
       );
@@ -53,6 +56,7 @@ describe("runStarterDeliveryHarness", () => {
       objectCount: 1,
       outcome: "delivered",
       sourceEpicKey: "MFG-17",
+      sourceUrl: "https://source-example.atlassian.net/browse/MFG-17",
       updateSequence: 1_786_129_200_000,
     });
     expect(post).toHaveBeenNthCalledWith(1, "destination-seed", {
@@ -66,6 +70,7 @@ describe("runStarterDeliveryHarness", () => {
       peerDeliveryUrl: "destination-delivery",
       role: "source",
       sourceEpicKey: "MFG-17",
+      sourceSiteUrl: "https://source-example.atlassian.net",
     });
     expect(post).toHaveBeenNthCalledWith(3, "source-publication", {
       pairingId: "pairing-001",

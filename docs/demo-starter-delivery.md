@@ -123,8 +123,10 @@ SCG_SOURCE_EPIC_KEY=MFG-17
 SCG_PAIRED_EPIC_KEY=SUP-42
 ```
 
-The harness validates all seven values before making a request. These values
-are local-only; do not upload them as Forge variables.
+The harness validates all eight values before making a request. It derives the
+canonical source browser URL from `SCG_SOURCE_SITE` and stores that URL in the
+source pairing; this avoids deriving a browser link from Jira's API-form
+`self` URL. These values are local-only; do not upload them as Forge variables.
 
 ## 7. Run and verify the demonstration
 
@@ -142,10 +144,18 @@ It performs these calls in order:
 3. publishes the source pairing.
 
 A successful result includes `outcome: "delivered"`, a correlation ID, document
-ID, source Epic key, update sequence, and `objectCount: 1`. Use the correlation
-ID to find the source and destination Forge logs. Then, as a normally
-authorized user, confirm that destination Search or Rovo finds the document and
-that its source URL opens the source Epic.
+ID, source Epic key, source URL, update sequence, and `objectCount: 1`. It also
+prints a copy-paste `twg docs search` command scoped to the destination site.
+Run that command to retrieve the destination-side search result and graph
+Document ARI; it does not directly hydrate raw graph-document fields. Use the
+correlation ID to find the source and destination Forge logs. Then, as a
+normally authorized user, confirm that destination Search or Rovo finds the
+document and that its source URL opens the source Epic.
+
+If you deployed a version that adds source-site URL provenance after a pairing
+was already seeded, rerun this harness before publishing. Reseeding replaces the
+source pairing with the canonical `https://<SCG_SOURCE_SITE>` URL required for
+document navigation.
 
 If the harness reports `request-failed`, it includes the failed step, HTTP
 status, and any JSON `error` or `message`. For `409` at `destination-seed`,

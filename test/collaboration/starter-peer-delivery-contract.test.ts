@@ -26,6 +26,7 @@ const activeSourceState = (): SourcePublicationState => ({
       peerDeliveryUrl:
         "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
       sourceEpicKey: "MFG-17",
+      sourceSiteUrl: "https://source-example.atlassian.net",
       status: "active",
     },
   ],
@@ -44,6 +45,7 @@ describe("prepareStarterPublication", () => {
       peerDeliveryUrl:
         "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
       sourceEpicKey: "MFG-17",
+      sourceSiteUrl: "https://source-example.atlassian.net",
     });
   });
 
@@ -56,6 +58,7 @@ describe("prepareStarterPublication", () => {
             peerDeliveryUrl:
               "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
             sourceEpicKey: "MFG-17",
+            sourceSiteUrl: "https://source-example.atlassian.net",
             status: "inactive",
           },
         ],

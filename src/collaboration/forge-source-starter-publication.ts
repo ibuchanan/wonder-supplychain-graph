@@ -1,17 +1,14 @@
 import api, { fetch, route } from "@forge/api";
+import {
+  buildSuccessResponse,
+  defineWebTrigger,
+  type WebTriggerEvent,
+  type WebTriggerResponse,
+} from "@forge-ahead/triggers/webtrigger";
 
+import type { DemoSourcePairing } from "../pairing/apply-demo-pairing-seed";
 import { kvsDemoPairingStore } from "../pairing/kvs-demo-pairing-store";
 import { prepareStarterPublication } from "./starter-peer-delivery-contract";
-
-interface WebTriggerRequest {
-  readonly body?: string;
-}
-
-interface WebTriggerResponse {
-  readonly body: string;
-  readonly headers: { readonly "Content-Type": readonly string[] };
-  readonly statusCode: number;
-}
 
 interface JiraIssueResponse {
   readonly fields?: {
@@ -21,10 +18,9 @@ interface JiraIssueResponse {
   };
   readonly id?: unknown;
   readonly key?: unknown;
-  readonly self?: unknown;
 }
 
-function response(
+function errorResponse(
   statusCode: number,
   body: Record<string, string | number>,
 ): WebTriggerResponse {
@@ -36,7 +32,7 @@ function response(
 }
 
 function parsePublicationRequest(
-  request: WebTriggerRequest,
+  request: WebTriggerEvent,
 ): { readonly pairingId: string } | undefined {
   if (!request.body) {
     return undefined;
@@ -85,7 +81,10 @@ function toRfc3339Timestamp(value: string): string {
   return new Date(value).toISOString();
 }
 
-function sourceEpicFromJira(issue: JiraIssueResponse):
+function sourceEpicFromJira(
+  issue: JiraIssueResponse,
+  sourceSiteUrl: string,
+):
   | {
       readonly createdAt: string;
       readonly id: string;
@@ -101,8 +100,7 @@ function sourceEpicFromJira(issue: JiraIssueResponse):
     typeof issue.key !== "string" ||
     typeof fields?.summary !== "string" ||
     typeof fields.created !== "string" ||
-    typeof fields.updated !== "string" ||
-    typeof issue.self !== "string"
+    typeof fields.updated !== "string"
   ) {
     return undefined;
   }
@@ -114,7 +112,7 @@ function sourceEpicFromJira(issue: JiraIssueResponse):
       key: issue.key,
       summary: fields.summary,
       updatedAt: toRfc3339Timestamp(fields.updated),
-      url: `${new URL(issue.self).origin}/browse/${issue.key}`,
+      url: `${sourceSiteUrl}/browse/${issue.key}`,
     };
   } catch {
     return undefined;
@@ -126,30 +124,33 @@ function sourceEpicFromJira(issue: JiraIssueResponse):
  * The caller supplies only a Pairing identifier; all content and peer routing are
  * derived within the source tenant.
  */
-export async function publishStarterDelivery(
-  request: WebTriggerRequest,
-): Promise<WebTriggerResponse> {
+export const publishStarterDelivery = defineWebTrigger(async (request) => {
   const publicationRequest = parsePublicationRequest(request);
   if (!publicationRequest) {
-    return response(400, { error: "invalid-source-publication" });
+    return errorResponse(400, { error: "invalid-source-publication" });
   }
 
   const pairingState = await kvsDemoPairingStore.read();
   const publication = prepareStarterPublication(
     {
       pairings: pairingState.pairings
-        .filter((pairing) => pairing.role === "source")
+        .filter(
+          (pairing): pairing is DemoSourcePairing =>
+            pairing.role === "source" &&
+            typeof pairing.sourceSiteUrl === "string",
+        )
         .map((pairing) => ({
           pairingId: pairing.pairingId,
           peerDeliveryUrl: pairing.peerDeliveryUrl,
           sourceEpicKey: pairing.sourceEpicKey,
+          sourceSiteUrl: pairing.sourceSiteUrl,
           status: pairing.status,
         })),
     },
     publicationRequest,
   );
   if (publication.isErr()) {
-    return response(409, { error: publication.error.code });
+    return errorResponse(409, { error: publication.error.code });
   }
 
   const jiraResponse = await api
@@ -158,14 +159,15 @@ export async function publishStarterDelivery(
       route`/rest/api/3/issue/${publication.value.sourceEpicKey}?fields=id,key,summary,created,updated`,
     );
   if (!jiraResponse.ok) {
-    return response(502, { error: "source-epic-read-failed" });
+    return errorResponse(502, { error: "source-epic-read-failed" });
   }
 
   const sourceEpic = sourceEpicFromJira(
     (await jiraResponse.json()) as JiraIssueResponse,
+    publication.value.sourceSiteUrl,
   );
   if (!sourceEpic) {
-    return response(502, { error: "source-epic-read-failed" });
+    return errorResponse(502, { error: "source-epic-read-failed" });
   }
 
   const correlationId = crypto.randomUUID();
@@ -180,7 +182,7 @@ export async function publishStarterDelivery(
     method: "POST",
   });
   if (!peerResponse.ok) {
-    return response(502, {
+    return errorResponse(502, {
       detail: peerFailureDetail(peerResponse.status, await peerResponse.text()),
       error: "peer-starter-delivery-failed",
     });
@@ -197,7 +199,9 @@ export async function publishStarterDelivery(
     typeof (deliveryResponse as { updateSequence?: unknown }).updateSequence !==
       "number"
   ) {
-    return response(502, { error: "invalid-peer-starter-delivery-response" });
+    return errorResponse(502, {
+      error: "invalid-peer-starter-delivery-response",
+    });
   }
 
   const { documentId, objectCount, updateSequence } = deliveryResponse as {
@@ -206,12 +210,13 @@ export async function publishStarterDelivery(
     readonly updateSequence: number;
   };
 
-  return response(200, {
+  return buildSuccessResponse({
     correlationId,
     documentId,
     objectCount,
     outcome: "delivered",
     sourceEpicKey: sourceEpic.key,
+    sourceUrl: sourceEpic.url,
     updateSequence,
   });
-}
+});

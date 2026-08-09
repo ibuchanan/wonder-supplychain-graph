@@ -7,9 +7,11 @@ describe("readStarterDeliveryHarnessConfig", () => {
     const result = readStarterDeliveryHarnessConfig({
       SCG_DESTINATION_DELIVERY_URL: "destination-delivery",
       SCG_DESTINATION_SEED_URL: "destination-seed",
+      SCG_DESTINATION_SITE: "destination-example.atlassian.net",
       SCG_PAIRED_EPIC_KEY: "SUP-42",
       SCG_PAIRING_ID: "pairing-001",
       SCG_SOURCE_EPIC_KEY: "MFG-17",
+      SCG_SOURCE_SITE: "source-example.atlassian.net",
       SCG_SOURCE_PUBLICATION_URL: "source-publication",
       SCG_SOURCE_SEED_URL: "source-seed",
     });
@@ -18,10 +20,12 @@ describe("readStarterDeliveryHarnessConfig", () => {
       value: {
         destinationDeliveryUrl: "destination-delivery",
         destinationSeedUrl: "destination-seed",
+        destinationSite: "destination-example.atlassian.net",
         pairedEpicKey: "SUP-42",
         pairingId: "pairing-001",
         sourceEpicKey: "MFG-17",
         sourcePublicationUrl: "source-publication",
+        sourceSiteUrl: "https://source-example.atlassian.net",
         sourceSeedUrl: "source-seed",
       },
     });
@@ -36,10 +40,12 @@ describe("readStarterDeliveryHarnessConfig", () => {
         names: [
           "SCG_DESTINATION_DELIVERY_URL",
           "SCG_DESTINATION_SEED_URL",
+          "SCG_DESTINATION_SITE",
           "SCG_PAIRED_EPIC_KEY",
           "SCG_PAIRING_ID",
           "SCG_SOURCE_EPIC_KEY",
           "SCG_SOURCE_PUBLICATION_URL",
+          "SCG_SOURCE_SITE",
           "SCG_SOURCE_SEED_URL",
         ],
       },

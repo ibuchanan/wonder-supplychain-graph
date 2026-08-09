@@ -1,3 +1,10 @@
+import {
+  buildSuccessResponse,
+  defineWebTrigger,
+  type WebTriggerEvent,
+  type WebTriggerResponse,
+} from "@forge-ahead/triggers/webtrigger";
+
 import { logger } from "../logging";
 import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
 import {
@@ -6,17 +13,7 @@ import {
 } from "./apply-demo-pairing-seed";
 import { kvsDemoPairingStore } from "./kvs-demo-pairing-store";
 
-interface WebTriggerRequest {
-  readonly body?: string;
-}
-
-interface WebTriggerResponse {
-  readonly body: string;
-  readonly headers: { readonly "Content-Type": readonly string[] };
-  readonly statusCode: number;
-}
-
-function response(
+function errorResponse(
   statusCode: number,
   body: Record<string, unknown>,
 ): WebTriggerResponse {
@@ -28,7 +25,7 @@ function response(
 }
 
 function parseSeed<T extends DemoPairingSeed>(
-  request: WebTriggerRequest,
+  request: WebTriggerEvent,
 ): T | undefined {
   if (!request.body) {
     return undefined;
@@ -42,16 +39,17 @@ function parseSeed<T extends DemoPairingSeed>(
 }
 
 async function seed(
-  request: WebTriggerRequest,
+  request: WebTriggerEvent,
   role: DemoPairingSeed["role"],
 ): Promise<WebTriggerResponse> {
-  if (process.env["DEMO_PAIRING_SEED_ENABLED"] !== "true") {
-    return response(404, { error: "seed-not-enabled" });
+  const { DEMO_PAIRING_SEED_ENABLED: demoPairingSeedEnabled } = process.env;
+  if (demoPairingSeedEnabled !== "true") {
+    return errorResponse(404, { error: "seed-not-enabled" });
   }
 
   const seedRequest = parseSeed<DemoPairingSeed>(request);
   if (!seedRequest || seedRequest.role !== role) {
-    return response(400, { error: "invalid-seed-request" });
+    return errorResponse(400, { error: "invalid-seed-request" });
   }
 
   const state = await kvsDemoPairingStore.read();
@@ -70,7 +68,7 @@ async function seed(
       },
       "Supplychain Graph demo pairing seed failed",
     );
-    return response(409, { error: result.error.code });
+    return errorResponse(409, { error: result.error.code });
   }
 
   await kvsDemoPairingStore.write(result.value.nextState);
@@ -82,13 +80,16 @@ async function seed(
     },
     "Supplychain Graph demo pairing seed completed",
   );
-  return response(200, { pairingId: seedRequest.pairingId, status: "active" });
+  return buildSuccessResponse({
+    pairingId: seedRequest.pairingId,
+    status: "active",
+  });
 }
 
-export async function seedSourcePairing(request: WebTriggerRequest) {
-  return seed(request, "source");
-}
+export const seedSourcePairing = defineWebTrigger((request) =>
+  seed(request, "source"),
+);
 
-export async function seedDestinationPairing(request: WebTriggerRequest) {
-  return seed(request, "destination");
-}
+export const seedDestinationPairing = defineWebTrigger((request) =>
+  seed(request, "destination"),
+);

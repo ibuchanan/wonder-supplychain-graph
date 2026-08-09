@@ -21,6 +21,10 @@ const http = {
   },
 };
 
+function shellQuote(value) {
+  return `'${value.replaceAll("'", "'\"'\"'")}'`;
+}
+
 async function main() {
   const config = readStarterDeliveryHarnessConfig(process.env);
   if (config.isErr()) {
@@ -36,9 +40,18 @@ async function main() {
     return;
   }
 
+  const destinationSearchCommand = [
+    "twg docs search",
+    shellQuote(result.value.sourceEpicKey),
+    "-s",
+    shellQuote(config.value.destinationSite),
+    "-n 20 -o json --agent-fields @evidence",
+  ].join(" ");
+
   console.log(
     JSON.stringify({
       ...result.value,
+      destinationSearchCommand,
       manualAcceptance:
         "Confirm the document is discoverable in destination Search/Rovo and its source URL opens the Source Epic.",
     }),

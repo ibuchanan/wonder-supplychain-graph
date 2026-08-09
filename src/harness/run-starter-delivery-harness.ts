@@ -3,10 +3,12 @@ import { err, ok, type Result } from "@forge-ahead/errors";
 export interface StarterDeliveryHarnessConfig {
   readonly destinationDeliveryUrl: string;
   readonly destinationSeedUrl: string;
+  readonly destinationSite: string;
   readonly pairedEpicKey: string;
   readonly pairingId: string;
   readonly sourceEpicKey: string;
   readonly sourcePublicationUrl: string;
+  readonly sourceSiteUrl: string;
   readonly sourceSeedUrl: string;
 }
 
@@ -16,6 +18,7 @@ export interface StarterDeliveryEvidence {
   readonly objectCount: number;
   readonly outcome: "delivered";
   readonly sourceEpicKey: string;
+  readonly sourceUrl: string;
   readonly updateSequence: number;
 }
 
@@ -57,6 +60,7 @@ function isDeliveryEvidence(value: unknown): value is StarterDeliveryEvidence {
     typeof candidate.objectCount === "number" &&
     candidate.outcome === "delivered" &&
     typeof candidate.sourceEpicKey === "string" &&
+    typeof candidate.sourceUrl === "string" &&
     typeof candidate.updateSequence === "number"
   );
 }
@@ -124,6 +128,7 @@ export async function runStarterDeliveryHarness(
     peerDeliveryUrl: config.destinationDeliveryUrl,
     role: "source",
     sourceEpicKey: config.sourceEpicKey,
+    sourceSiteUrl: config.sourceSiteUrl,
   });
   if (!isSuccessful(sourceSeed.status)) {
     return err(await requestFailure(sourceSeed, "source-seed"));

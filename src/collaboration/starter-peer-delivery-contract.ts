@@ -6,6 +6,7 @@ export interface SourcePairing {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
   readonly sourceEpicKey: string;
+  readonly sourceSiteUrl: string;
   readonly status: "active" | "inactive";
 }
 
@@ -22,6 +23,7 @@ export interface StarterPublication {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
   readonly sourceEpicKey: string;
+  readonly sourceSiteUrl: string;
 }
 
 export interface SourcePairingUnavailableError {
@@ -50,6 +52,7 @@ export function prepareStarterPublication(
     pairingId: pairing.pairingId,
     peerDeliveryUrl: pairing.peerDeliveryUrl,
     sourceEpicKey: pairing.sourceEpicKey,
+    sourceSiteUrl: pairing.sourceSiteUrl,
   });
 }
 

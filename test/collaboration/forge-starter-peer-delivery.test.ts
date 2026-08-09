@@ -66,8 +66,9 @@ describe("receiveStarterDelivery", () => {
         outcome: "accepted",
         updateSequence: Date.parse("2026-08-07T19:00:00.000Z"),
       }),
-      headers: { "Content-Type": ["application/json"] },
+      headers: { "content-type": ["application/json"] },
       statusCode: 200,
+      statusText: "OK",
     });
 
     expect(graph.setObjects).toHaveBeenCalledExactlyOnceWith({

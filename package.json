@@ -12,50 +12,34 @@
     "demo:starter-delivery:webtriggers": "secretspec run --reason \"npm run demo:starter-delivery:webtriggers\" -- bash scripts/create-starter-delivery-webtriggers.sh",
     "dev": "tsc -p tsconfig.json --watch",
     "forge:deploy": "secretspec run --reason \"npm run forge:deploy\" -- sh -c 'forge deploy --environment \"$FORGE_ENVIRONMENT\"'",
-    "forge:logs": "forge logs | sd \"^[^{]*\" \"\" | jq .",
     "forge:install": "secretspec run --reason \"npm run forge:install\" -- sh -c 'forge install --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
+    "forge:logs": "forge logs | sd \"^[^{]*\" \"\" | jq .",
     "forge:register": "forge register",
     "forge:uninstall": "secretspec run --reason \"npm run forge:uninstall\" -- bash scripts/forge-uninstall-both.sh",
     "forge:upgrade": "secretspec run --reason \"npm run forge:upgrade\" -- sh -c 'forge install --upgrade --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --upgrade --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
     "forge:variables:set": "secretspec run --reason \"npm run forge:variables:set\" -- sh -c 'forge variables set --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
-    "forge:variables:set-encrypted": "secretspec run --reason \"npm run forge:variables:set-encrypted\" -- sh -c 'forge variables set --encrypt --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
     "forge:variables:set:secretspec": "./scripts/forge-vars-from-secretspec.sh",
+    "forge:variables:set-encrypted": "secretspec run --reason \"npm run forge:variables:set-encrypted\" -- sh -c 'forge variables set --encrypt --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
     "format": "biome format --write",
     "format:check": "biome format",
     "lint": "lefthook run lint",
     "lint:check": "biome lint",
     "lint:fix": "biome lint --write",
     "lint:forge": "forge lint",
+    "lint:prelint": "ast-grep scan --config node_modules/@forge-ahead/prelint/sgconfig.ecosol.yml --globs '!node_modules/**' --globs '!vendor/**'",
     "prepare": "lefthook install",
+    "size": "npm run build && size-limit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest watch",
     "todo": "rg --glob '!vendor/**' --glob '!package.json' 'TODO' || echo 'No TODOs found!'",
-    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
-    "lint:prelint": "ast-grep scan --config node_modules/tool-forge-prelint-ast-grep/sgconfig.ecosol.yml --globs '!node_modules/**' --globs '!vendor/**'",
-    "size": "npm run build && size-limit"
-  },
-  "engines": {
-    "node": "24.x"
-  },
-  "devDependencies": {
-    "@ast-grep/cli": "^0.45",
-    "@biomejs/biome": "2.5.6",
-    "@size-limit/file": "^13.0",
-    "@types/node": "24",
-    "archunit": "^2.4",
-    "git-cliff": "^2.13",
-    "lefthook": "^2.1",
-    "size-limit": "^13.0",
-    "tool-forge-prelint-ast-grep": "github:ibuchanan/tool-forge-prelint-ast-grep",
-    "typescript": "^5.9",
-    "vitest": "^4.1",
-    "yaml": "^2.9"
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
     "@forge-ahead/atlassian-api-types": "github:ibuchanan/forge-ahead-atlassian-api-types",
     "@forge-ahead/errors": "github:ibuchanan/forge-ahead-errors",
     "@forge-ahead/logging": "github:ibuchanan/forge-ahead-logging",
+    "@forge-ahead/triggers": "github:ibuchanan/forge-ahead-triggers",
     "@forge/api": "^8.0",
     "@forge/bridge": "^6.2",
     "@forge/kvs": "^2.0",
@@ -63,6 +47,23 @@
     "@forge/resolver": "^2.0",
     "@forge/teamwork-graph": "^5.0",
     "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@ast-grep/cli": "^0.45",
+    "@biomejs/biome": "2.5.6",
+    "@forge-ahead/prelint": "github:ibuchanan/tool-forge-prelint-ast-grep",
+    "@size-limit/file": "^13.0",
+    "@types/node": "24",
+    "archunit": "^2.4",
+    "git-cliff": "^2.13",
+    "lefthook": "^2.1",
+    "size-limit": "^13.0",
+    "typescript": "^5.9",
+    "vitest": "^4.1",
+    "yaml": "^2.9"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "size-limit": [
     {

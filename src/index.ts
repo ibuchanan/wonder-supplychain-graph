@@ -21,8 +21,8 @@ export { handler } from "./resolvers";
 
 import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
-import { receiveStarterDelivery as receiveStarterDeliveryFromPeer } from "./collaboration/forge-starter-peer-delivery";
-import { publishStarterDelivery as publishStarterDeliveryToPeer } from "./collaboration/forge-source-starter-publication";
+export { receiveStarterDelivery } from "./collaboration/forge-starter-peer-delivery";
+export { publishStarterDelivery } from "./collaboration/forge-source-starter-publication";
 import { type OnConfigChangeResponse, onConfigChange } from "./cx-management";
 import {
   seedDestinationPairing,
@@ -62,20 +62,6 @@ export async function publishPackageToGraph(
   payload: PublishPackageToGraphInput,
 ) {
   return publishDemoPackageToGraph(payload);
-}
-
-/** Thin Forge entry point for one source-published starter document. */
-export async function publishStarterDelivery(request: {
-  readonly body?: string;
-}) {
-  return publishStarterDeliveryToPeer(request);
-}
-
-/** Thin Forge entry point for one peer-delivered starter document. */
-export async function receiveStarterDelivery(request: {
-  readonly body?: string;
-}) {
-  return receiveStarterDeliveryFromPeer(request);
 }
 
 export { seedDestinationPairing, seedSourcePairing };

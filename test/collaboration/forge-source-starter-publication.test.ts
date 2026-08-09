@@ -28,7 +28,7 @@ function configureJiraSourceEpic() {
       },
       id: "10017",
       key: "MFG-17",
-      self: "https://tenant-id.atlassian.net/rest/api/3/issue/10017",
+      self: "https://api.atlassian.com/ex/jira/source-cloud-id/rest/api/3/issue/10017",
     }),
     ok: true,
   });
@@ -48,6 +48,7 @@ describe("publishStarterDelivery", () => {
             "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
           role: "source",
           sourceEpicKey: "MFG-17",
+          sourceSiteUrl: "https://source-example.atlassian.net",
           status: "active",
         },
       ],
@@ -97,8 +98,13 @@ describe("publishStarterDelivery", () => {
         key: "MFG-17",
         summary: "Approve material source",
         updatedAt: "2026-08-07T19:00:00.000Z",
-        url: "https://tenant-id.atlassian.net/browse/MFG-17",
+        url: "https://source-example.atlassian.net/browse/MFG-17",
       },
+    });
+    expect(response).toMatchObject({
+      headers: { "content-type": ["application/json"] },
+      statusCode: 200,
+      statusText: "OK",
     });
     expect(JSON.parse(response.body)).toEqual({
       correlationId: forwarded.correlationId,
@@ -106,6 +112,7 @@ describe("publishStarterDelivery", () => {
       objectCount: 1,
       outcome: "delivered",
       sourceEpicKey: "MFG-17",
+      sourceUrl: "https://source-example.atlassian.net/browse/MFG-17",
       updateSequence: Date.parse("2026-08-07T19:00:00.000Z"),
     });
   });

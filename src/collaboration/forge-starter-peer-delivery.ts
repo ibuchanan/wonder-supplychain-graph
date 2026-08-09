@@ -1,3 +1,9 @@
+import {
+  buildSuccessResponse,
+  defineWebTrigger,
+  type WebTriggerEvent,
+  type WebTriggerResponse,
+} from "@forge-ahead/triggers/webtrigger";
 import type { types } from "@forge/teamwork-graph";
 import { graph } from "@forge/teamwork-graph";
 
@@ -9,17 +15,7 @@ import {
   type StarterDeliveryRequest,
 } from "./starter-peer-delivery-contract";
 
-interface WebTriggerRequest {
-  readonly body?: string;
-}
-
-interface WebTriggerResponse {
-  readonly body: string;
-  readonly headers: { readonly "Content-Type": readonly string[] };
-  readonly statusCode: number;
-}
-
-function response(
+function errorResponse(
   statusCode: number,
   body: Record<string, string | number>,
 ): WebTriggerResponse {
@@ -76,7 +72,7 @@ function isStarterDeliveryRequest(
 }
 
 function parseStarterDelivery(
-  request: WebTriggerRequest,
+  request: WebTriggerEvent,
 ): StarterDeliveryRequest | undefined {
   if (!request.body) {
     return undefined;
@@ -95,12 +91,10 @@ function parseStarterDelivery(
  * this handler reads its own active connection and Pairing state from KVS and
  * never persists a candidate, receipt, version, or idempotency record.
  */
-export async function receiveStarterDelivery(
-  request: WebTriggerRequest,
-): Promise<WebTriggerResponse> {
+export const receiveStarterDelivery = defineWebTrigger(async (request) => {
   const delivery = parseStarterDelivery(request);
   if (!delivery) {
-    return response(400, { error: "invalid-starter-delivery" });
+    return errorResponse(400, { error: "invalid-starter-delivery" });
   }
 
   const [connectionId, pairingState] = await Promise.all([
@@ -126,7 +120,7 @@ export async function receiveStarterDelivery(
   );
 
   if (result.isErr()) {
-    return response(409, { error: result.error.code });
+    return errorResponse(409, { error: result.error.code });
   }
 
   const { document } = result.value;
@@ -172,10 +166,10 @@ export async function receiveStarterDelivery(
       },
       "Supplychain Graph document upsert failed",
     );
-    return response(502, { error: "graph-document-upsert-failed" });
+    return errorResponse(502, { error: "graph-document-upsert-failed" });
   }
 
-  return response(200, {
+  return buildSuccessResponse({
     connectionId: result.value.connectionId,
     correlationId: result.value.correlationId,
     documentId: document.id,
@@ -183,4 +177,4 @@ export async function receiveStarterDelivery(
     outcome: result.value.outcome,
     updateSequence: document.updateSequence,
   });
-}
+});
