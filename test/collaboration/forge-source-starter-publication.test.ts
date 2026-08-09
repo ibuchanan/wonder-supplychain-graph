@@ -18,6 +18,25 @@ vi.mock("@forge/kvs", () => ({
 
 import { publishStarterDelivery } from "../../src/collaboration/forge-source-starter-publication";
 
+function configureJiraSourceEpic() {
+  const requestJira = vi.fn().mockResolvedValue({
+    json: async () => ({
+      fields: {
+        created: "2026-08-01T05:00:00.000-0700",
+        summary: "Approve material source",
+        updated: "2026-08-07T12:00:00.000-0700",
+      },
+      id: "10017",
+      key: "MFG-17",
+      self: "https://tenant-id.atlassian.net/rest/api/3/issue/10017",
+    }),
+    ok: true,
+  });
+  vi.mocked(api.asApp).mockReturnValue({ requestJira } as never);
+
+  return requestJira;
+}
+
 describe("publishStarterDelivery", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -28,7 +47,7 @@ describe("publishStarterDelivery", () => {
           peerDeliveryUrl:
             "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
           role: "source",
-          sourceEpicId: "MFG-17",
+          sourceEpicKey: "MFG-17",
           status: "active",
         },
       ],
@@ -36,20 +55,7 @@ describe("publishStarterDelivery", () => {
   });
 
   it("reads only the paired Source Epic fields as the app and directly sends its starter document to the peer", async () => {
-    const requestJira = vi.fn().mockResolvedValue({
-      json: async () => ({
-        fields: {
-          created: "2026-08-01T12:00:00.000Z",
-          summary: "Approve material source",
-          updated: "2026-08-07T19:00:00.000Z",
-        },
-        id: "10017",
-        key: "MFG-17",
-        self: "https://tenant-id.atlassian.net/rest/api/3/issue/10017",
-      }),
-      ok: true,
-    });
-    vi.mocked(api.asApp).mockReturnValue({ requestJira } as never);
+    const requestJira = configureJiraSourceEpic();
     vi.mocked(fetch).mockResolvedValue({
       json: async () => ({
         correlationId: "corr-001",
@@ -101,6 +107,30 @@ describe("publishStarterDelivery", () => {
       outcome: "delivered",
       sourceEpicKey: "MFG-17",
       updateSequence: Date.parse("2026-08-07T19:00:00.000Z"),
+    });
+  });
+
+  it("returns the destination error and status when peer delivery fails", async () => {
+    configureJiraSourceEpic();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 409,
+      text: async () =>
+        JSON.stringify({ error: "destination-pairing-unavailable" }),
+    } as never);
+
+    const response = await publishStarterDelivery({
+      body: JSON.stringify({ pairingId: "pairing-001" }),
+    });
+
+    expect(response).toEqual({
+      body: JSON.stringify({
+        detail:
+          "destination returned HTTP 409: destination-pairing-unavailable",
+        error: "peer-starter-delivery-failed",
+      }),
+      headers: { "Content-Type": ["application/json"] },
+      statusCode: 502,
     });
   });
 });

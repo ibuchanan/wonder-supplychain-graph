@@ -1,6 +1,7 @@
 import type { types } from "@forge/teamwork-graph";
 import { graph } from "@forge/teamwork-graph";
 
+import { logger } from "../logging";
 import { kvsDemoPairingStore } from "../pairing/kvs-demo-pairing-store";
 import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
 import {
@@ -14,7 +15,7 @@ interface WebTriggerRequest {
 
 interface WebTriggerResponse {
   readonly body: string;
-  readonly headers: { readonly "Content-Type": string };
+  readonly headers: { readonly "Content-Type": readonly string[] };
   readonly statusCode: number;
 }
 
@@ -24,7 +25,7 @@ function response(
 ): WebTriggerResponse {
   return {
     body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": ["application/json"] },
     statusCode,
   };
 }
@@ -117,7 +118,7 @@ export async function receiveStarterDelivery(
         )
         .map((pairing) => ({
           pairingId: pairing.pairingId,
-          sourceEpicId: pairing.sourceEpicId,
+          sourceEpicKey: pairing.sourceEpicKey,
           status: pairing.status,
         })),
     },
@@ -153,6 +154,24 @@ export async function receiveStarterDelivery(
   });
 
   if (!graphResult.success) {
+    // Graph returns object-level validation messages only in the bulk response.
+    // Log those safe diagnostics, not the document content or webtrigger URL.
+    logger.info(
+      {
+        connectionId: result.value.connectionId,
+        documentId: document.id,
+        error: graphResult.error,
+        event: "scg.graph.document.upsert.failed",
+        rejected: graphResult.results?.rejected?.map((rejection) => ({
+          errors: rejection.errors.map(({ key, message }) => ({
+            key,
+            message,
+          })),
+          entityType: rejection.key.entityType,
+        })),
+      },
+      "Supplychain Graph document upsert failed",
+    );
     return response(502, { error: "graph-document-upsert-failed" });
   }
 

@@ -9,7 +9,7 @@ interface WebTriggerRequest {
 
 interface WebTriggerResponse {
   readonly body: string;
-  readonly headers: { readonly "Content-Type": string };
+  readonly headers: { readonly "Content-Type": readonly string[] };
   readonly statusCode: number;
 }
 
@@ -30,7 +30,7 @@ function response(
 ): WebTriggerResponse {
   return {
     body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": ["application/json"] },
     statusCode,
   };
 }
@@ -59,6 +59,32 @@ function parsePublicationRequest(
   }
 }
 
+function peerFailureDetail(status: number, body: string): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (typeof parsed === "object" && parsed !== null) {
+      const value = parsed as { error?: unknown; message?: unknown };
+      const reason =
+        typeof value.error === "string"
+          ? value.error
+          : typeof value.message === "string"
+            ? value.message
+            : undefined;
+      if (reason) {
+        return `destination returned HTTP ${status}: ${reason.slice(0, 500)}`;
+      }
+    }
+  } catch {
+    // The destination response was not JSON; retain only its status.
+  }
+
+  return `destination returned HTTP ${status}`;
+}
+
+function toRfc3339Timestamp(value: string): string {
+  return new Date(value).toISOString();
+}
+
 function sourceEpicFromJira(issue: JiraIssueResponse):
   | {
       readonly createdAt: string;
@@ -83,11 +109,11 @@ function sourceEpicFromJira(issue: JiraIssueResponse):
 
   try {
     return {
-      createdAt: fields.created,
+      createdAt: toRfc3339Timestamp(fields.created),
       id: issue.id,
       key: issue.key,
       summary: fields.summary,
-      updatedAt: fields.updated,
+      updatedAt: toRfc3339Timestamp(fields.updated),
       url: `${new URL(issue.self).origin}/browse/${issue.key}`,
     };
   } catch {
@@ -116,7 +142,7 @@ export async function publishStarterDelivery(
         .map((pairing) => ({
           pairingId: pairing.pairingId,
           peerDeliveryUrl: pairing.peerDeliveryUrl,
-          sourceEpicId: pairing.sourceEpicId,
+          sourceEpicKey: pairing.sourceEpicKey,
           status: pairing.status,
         })),
     },
@@ -129,7 +155,7 @@ export async function publishStarterDelivery(
   const jiraResponse = await api
     .asApp()
     .requestJira(
-      route`/rest/api/3/issue/${publication.value.sourceEpicId}?fields=id,key,summary,created,updated`,
+      route`/rest/api/3/issue/${publication.value.sourceEpicKey}?fields=id,key,summary,created,updated`,
     );
   if (!jiraResponse.ok) {
     return response(502, { error: "source-epic-read-failed" });
@@ -154,7 +180,10 @@ export async function publishStarterDelivery(
     method: "POST",
   });
   if (!peerResponse.ok) {
-    return response(502, { error: "peer-starter-delivery-failed" });
+    return response(502, {
+      detail: peerFailureDetail(peerResponse.status, await peerResponse.text()),
+      error: "peer-starter-delivery-failed",
+    });
   }
 
   const deliveryResponse: unknown = await peerResponse.json();

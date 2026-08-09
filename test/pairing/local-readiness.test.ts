@@ -24,7 +24,7 @@ describe("determineLocalReadiness", () => {
             peerDeliveryUrl:
               "https://supplier.example/forge/webtrigger/deliver",
             role: "source",
-            sourceEpicId: "MFG-17",
+            sourceEpicKey: "MFG-17",
             status: "active",
           },
         ],
@@ -50,10 +50,10 @@ describe("determineLocalReadiness", () => {
         pairings: [
           {
             connectionId: "connection-001",
-            pairedEpicId: "SUP-42",
+            pairedEpicKey: "SUP-42",
             pairingId: "demo-pairing-001",
             role: "destination",
-            sourceEpicId: "MFG-17",
+            sourceEpicKey: "MFG-17",
             status: "active",
           },
         ],

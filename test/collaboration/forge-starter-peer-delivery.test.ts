@@ -25,10 +25,10 @@ describe("receiveStarterDelivery", () => {
           pairings: [
             {
               connectionId: "connection-001",
-              pairedEpicId: "SUP-42",
+              pairedEpicKey: "SUP-42",
               pairingId: "pairing-001",
               role: "destination",
-              sourceEpicId: "MFG-17",
+              sourceEpicKey: "MFG-17",
               status: "active",
             },
           ],
@@ -66,7 +66,7 @@ describe("receiveStarterDelivery", () => {
         outcome: "accepted",
         updateSequence: Date.parse("2026-08-07T19:00:00.000Z"),
       }),
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": ["application/json"] },
       statusCode: 200,
     });
 
@@ -101,11 +101,52 @@ describe("receiveStarterDelivery", () => {
     expect(kvs.set).not.toHaveBeenCalled();
   });
 
+  it("returns a stable error when graph rejects the document", async () => {
+    vi.mocked(graph.setObjects).mockResolvedValue({
+      error: "document validation failed",
+      results: {
+        rejected: [
+          {
+            errors: [
+              { key: "atlassian:document.type.category", message: "invalid" },
+            ],
+            key: {
+              entityId: { id: "pairing-001:10017" },
+              entityType: "atlassian:document",
+            },
+          },
+        ],
+      },
+      success: false,
+    });
+
+    await expect(
+      receiveStarterDelivery({
+        body: JSON.stringify({
+          correlationId: "corr-001",
+          pairingId: "pairing-001",
+          protocolVersion: "v1",
+          sourceEpic: {
+            id: "10017",
+            key: "MFG-17",
+            summary: "Approve material source",
+            updatedAt: "2026-08-07T19:00:00.000Z",
+            url: "https://manufacturer.example/browse/MFG-17",
+          },
+        }),
+      }),
+    ).resolves.toEqual({
+      body: JSON.stringify({ error: "graph-document-upsert-failed" }),
+      headers: { "Content-Type": ["application/json"] },
+      statusCode: 502,
+    });
+  });
+
   it("rejects malformed terminal input before reading or writing local state", async () => {
     await expect(receiveStarterDelivery({ body: "not JSON" })).resolves.toEqual(
       {
         body: JSON.stringify({ error: "invalid-starter-delivery" }),
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": ["application/json"] },
         statusCode: 400,
       },
     );
@@ -126,10 +167,10 @@ describe("receiveStarterDelivery", () => {
           pairings: [
             {
               connectionId: "connection-001",
-              pairedEpicId: "SUP-42",
+              pairedEpicKey: "SUP-42",
               pairingId: "pairing-001",
               role: "destination",
-              sourceEpicId: "MFG-99",
+              sourceEpicKey: "MFG-99",
               status: "active",
             },
           ],
@@ -156,7 +197,7 @@ describe("receiveStarterDelivery", () => {
       }),
     ).resolves.toEqual({
       body: JSON.stringify({ error: "destination-pairing-unavailable" }),
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": ["application/json"] },
       statusCode: 409,
     });
 

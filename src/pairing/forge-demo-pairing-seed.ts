@@ -12,7 +12,7 @@ interface WebTriggerRequest {
 
 interface WebTriggerResponse {
   readonly body: string;
-  readonly headers: { readonly "Content-Type": string };
+  readonly headers: { readonly "Content-Type": readonly string[] };
   readonly statusCode: number;
 }
 
@@ -22,7 +22,7 @@ function response(
 ): WebTriggerResponse {
   return {
     body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": ["application/json"] },
     statusCode,
   };
 }

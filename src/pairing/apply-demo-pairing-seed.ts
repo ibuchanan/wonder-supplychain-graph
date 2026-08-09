@@ -4,16 +4,16 @@ export interface DemoSourcePairing {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
   readonly role: "source";
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
   readonly status: "active";
 }
 
 export interface DemoDestinationPairing {
   readonly connectionId: string;
-  readonly pairedEpicId: string;
+  readonly pairedEpicKey: string;
   readonly pairingId: string;
   readonly role: "destination";
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
   readonly status: "active";
 }
 
@@ -28,14 +28,14 @@ export interface SourceDemoPairingSeed {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
   readonly role: "source";
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
 }
 
 export interface DestinationDemoPairingSeed {
-  readonly pairedEpicId: string;
+  readonly pairedEpicKey: string;
   readonly pairingId: string;
   readonly role: "destination";
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
 }
 
 export type DemoPairingSeed =
@@ -64,15 +64,15 @@ export function applyDemoPairingSeed(
           pairingId: seed.pairingId,
           peerDeliveryUrl: seed.peerDeliveryUrl,
           role: seed.role,
-          sourceEpicId: seed.sourceEpicId,
+          sourceEpicKey: seed.sourceEpicKey,
           status: "active",
         }
       : {
           connectionId: state.activeConnectionId as string,
-          pairedEpicId: seed.pairedEpicId,
+          pairedEpicKey: seed.pairedEpicKey,
           pairingId: seed.pairingId,
           role: seed.role,
-          sourceEpicId: seed.sourceEpicId,
+          sourceEpicKey: seed.sourceEpicKey,
           status: "active",
         };
   const existingPairingIndex = state.pairings.findIndex(

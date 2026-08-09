@@ -7,9 +7,9 @@ describe("readStarterDeliveryHarnessConfig", () => {
     const result = readStarterDeliveryHarnessConfig({
       SCG_DESTINATION_DELIVERY_URL: "destination-delivery",
       SCG_DESTINATION_SEED_URL: "destination-seed",
-      SCG_PAIRED_EPIC_ID: "SUP-42",
+      SCG_PAIRED_EPIC_KEY: "SUP-42",
       SCG_PAIRING_ID: "pairing-001",
-      SCG_SOURCE_EPIC_ID: "MFG-17",
+      SCG_SOURCE_EPIC_KEY: "MFG-17",
       SCG_SOURCE_PUBLICATION_URL: "source-publication",
       SCG_SOURCE_SEED_URL: "source-seed",
     });
@@ -18,9 +18,9 @@ describe("readStarterDeliveryHarnessConfig", () => {
       value: {
         destinationDeliveryUrl: "destination-delivery",
         destinationSeedUrl: "destination-seed",
-        pairedEpicId: "SUP-42",
+        pairedEpicKey: "SUP-42",
         pairingId: "pairing-001",
-        sourceEpicId: "MFG-17",
+        sourceEpicKey: "MFG-17",
         sourcePublicationUrl: "source-publication",
         sourceSeedUrl: "source-seed",
       },
@@ -36,9 +36,9 @@ describe("readStarterDeliveryHarnessConfig", () => {
         names: [
           "SCG_DESTINATION_DELIVERY_URL",
           "SCG_DESTINATION_SEED_URL",
-          "SCG_PAIRED_EPIC_ID",
+          "SCG_PAIRED_EPIC_KEY",
           "SCG_PAIRING_ID",
-          "SCG_SOURCE_EPIC_ID",
+          "SCG_SOURCE_EPIC_KEY",
           "SCG_SOURCE_PUBLICATION_URL",
           "SCG_SOURCE_SEED_URL",
         ],

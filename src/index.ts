@@ -23,11 +23,7 @@ import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-commen
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
 import { receiveStarterDelivery as receiveStarterDeliveryFromPeer } from "./collaboration/forge-starter-peer-delivery";
 import { publishStarterDelivery as publishStarterDeliveryToPeer } from "./collaboration/forge-source-starter-publication";
-import {
-  type OnConfigChangeRequest,
-  type OnConfigChangeResponse,
-  onConfigChange,
-} from "./cx-management";
+import { type OnConfigChangeResponse, onConfigChange } from "./cx-management";
 import {
   seedDestinationPairing,
   seedSourcePairing,
@@ -37,6 +33,7 @@ import {
   publishPackageToGraph as publishDemoPackageToGraph,
 } from "./projection/forge-demo-projection-action";
 import { kvsPackageConnectionStore } from "./projection/kvs-connection-store";
+import { readConnectionChangeRequest } from "./projection/read-connection-change-request";
 import {
   type PublishWorkPackageActionInput,
   publishWorkPackage as publishAutomationWorkPackage,
@@ -123,21 +120,36 @@ export async function onUpgraded(event: ForgeLifecycleEvent): Promise<void> {
 }
 
 export async function onPackageConnectionChange(
-  request: OnConfigChangeRequest,
+  event: unknown,
 ): Promise<OnConfigChangeResponse> {
+  const request = readConnectionChangeRequest(event);
+  if (request.isErr()) {
+    logger.info(
+      {
+        event: "scg.graph.connection.rejected",
+        reason: request.error.code,
+      },
+      "Supplychain Graph connection change rejected",
+    );
+    return {
+      message: "Invalid graph connector connection-change request.",
+      success: false,
+    };
+  }
+
   logGraphConnectionChanged(logger, {
-    action: request.action,
-    connectionId: request.connectionId,
-    connectionName: request.name,
+    action: request.value.action,
+    connectionId: request.value.connectionId,
+    connectionName: request.value.name,
   });
   const response = await onConfigChange(
     { graph, store: kvsPackageConnectionStore },
-    request,
+    request.value,
   );
   logGraphConnectionResult(logger, {
-    action: request.action,
-    connectionId: request.connectionId,
-    connectionName: request.name,
+    action: request.value.action,
+    connectionId: request.value.connectionId,
+    connectionName: request.value.name,
     ...response,
   });
 

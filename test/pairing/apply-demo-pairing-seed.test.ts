@@ -26,7 +26,7 @@ describe("applyDemoPairingSeed", () => {
         pairingId: "demo-pairing-001",
         peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
         role: "source",
-        sourceEpicId: "MFG-17",
+        sourceEpicKey: "MFG-17",
       }),
     );
 
@@ -36,7 +36,7 @@ describe("applyDemoPairingSeed", () => {
           pairingId: "demo-pairing-001",
           peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
           role: "source",
-          sourceEpicId: "MFG-17",
+          sourceEpicKey: "MFG-17",
           status: "active",
         },
       ],
@@ -53,7 +53,7 @@ describe("applyDemoPairingSeed", () => {
               peerDeliveryUrl:
                 "https://old-supplier.example/forge/webtrigger/deliver",
               role: "source",
-              sourceEpicId: "MFG-16",
+              sourceEpicKey: "MFG-16",
               status: "active",
             },
           ],
@@ -62,7 +62,7 @@ describe("applyDemoPairingSeed", () => {
           pairingId: "demo-pairing-001",
           peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
           role: "source",
-          sourceEpicId: "MFG-17",
+          sourceEpicKey: "MFG-17",
         },
       ),
     );
@@ -72,7 +72,7 @@ describe("applyDemoPairingSeed", () => {
         pairingId: "demo-pairing-001",
         peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
         role: "source",
-        sourceEpicId: "MFG-17",
+        sourceEpicKey: "MFG-17",
         status: "active",
       },
     ]);
@@ -82,10 +82,10 @@ describe("applyDemoPairingSeed", () => {
     const result = applyDemoPairingSeed(
       { pairings: [] },
       {
-        pairedEpicId: "SUP-42",
+        pairedEpicKey: "SUP-42",
         pairingId: "demo-pairing-001",
         role: "destination",
-        sourceEpicId: "MFG-17",
+        sourceEpicKey: "MFG-17",
       },
     );
 
@@ -105,10 +105,10 @@ describe("applyDemoPairingSeed", () => {
       applyDemoPairingSeed(
         { activeConnectionId: "connection-001", pairings: [] },
         {
-          pairedEpicId: "SUP-42",
+          pairedEpicKey: "SUP-42",
           pairingId: "demo-pairing-001",
           role: "destination",
-          sourceEpicId: "MFG-17",
+          sourceEpicKey: "MFG-17",
         },
       ),
     );
@@ -116,10 +116,10 @@ describe("applyDemoPairingSeed", () => {
     expect(result.nextState.pairings).toEqual([
       {
         connectionId: "connection-001",
-        pairedEpicId: "SUP-42",
+        pairedEpicKey: "SUP-42",
         pairingId: "demo-pairing-001",
         role: "destination",
-        sourceEpicId: "MFG-17",
+        sourceEpicKey: "MFG-17",
         status: "active",
       },
     ]);

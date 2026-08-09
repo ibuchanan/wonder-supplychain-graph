@@ -5,7 +5,7 @@ import type { ProtocolVersion } from "./protocol";
 export interface SourcePairing {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
   readonly status: "active" | "inactive";
 }
 
@@ -21,7 +21,7 @@ export interface SourcePublicationRequest {
 export interface StarterPublication {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
 }
 
 export interface SourcePairingUnavailableError {
@@ -49,13 +49,13 @@ export function prepareStarterPublication(
   return ok({
     pairingId: pairing.pairingId,
     peerDeliveryUrl: pairing.peerDeliveryUrl,
-    sourceEpicId: pairing.sourceEpicId,
+    sourceEpicKey: pairing.sourceEpicKey,
   });
 }
 
 export interface DestinationPairing {
   readonly pairingId: string;
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
   readonly status: "active" | "inactive";
 }
 
@@ -138,7 +138,7 @@ export function acceptStarterDelivery(
   const pairing = state.pairings.find(
     (candidate) =>
       candidate.pairingId === request.pairingId &&
-      candidate.sourceEpicId === request.sourceEpic.key &&
+      candidate.sourceEpicKey === request.sourceEpic.key &&
       candidate.status === "active",
   );
 

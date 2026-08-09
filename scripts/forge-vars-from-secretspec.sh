@@ -6,8 +6,8 @@ keys=$(sed -nE 's/^([A-Z_][A-Z0-9_]*)[[:space:]]*=.*/\1/p' secretspec.toml)
 secretspec run -- bash -c '
 for key; do
   case "$key" in
-  FORGE*)
-    # Skip vars that configure Forge commands.
+  FORGE*|SCG_*)
+    # Skip Forge command configuration and local-only harness inputs.
     :
     ;;
   *SECRET*)

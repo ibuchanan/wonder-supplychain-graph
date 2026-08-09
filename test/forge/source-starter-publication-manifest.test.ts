@@ -24,10 +24,11 @@ describe("source starter publication manifest", () => {
     expect(manifest.modules.webtrigger).toContainEqual({
       function: "publishStarterDelivery",
       key: "scg-publish-starter",
+      urlFormat: "v2",
     });
-    expect(manifest.permissions?.external?.fetch?.backend).toContain(
-      "*.webtrigger.atlassian.app",
-    );
+    expect(manifest.permissions?.external?.fetch?.backend).toContainEqual({
+      address: "*.webtrigger.atlassian.app",
+    });
     expect(manifest.permissions?.scopes).toContain("read:jira-work");
   });
 });

@@ -25,7 +25,7 @@ const activeSourceState = (): SourcePublicationState => ({
       pairingId: "pairing-001",
       peerDeliveryUrl:
         "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
-      sourceEpicId: "MFG-17",
+      sourceEpicKey: "MFG-17",
       status: "active",
     },
   ],
@@ -43,7 +43,7 @@ describe("prepareStarterPublication", () => {
       pairingId: "pairing-001",
       peerDeliveryUrl:
         "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
-      sourceEpicId: "MFG-17",
+      sourceEpicKey: "MFG-17",
     });
   });
 
@@ -55,7 +55,7 @@ describe("prepareStarterPublication", () => {
             pairingId: "pairing-001",
             peerDeliveryUrl:
               "https://tenant-id.webtrigger.atlassian.app/api/source-delivery",
-            sourceEpicId: "MFG-17",
+            sourceEpicKey: "MFG-17",
             status: "inactive",
           },
         ],
@@ -79,7 +79,7 @@ const readyDestinationState = (): DestinationDeliveryState => ({
   pairings: [
     {
       pairingId: "pairing-001",
-      sourceEpicId: "MFG-17",
+      sourceEpicKey: "MFG-17",
       status: "active",
     },
   ],

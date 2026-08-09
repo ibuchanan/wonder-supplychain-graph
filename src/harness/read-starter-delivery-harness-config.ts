@@ -5,9 +5,9 @@ import type { StarterDeliveryHarnessConfig } from "./run-starter-delivery-harnes
 const requiredEnvironmentVariables = [
   "SCG_DESTINATION_DELIVERY_URL",
   "SCG_DESTINATION_SEED_URL",
-  "SCG_PAIRED_EPIC_ID",
+  "SCG_PAIRED_EPIC_KEY",
   "SCG_PAIRING_ID",
-  "SCG_SOURCE_EPIC_ID",
+  "SCG_SOURCE_EPIC_KEY",
   "SCG_SOURCE_PUBLICATION_URL",
   "SCG_SOURCE_SEED_URL",
 ] as const;
@@ -34,9 +34,9 @@ export function readStarterDeliveryHarnessConfig(
   return ok({
     destinationDeliveryUrl: value("SCG_DESTINATION_DELIVERY_URL"),
     destinationSeedUrl: value("SCG_DESTINATION_SEED_URL"),
-    pairedEpicId: value("SCG_PAIRED_EPIC_ID"),
+    pairedEpicKey: value("SCG_PAIRED_EPIC_KEY"),
     pairingId: value("SCG_PAIRING_ID"),
-    sourceEpicId: value("SCG_SOURCE_EPIC_ID"),
+    sourceEpicKey: value("SCG_SOURCE_EPIC_KEY"),
     sourcePublicationUrl: value("SCG_SOURCE_PUBLICATION_URL"),
     sourceSeedUrl: value("SCG_SOURCE_SEED_URL"),
   });

@@ -3,9 +3,9 @@ import { err, ok, type Result } from "@forge-ahead/errors";
 export interface StarterDeliveryHarnessConfig {
   readonly destinationDeliveryUrl: string;
   readonly destinationSeedUrl: string;
-  readonly pairedEpicId: string;
+  readonly pairedEpicKey: string;
   readonly pairingId: string;
-  readonly sourceEpicId: string;
+  readonly sourceEpicKey: string;
   readonly sourcePublicationUrl: string;
   readonly sourceSeedUrl: string;
 }
@@ -26,6 +26,7 @@ export interface StarterDeliveryHarnessHttp {
   ): Promise<{
     readonly json: () => Promise<unknown>;
     readonly status: number;
+    readonly text: () => Promise<string>;
   }>;
 }
 
@@ -35,6 +36,7 @@ export type StarterDeliveryHarnessError =
     }
   | {
       readonly code: "request-failed";
+      readonly detail?: string;
       readonly status: number;
       readonly step: "destination-seed" | "source-publication" | "source-seed";
     };
@@ -59,6 +61,45 @@ function isDeliveryEvidence(value: unknown): value is StarterDeliveryEvidence {
   );
 }
 
+function detailFromBody(body: string): string | undefined {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (typeof parsed !== "object" || parsed === null) {
+      return undefined;
+    }
+
+    const value = parsed as {
+      detail?: unknown;
+      error?: unknown;
+      message?: unknown;
+    };
+    const detail =
+      typeof value.detail === "string"
+        ? value.detail
+        : typeof value.error === "string"
+          ? value.error
+          : typeof value.message === "string"
+            ? value.message
+            : undefined;
+    return detail?.slice(0, 500);
+  } catch {
+    return undefined;
+  }
+}
+
+async function requestFailure(
+  response: Awaited<ReturnType<StarterDeliveryHarnessHttp["post"]>>,
+  step: "destination-seed" | "source-publication" | "source-seed",
+): Promise<StarterDeliveryHarnessError> {
+  const detail = detailFromBody(await response.text());
+  return {
+    code: "request-failed",
+    ...(detail ? { detail } : {}),
+    status: response.status,
+    step,
+  };
+}
+
 /**
  * Runs the controlled starter-delivery demonstration without reading source
  * content or exposing peer credentials. The Forge runtimes perform the direct
@@ -69,42 +110,30 @@ export async function runStarterDeliveryHarness(
   http: StarterDeliveryHarnessHttp,
 ): Promise<Result<StarterDeliveryEvidence, StarterDeliveryHarnessError>> {
   const destinationSeed = await http.post(config.destinationSeedUrl, {
-    pairedEpicId: config.pairedEpicId,
+    pairedEpicKey: config.pairedEpicKey,
     pairingId: config.pairingId,
     role: "destination",
-    sourceEpicId: config.sourceEpicId,
+    sourceEpicKey: config.sourceEpicKey,
   });
   if (!isSuccessful(destinationSeed.status)) {
-    return err({
-      code: "request-failed",
-      status: destinationSeed.status,
-      step: "destination-seed",
-    });
+    return err(await requestFailure(destinationSeed, "destination-seed"));
   }
 
   const sourceSeed = await http.post(config.sourceSeedUrl, {
     pairingId: config.pairingId,
     peerDeliveryUrl: config.destinationDeliveryUrl,
     role: "source",
-    sourceEpicId: config.sourceEpicId,
+    sourceEpicKey: config.sourceEpicKey,
   });
   if (!isSuccessful(sourceSeed.status)) {
-    return err({
-      code: "request-failed",
-      status: sourceSeed.status,
-      step: "source-seed",
-    });
+    return err(await requestFailure(sourceSeed, "source-seed"));
   }
 
   const sourcePublication = await http.post(config.sourcePublicationUrl, {
     pairingId: config.pairingId,
   });
   if (!isSuccessful(sourcePublication.status)) {
-    return err({
-      code: "request-failed",
-      status: sourcePublication.status,
-      step: "source-publication",
-    });
+    return err(await requestFailure(sourcePublication, "source-publication"));
   }
 
   const evidence = await sourcePublication.json();
