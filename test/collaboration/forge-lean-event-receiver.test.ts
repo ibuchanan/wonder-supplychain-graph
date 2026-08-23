@@ -79,6 +79,32 @@ describe("receiveLeanEvent", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("rejects an inactive destination pairing without calling Automation", async () => {
+    vi.mocked(kvs.get).mockResolvedValue({
+      pairings: [
+        {
+          automationWebhookUrl: "https://automation.example/webhook",
+          connectionId: "connection-001",
+          pairedEpicKey: "GREEN-42",
+          pairingId: "pairing-001",
+          role: "destination",
+          sourceEpicKey: "BLUE-101",
+          status: "inactive",
+        },
+      ],
+    } as never);
+
+    await expect(
+      receiveLeanEvent({ body: JSON.stringify(validEvent) }),
+    ).resolves.toEqual({
+      body: JSON.stringify({ error: "destination-pairing-unavailable" }),
+      headers: { "Content-Type": ["application/json"] },
+      statusCode: 409,
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("returns a gateway error when Automation rejects the accepted event", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: false, status: 500 } as never);
 
