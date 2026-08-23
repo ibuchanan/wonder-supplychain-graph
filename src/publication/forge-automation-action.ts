@@ -1,5 +1,8 @@
+import { fetch } from "@forge/api";
 import { kvs } from "@forge/kvs";
 
+import type { LeanEvent } from "../collaboration/lean-event-contract";
+import { kvsDemoPairingStore } from "../pairing/kvs-demo-pairing-store";
 import { createActionExecutionMetadata } from "./action-execution-metadata";
 import type { PublicationState } from "./apply-command";
 import {
@@ -31,7 +34,32 @@ function demoPublicationState(
   };
 }
 
+async function emitLeanEvent(
+  pairing: { readonly peerEventUrl: string },
+  event: LeanEvent,
+): Promise<void> {
+  const response = await fetch(pairing.peerEventUrl, {
+    body: JSON.stringify(event),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  if (!response.ok) {
+    throw new Error("Unable to emit lean event: peer rejected delivery");
+  }
+}
+
 const publishDemoWorkPackage = createDemoPublishWorkPackageAction({
+  emitLeanEvent,
+  resolveSourcePairing: async (payload) => {
+    const { pairings } = await kvsDemoPairingStore.read();
+    const pairing = pairings.find(
+      (candidate) =>
+        candidate.role === "source" &&
+        candidate.status === "active" &&
+        candidate.sourceEpicKey === payload.sourceEpicId,
+    );
+    return pairing?.role === "source" ? pairing : undefined;
+  },
   initialState: demoPublicationState,
   store: {
     load: async (sourceEpicId) =>

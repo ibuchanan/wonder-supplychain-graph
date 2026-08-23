@@ -1,3 +1,5 @@
+import type { LeanEvent } from "../collaboration/lean-event-contract";
+import type { DemoSourcePairing } from "../pairing/apply-demo-pairing-seed";
 import {
   applyPublicationCommand,
   type PublicationCommand,
@@ -21,10 +23,25 @@ export interface PublicationStateStore {
   ) => Promise<void>;
 }
 
+export interface LeanEventEmitter {
+  readonly emitLeanEvent: (
+    pairing: DemoSourcePairing,
+    event: LeanEvent,
+  ) => Promise<void>;
+}
+
+export interface SourcePairingResolver {
+  readonly resolveSourcePairing: (
+    payload: PublishWorkPackageActionPayload,
+  ) => Promise<DemoSourcePairing | undefined>;
+}
+
 export interface DemoPublishWorkPackageActionDependencies {
+  readonly emitLeanEvent?: LeanEventEmitter["emitLeanEvent"];
   readonly initialState?: (
     payload: PublishWorkPackageActionPayload,
   ) => PublicationState;
+  readonly resolveSourcePairing?: SourcePairingResolver["resolveSourcePairing"];
   readonly store: PublicationStateStore;
 }
 
@@ -66,8 +83,30 @@ function toPublicationCommand(
   };
 }
 
+function toLeanEvent(
+  payload: PublishWorkPackageActionPayload,
+  pairing: DemoSourcePairing,
+): LeanEvent {
+  return {
+    data: {
+      issueKey: payload.sourceEpicId,
+      pairingId: pairing.pairingId,
+      updatedFields: [],
+    },
+    datacontenttype: "application/json",
+    id: crypto.randomUUID(),
+    source: pairing.sourceSiteAri,
+    specversion: "1.0",
+    subject: `issue/${payload.sourceEpicId}`,
+    time: new Date().toISOString(),
+    type: "scg:work-package:queued",
+  };
+}
+
 export function createDemoPublishWorkPackageAction({
+  emitLeanEvent,
   initialState,
+  resolveSourcePairing,
   store,
 }: DemoPublishWorkPackageActionDependencies) {
   return async function publishWorkPackage(
@@ -102,6 +141,17 @@ export function createDemoPublishWorkPackageAction({
 
     if (outcome.value.decision.idempotency === "applied") {
       await store.save(payload.sourceEpicId, outcome.value.nextState);
+    }
+
+    if (emitLeanEvent && resolveSourcePairing) {
+      const sourcePairing = await resolveSourcePairing(payload);
+      if (!sourcePairing) {
+        throw new Error(
+          "Unable to emit lean event: source pairing unavailable",
+        );
+      }
+      // ponytail: at-most-once delivery; add an outbox with retry and receipts if reliability matters.
+      await emitLeanEvent(sourcePairing, toLeanEvent(payload, sourcePairing));
     }
 
     return {

@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createDemoPublishWorkPackageAction,
   type PublicationStateStore,
 } from "../../src/publication/automation-action";
 import type { PublicationState } from "../../src/publication/apply-command";
+import type { DemoSourcePairing } from "../../src/pairing/apply-demo-pairing-seed";
 
 function activePublicationState(): PublicationState {
   return {
@@ -133,5 +134,57 @@ describe("createDemoPublishWorkPackageAction", () => {
     });
 
     expect(writes).toEqual([]);
+  });
+
+  it("emits one identifier-only lean event after queueing through its active source pairing", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-22T14:30:00.000Z"));
+    vi.stubGlobal("crypto", { randomUUID: () => "event-001" });
+    const emitLeanEvent = vi.fn().mockResolvedValue(undefined);
+    const sourcePairing: DemoSourcePairing = {
+      pairingId: "pairing-001",
+      peerDeliveryUrl: "https://green.example/legacy-delivery",
+      peerEventUrl: "https://green.example/forge/webtrigger/receive-lean-event",
+      role: "source",
+      sourceEpicKey: "MFG-17",
+      sourceSiteAri: "ari:cloud:jira::site/blue-site",
+      sourceSiteUrl: "https://blue.example",
+      status: "active",
+    };
+    const publishWorkPackage = createDemoPublishWorkPackageAction({
+      emitLeanEvent,
+      resolveSourcePairing: async () => sourcePairing,
+      store: {
+        load: async () => activePublicationState(),
+        save: async () => undefined,
+      },
+    });
+
+    await publishWorkPackage({
+      correlationId: "corr-publish-005",
+      idempotencyKey: "automation-run-005",
+      publisherId: "account:automation-001",
+      sourceEpicId: "MFG-17",
+    });
+
+    expect(emitLeanEvent).toHaveBeenCalledExactlyOnceWith(sourcePairing, {
+      data: {
+        issueKey: "MFG-17",
+        pairingId: "pairing-001",
+        updatedFields: [],
+      },
+      datacontenttype: "application/json",
+      id: "event-001",
+      source: "ari:cloud:jira::site/blue-site",
+      specversion: "1.0",
+      subject: "issue/MFG-17",
+      time: "2026-08-22T14:30:00.000Z",
+      type: "scg:work-package:queued",
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 });
