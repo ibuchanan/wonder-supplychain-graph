@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Creates or retrieves the four starter-delivery webtrigger URLs and prints the
-# existing local SecretSpec assignments as a ready-to-paste dotenv block.
+# Creates or retrieves the development webtrigger URLs and prints the local
+# SecretSpec assignments as a ready-to-paste dotenv block.
 
 set -euo pipefail
 
@@ -48,6 +48,7 @@ require_value SCG_DESTINATION_SITE
 
 destination_seed_url=$(webtrigger_url scg-seed-destination "$SCG_DESTINATION_SITE")
 destination_delivery_url=$(webtrigger_url scg-receive-starter "$SCG_DESTINATION_SITE")
+destination_event_url=$(webtrigger_url scg-receive-lean-event "$SCG_DESTINATION_SITE")
 source_seed_url=$(webtrigger_url scg-seed-source "$SCG_SOURCE_SITE")
 source_publication_url=$(webtrigger_url scg-publish-starter "$SCG_SOURCE_SITE")
 
@@ -56,6 +57,7 @@ cat <<EOF
 # Webtrigger URLs are development capabilities: do not commit or share them.
 SCG_DESTINATION_SEED_URL=$destination_seed_url
 SCG_DESTINATION_DELIVERY_URL=$destination_delivery_url
+SCG_DESTINATION_EVENT_URL=$destination_event_url
 SCG_SOURCE_SEED_URL=$source_seed_url
 SCG_SOURCE_PUBLICATION_URL=$source_publication_url
 EOF

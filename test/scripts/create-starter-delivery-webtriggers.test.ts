@@ -16,6 +16,9 @@ describe("create-starter-delivery-webtriggers", () => {
       'destination_delivery_url=$(webtrigger_url scg-receive-starter "$SCG_DESTINATION_SITE")',
     );
     expect(script).toContain(
+      'destination_event_url=$(webtrigger_url scg-receive-lean-event "$SCG_DESTINATION_SITE")',
+    );
+    expect(script).toContain(
       'source_seed_url=$(webtrigger_url scg-seed-source "$SCG_SOURCE_SITE")',
     );
     expect(script).toContain(
@@ -24,6 +27,9 @@ describe("create-starter-delivery-webtriggers", () => {
     expect(script).toContain("SCG_DESTINATION_SEED_URL=$destination_seed_url");
     expect(script).toContain(
       "SCG_DESTINATION_DELIVERY_URL=$destination_delivery_url",
+    );
+    expect(script).toContain(
+      "SCG_DESTINATION_EVENT_URL=$destination_event_url",
     );
     expect(script).toContain("SCG_SOURCE_SEED_URL=$source_seed_url");
     expect(script).toContain(

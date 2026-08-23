@@ -10,6 +10,7 @@
     "clean": "rm -rf ./node_modules ./dist",
     "demo:starter-delivery": "secretspec run --reason \"npm run demo:starter-delivery\" -- sh -c 'npm run build && node scripts/run-starter-delivery-harness.cjs'",
     "demo:starter-delivery:webtriggers": "secretspec run --reason \"npm run demo:starter-delivery:webtriggers\" -- bash scripts/create-starter-delivery-webtriggers.sh",
+    "demo:lean-event": "secretspec run --reason \"npm run demo:lean-event\" -- sh -c 'npm run build && node scripts/run-lean-event-demo.cjs'",
     "dev": "tsc -p tsconfig.json --watch",
     "forge:deploy": "secretspec run --reason \"npm run forge:deploy\" -- sh -c 'forge deploy --environment \"$FORGE_ENVIRONMENT\"'",
     "forge:install": "secretspec run --reason \"npm run forge:install\" -- sh -c 'forge install --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
