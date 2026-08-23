@@ -25,8 +25,10 @@ describe("applyDemoPairingSeed", () => {
       applyDemoPairingSeed(state, {
         pairingId: "demo-pairing-001",
         peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
+        peerEventUrl: "https://supplier.example/forge/webtrigger/receive-event",
         role: "source",
         sourceEpicKey: "MFG-17",
+        sourceSiteAri: "ari:cloud:jira::site/source-001",
         sourceSiteUrl: "https://source-example.atlassian.net/",
       }),
     );
@@ -36,13 +38,33 @@ describe("applyDemoPairingSeed", () => {
         {
           pairingId: "demo-pairing-001",
           peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
+          peerEventUrl:
+            "https://supplier.example/forge/webtrigger/receive-event",
           role: "source",
           sourceEpicKey: "MFG-17",
+          sourceSiteAri: "ari:cloud:jira::site/source-001",
           sourceSiteUrl: "https://source-example.atlassian.net",
           status: "active",
         },
       ],
     });
+  });
+
+  it("rejects a source seed with an invalid peer event URL", () => {
+    const result = applyDemoPairingSeed(
+      { pairings: [] },
+      {
+        pairingId: "demo-pairing-001",
+        peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
+        peerEventUrl: "not-a-url",
+        role: "source",
+        sourceEpicKey: "MFG-17",
+        sourceSiteAri: "ari:cloud:jira::site/source-001",
+        sourceSiteUrl: "https://source-example.atlassian.net",
+      },
+    );
+
+    expect(result).toMatchObject({ error: { code: "invalid-peer-event-url" } });
   });
 
   it("idempotently replaces the matching source Pairing", () => {
@@ -54,8 +76,11 @@ describe("applyDemoPairingSeed", () => {
               pairingId: "demo-pairing-001",
               peerDeliveryUrl:
                 "https://old-supplier.example/forge/webtrigger/deliver",
+              peerEventUrl:
+                "https://old-supplier.example/forge/webtrigger/receive-event",
               role: "source",
               sourceEpicKey: "MFG-16",
+              sourceSiteAri: "ari:cloud:jira::site/source-001",
               sourceSiteUrl: "https://old-source-example.atlassian.net",
               status: "active",
             },
@@ -64,8 +89,11 @@ describe("applyDemoPairingSeed", () => {
         {
           pairingId: "demo-pairing-001",
           peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
+          peerEventUrl:
+            "https://supplier.example/forge/webtrigger/receive-event",
           role: "source",
           sourceEpicKey: "MFG-17",
+          sourceSiteAri: "ari:cloud:jira::site/source-001",
           sourceSiteUrl: "https://source-example.atlassian.net",
         },
       ),
@@ -75,8 +103,10 @@ describe("applyDemoPairingSeed", () => {
       {
         pairingId: "demo-pairing-001",
         peerDeliveryUrl: "https://supplier.example/forge/webtrigger/deliver",
+        peerEventUrl: "https://supplier.example/forge/webtrigger/receive-event",
         role: "source",
         sourceEpicKey: "MFG-17",
+        sourceSiteAri: "ari:cloud:jira::site/source-001",
         sourceSiteUrl: "https://source-example.atlassian.net",
         status: "active",
       },
@@ -87,6 +117,7 @@ describe("applyDemoPairingSeed", () => {
     const result = applyDemoPairingSeed(
       { pairings: [] },
       {
+        automationWebhookUrl: "https://automation.example/webhook/green-001",
         pairedEpicKey: "SUP-42",
         pairingId: "demo-pairing-001",
         role: "destination",
@@ -105,11 +136,29 @@ describe("applyDemoPairingSeed", () => {
     });
   });
 
+  it("rejects a destination seed with an invalid Automation webhook URL", () => {
+    const result = applyDemoPairingSeed(
+      { activeConnectionId: "connection-001", pairings: [] },
+      {
+        automationWebhookUrl: "not-a-url",
+        pairedEpicKey: "SUP-42",
+        pairingId: "demo-pairing-001",
+        role: "destination",
+        sourceEpicKey: "MFG-17",
+      },
+    );
+
+    expect(result).toMatchObject({
+      error: { code: "invalid-automation-webhook-url" },
+    });
+  });
+
   it("binds the active destination Pairing to the active graph connection", () => {
     const result = expectOk(
       applyDemoPairingSeed(
         { activeConnectionId: "connection-001", pairings: [] },
         {
+          automationWebhookUrl: "https://automation.example/webhook/green-001",
           pairedEpicKey: "SUP-42",
           pairingId: "demo-pairing-001",
           role: "destination",
@@ -120,6 +169,7 @@ describe("applyDemoPairingSeed", () => {
 
     expect(result.nextState.pairings).toEqual([
       {
+        automationWebhookUrl: "https://automation.example/webhook/green-001",
         connectionId: "connection-001",
         pairedEpicKey: "SUP-42",
         pairingId: "demo-pairing-001",

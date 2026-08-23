@@ -6,13 +6,16 @@ import {
 } from "../../src/harness/run-starter-delivery-harness";
 
 const config: StarterDeliveryHarnessConfig = {
+  destinationAutomationWebhookUrl: "destination-automation-webhook",
   destinationDeliveryUrl: "destination-delivery",
+  destinationEventUrl: "destination-event",
   destinationSeedUrl: "destination-seed",
   destinationSite: "destination-example.atlassian.net",
   pairedEpicKey: "SUP-42",
   pairingId: "pairing-001",
   sourceEpicKey: "MFG-17",
   sourcePublicationUrl: "source-publication",
+  sourceSiteAri: "ari:cloud:jira::site/source-001",
   sourceSiteUrl: "https://source-example.atlassian.net",
   sourceSeedUrl: "source-seed",
 };
@@ -60,6 +63,7 @@ describe("runStarterDeliveryHarness", () => {
       updateSequence: 1_786_129_200_000,
     });
     expect(post).toHaveBeenNthCalledWith(1, "destination-seed", {
+      automationWebhookUrl: "destination-automation-webhook",
       pairedEpicKey: "SUP-42",
       pairingId: "pairing-001",
       role: "destination",
@@ -68,8 +72,10 @@ describe("runStarterDeliveryHarness", () => {
     expect(post).toHaveBeenNthCalledWith(2, "source-seed", {
       pairingId: "pairing-001",
       peerDeliveryUrl: "destination-delivery",
+      peerEventUrl: "destination-event",
       role: "source",
       sourceEpicKey: "MFG-17",
+      sourceSiteAri: "ari:cloud:jira::site/source-001",
       sourceSiteUrl: "https://source-example.atlassian.net",
     });
     expect(post).toHaveBeenNthCalledWith(3, "source-publication", {
@@ -95,6 +101,7 @@ describe("runStarterDeliveryHarness", () => {
       },
     });
     expect(post).toHaveBeenCalledExactlyOnceWith("destination-seed", {
+      automationWebhookUrl: "destination-automation-webhook",
       pairedEpicKey: "SUP-42",
       pairingId: "pairing-001",
       role: "destination",

@@ -3,13 +3,16 @@ import { err, ok, type Result } from "@forge-ahead/errors";
 export interface DemoSourcePairing {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
+  readonly peerEventUrl: string;
   readonly role: "source";
   readonly sourceEpicKey: string;
+  readonly sourceSiteAri: string;
   readonly sourceSiteUrl: string;
   readonly status: "active";
 }
 
 export interface DemoDestinationPairing {
+  readonly automationWebhookUrl: string;
   readonly connectionId: string;
   readonly pairedEpicKey: string;
   readonly pairingId: string;
@@ -28,12 +31,15 @@ export interface DemoPairingState {
 export interface SourceDemoPairingSeed {
   readonly pairingId: string;
   readonly peerDeliveryUrl: string;
+  readonly peerEventUrl: string;
   readonly role: "source";
   readonly sourceEpicKey: string;
+  readonly sourceSiteAri: string;
   readonly sourceSiteUrl: string;
 }
 
 export interface DestinationDemoPairingSeed {
+  readonly automationWebhookUrl: string;
   readonly pairedEpicKey: string;
   readonly pairingId: string;
   readonly role: "destination";
@@ -52,13 +58,40 @@ export interface DestinationConnectionUnavailableError {
   readonly code: "destination-connection-unavailable";
 }
 
+export interface InvalidAutomationWebhookUrlError {
+  readonly code: "invalid-automation-webhook-url";
+}
+
+export interface InvalidPeerEventUrlError {
+  readonly code: "invalid-peer-event-url";
+}
+
 export interface InvalidSourceSiteUrlError {
   readonly code: "invalid-source-site-url";
 }
 
 export type DemoPairingSeedError =
   | DestinationConnectionUnavailableError
+  | InvalidAutomationWebhookUrlError
+  | InvalidPeerEventUrlError
   | InvalidSourceSiteUrlError;
+
+function canonicalCapabilityUrl(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password) {
+      return undefined;
+    }
+
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
 
 function canonicalSourceSiteUrl(value: unknown): string | undefined {
   if (typeof value !== "string") {
@@ -112,6 +145,11 @@ export function applyDemoPairingSeed(
   seed: DemoPairingSeed,
 ): Result<DemoPairingSeedResult, DemoPairingSeedError> {
   if (seed.role === "source") {
+    const peerEventUrl = canonicalCapabilityUrl(seed.peerEventUrl);
+    if (!peerEventUrl) {
+      return err({ code: "invalid-peer-event-url" });
+    }
+
     const sourceSiteUrl = canonicalSourceSiteUrl(seed.sourceSiteUrl);
     if (!sourceSiteUrl) {
       return err({ code: "invalid-source-site-url" });
@@ -121,12 +159,21 @@ export function applyDemoPairingSeed(
       replacePairing(state, {
         pairingId: seed.pairingId,
         peerDeliveryUrl: seed.peerDeliveryUrl,
+        peerEventUrl,
         role: seed.role,
         sourceEpicKey: seed.sourceEpicKey,
+        sourceSiteAri: seed.sourceSiteAri,
         sourceSiteUrl,
         status: "active",
       }),
     );
+  }
+
+  const automationWebhookUrl = canonicalCapabilityUrl(
+    seed.automationWebhookUrl,
+  );
+  if (!automationWebhookUrl) {
+    return err({ code: "invalid-automation-webhook-url" });
   }
 
   if (!state.activeConnectionId) {
@@ -135,6 +182,7 @@ export function applyDemoPairingSeed(
 
   return ok(
     replacePairing(state, {
+      automationWebhookUrl,
       connectionId: state.activeConnectionId,
       pairedEpicKey: seed.pairedEpicKey,
       pairingId: seed.pairingId,

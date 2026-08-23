@@ -1,13 +1,16 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
 
 export interface StarterDeliveryHarnessConfig {
+  readonly destinationAutomationWebhookUrl: string;
   readonly destinationDeliveryUrl: string;
+  readonly destinationEventUrl: string;
   readonly destinationSeedUrl: string;
   readonly destinationSite: string;
   readonly pairedEpicKey: string;
   readonly pairingId: string;
   readonly sourceEpicKey: string;
   readonly sourcePublicationUrl: string;
+  readonly sourceSiteAri: string;
   readonly sourceSiteUrl: string;
   readonly sourceSeedUrl: string;
 }
@@ -114,6 +117,7 @@ export async function runStarterDeliveryHarness(
   http: StarterDeliveryHarnessHttp,
 ): Promise<Result<StarterDeliveryEvidence, StarterDeliveryHarnessError>> {
   const destinationSeed = await http.post(config.destinationSeedUrl, {
+    automationWebhookUrl: config.destinationAutomationWebhookUrl,
     pairedEpicKey: config.pairedEpicKey,
     pairingId: config.pairingId,
     role: "destination",
@@ -126,8 +130,10 @@ export async function runStarterDeliveryHarness(
   const sourceSeed = await http.post(config.sourceSeedUrl, {
     pairingId: config.pairingId,
     peerDeliveryUrl: config.destinationDeliveryUrl,
+    peerEventUrl: config.destinationEventUrl,
     role: "source",
     sourceEpicKey: config.sourceEpicKey,
+    sourceSiteAri: config.sourceSiteAri,
     sourceSiteUrl: config.sourceSiteUrl,
   });
   if (!isSuccessful(sourceSeed.status)) {
