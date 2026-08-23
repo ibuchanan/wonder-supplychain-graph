@@ -21,6 +21,7 @@ export { handler } from "./resolvers";
 
 import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
+export { receiveLeanEvent } from "./collaboration/forge-lean-event-receiver";
 export { receiveStarterDelivery } from "./collaboration/forge-starter-peer-delivery";
 export { publishStarterDelivery } from "./collaboration/forge-source-starter-publication";
 import { type OnConfigChangeResponse, onConfigChange } from "./cx-management";

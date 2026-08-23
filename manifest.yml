@@ -49,6 +49,8 @@ modules:
       handler: index.receiveStarterDelivery
     - key: publishStarterDelivery
       handler: index.publishStarterDelivery
+    - key: receiveLeanEvent
+      handler: index.receiveLeanEvent
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -147,6 +149,11 @@ modules:
     - key: scg-publish-starter
       function: publishStarterDelivery
       urlFormat: v2
+    - key: scg-receive-lean-event
+      function: receiveLeanEvent
+      urlFormat: v2
+      response:
+        type: dynamic
 app:
   runtime:
     name: nodejs24.x
@@ -165,6 +172,7 @@ permissions:
     fetch:
       backend:
         - address: "*.webtrigger.atlassian.app"
+        - address: automation.atlassian.com
 resources:
   - key: main
     path: src/frontend/index.tsx
