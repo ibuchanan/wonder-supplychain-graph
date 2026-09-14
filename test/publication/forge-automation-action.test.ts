@@ -19,7 +19,7 @@ describe("publishWorkPackage", () => {
     vi.setSystemTime(new Date("2026-08-05T14:30:00.000Z"));
     vi.stubGlobal("crypto", { randomUUID: () => "execution-003" });
     vi.stubEnv(
-      "SCG_P2P_POC_SECRET",
+      "SHARED_SECRET",
       Buffer.from("0123456789abcdef0123456789abcdef").toString("base64"),
     );
   });

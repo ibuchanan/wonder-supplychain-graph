@@ -59,7 +59,7 @@ That document remains the intended successor for real peer credential bootstrap.
 
 ## Key decision: authentication is not authorization
 
-`SCG_P2P_POC_SECRET` is a base64-encoded secret set with
+`SHARED_SECRET` is a base64-encoded secret set with
 `forge variables set --encrypt` for the shared Forge development environment
 before either site performs setup. The current app reads it to compute and
 verify request signatures; Forge does not yet perform that verification.
@@ -115,7 +115,7 @@ or possession of the POC secret is never sufficient.
 
 The deployment operator deploys the same app version to Green and Blue
 in the same Forge development environment
-and sets `SCG_P2P_POC_SECRET` as an encrypted Forge variable.
+and sets `SHARED_SECRET` as an encrypted Forge variable.
 The secret is generated with cryptographically secure randomness
 and is at least 32 random bytes before encoding.
 
@@ -297,7 +297,7 @@ When the platform feature becomes available, the app can move verification to
 Forge without changing the secret encoding, signature header, or request body.
 
 The sending app computes HMAC-SHA256 with the base64-decoded
-`SCG_P2P_POC_SECRET` and sends:
+`SHARED_SECRET` and sends:
 
 ```text
 x-webtrigger-signature: sha256=<hex HMAC>

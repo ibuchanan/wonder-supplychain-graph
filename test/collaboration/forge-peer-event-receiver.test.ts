@@ -38,7 +38,7 @@ describe("receivePeerEvent", () => {
     vi.resetAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(timestamp));
-    vi.stubEnv("SCG_P2P_POC_SECRET", secret);
+    vi.stubEnv("SHARED_SECRET", secret);
     vi.mocked(kvs.get).mockResolvedValue({
       pairings: [
         {

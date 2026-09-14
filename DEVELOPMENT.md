@@ -57,37 +57,31 @@ a new Forge app. It changes the app ID and should not be a normal setup step.
 
 ## Forge configuration
 
-`secretspec.toml` declares non-secret Forge command configuration:
+`secretspec.toml` declares `FORGE_PRODUCT`, `FORGE_ENVIRONMENT`, and the
+shared development-only peer HMAC secret. Generate and store the secret as an
+encrypted Forge variable without printing it:
 
-- `FORGE_PRODUCT`
-- `FORGE_ENVIRONMENT`
-- `SCG_SOURCE_SITE` and `SCG_DESTINATION_SITE` for the controlled two-tenant
-  Forge workflows
+```sh
+npm run forge:variables:generate-shared-secret
+```
 
-Use the `forge:*` scripts only after configuring those values with SecretSpec.
-`npm run forge:install` and `npm run forge:upgrade` fail fast after the
-source-site operation. `npm run forge:uninstall` attempts both sites before
+The script generates exactly 32 random bytes, base64-encodes them, and sets
+`SHARED_SECRET` with `forge variables set --encrypt`. It prefers Homebrew
+OpenSSL 3, ignores a conflicting inherited `OPENSSL_CONF`, and fails rather
+than using an older LibreSSL binary. Set `OPENSSL_BIN` to override the selected
+OpenSSL 3 binary, or set `FORGE_ENVIRONMENT` to target a non-development Forge
+environment.
+
+Generate a new value when rotating this controlled POC secret. Do not print,
+commit, or copy it into application configuration, webtrigger URLs, or logs.
+Future Pairing setup in the Forge admin flow will supply the non-secret
+counterpart endpoint and relationship state.
+
+`npm run forge:install` and `npm run forge:upgrade` require the configured
+Forge product and sites. `npm run forge:uninstall` attempts both sites before
 returning failure for an unexpected uninstall error; an already-absent
 installation is a successful no-op. Keep real credentials and secret values
 outside the repository.
-
-## Controlled two-tenant starter delivery
-
-Use `npm run demo:starter-delivery` to run the controlled development harness after deploying the app to both tenants and creating a destination graph connection. The script uses SecretSpec to load generated webtrigger URLs, site-specific Epic IDs, and the Pairing ID from your local environment; do not commit them.
-
-The harness requires these local environment variables:
-
-- `SCG_DESTINATION_SEED_URL`
-- `SCG_DESTINATION_DELIVERY_URL`
-- `SCG_SOURCE_SEED_URL`
-- `SCG_SOURCE_PUBLICATION_URL`
-- `SCG_PAIRING_ID`
-- `SCG_SOURCE_EPIC_KEY`
-- `SCG_PAIRED_EPIC_KEY`
-
-It seeds the destination Pairing, seeds the source Pairing with the destination delivery URL, and then invokes source publication. On success it prints the delivery correlation ID, document ID, source Epic key, update sequence, and object count. Use the correlation ID to join source and destination Forge logs. Then manually confirm that destination Search/Rovo finds the document and that its source URL opens the Source Epic for a normally authorized user.
-
-The supported clean reset is to delete and recreate the destination native graph connection, then rerun the harness to seed both Pairings again. This is necessary because `upsert` can leave a previously indexed document after its Source Epic or Pairing is removed.
 
 ## Testing expectations
 

@@ -24,7 +24,7 @@ function errorResponse(statusCode: number, error: string): WebTriggerResponse {
 export const receivePeerEvent = defineWebTrigger(async (request) => {
   const authenticationError = verifyPeerRequest(
     request,
-    process.env["SCG_P2P_POC_SECRET"],
+    process.env["SHARED_SECRET"],
   );
   if (authenticationError) {
     return errorResponse(401, authenticationError);

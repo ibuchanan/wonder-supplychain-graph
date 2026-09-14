@@ -17,6 +17,7 @@
     "forge:upgrade": "secretspec run --reason \"npm run forge:upgrade\" -- sh -c 'forge install --upgrade --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --upgrade --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
     "forge:variables:set": "secretspec run --reason \"npm run forge:variables:set\" -- sh -c 'forge variables set --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
     "forge:variables:set:secretspec": "./scripts/forge-vars-from-secretspec.sh",
+    "forge:variables:generate-shared-secret": "bash scripts/set-shared-secret.sh",
     "forge:variables:set-encrypted": "secretspec run --reason \"npm run forge:variables:set-encrypted\" -- sh -c 'forge variables set --encrypt --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
     "format": "biome format --write",
     "format:check": "biome format",

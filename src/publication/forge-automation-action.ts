@@ -40,10 +40,7 @@ async function emitLeanEvent(
   event: LeanEvent,
 ): Promise<void> {
   const body = JSON.stringify(event);
-  const authentication = signPeerRequest(
-    process.env["SCG_P2P_POC_SECRET"],
-    body,
-  );
+  const authentication = signPeerRequest(process.env["SHARED_SECRET"], body);
   if (!authentication) {
     throw new Error("Unable to emit lean event: invalid peer HMAC secret");
   }
