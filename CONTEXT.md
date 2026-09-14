@@ -2,8 +2,17 @@
 
 ## Ubiquitous language
 
+- **Site relationship**: the bilaterally approved trust relationship between two
+  sites, reusable across separately authorized Pairings. It does not grant access
+  to all work on either site. Revoking it stops exchange for all its Pairings.
+- **Authorization lease**: the finite period during which a Site relationship
+  may authorize exchange, unless revoked earlier. An active lease does not
+  replace the separate authorization required for each Pairing.
+- **Site relationship invitation**: a pending proposal to establish a Site
+  relationship, distinct from an Invitation to pair two Epics.
 - **Pairing**: the bilateral relationship between exactly one Source Epic and one
-  Paired Epic.
+  Paired Epic. Each Pairing requires its own authorization within an active Site
+  relationship; revoking one Pairing does not revoke other Pairings.
 - **Local readiness**: the state in which the current tenant has the local
   prerequisites for its role. A source tenant needs an active Pairing and peer
   delivery endpoint. A destination tenant also needs an active Teamwork Graph
