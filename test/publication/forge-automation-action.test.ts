@@ -18,10 +18,15 @@ describe("publishWorkPackage", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-05T14:30:00.000Z"));
     vi.stubGlobal("crypto", { randomUUID: () => "execution-003" });
+    vi.stubEnv(
+      "SCG_P2P_POC_SECRET",
+      Buffer.from("0123456789abcdef0123456789abcdef").toString("base64"),
+    );
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
@@ -63,14 +68,13 @@ describe("publishWorkPackage", () => {
 
   it("posts one lean event to the active source pairing after queueing", async () => {
     vi.mocked(kvs.get).mockImplementation(async (key) => {
-      if (key === "demo-pairing-state") {
+      if (key === "peer-pairing-state") {
         return {
           pairings: [
             {
               pairingId: "pairing-001",
-              peerDeliveryUrl: "https://green.example/legacy-delivery",
               peerEventUrl:
-                "https://green.example/forge/webtrigger/receive-lean-event",
+                "https://green.example/forge/webtrigger/receive-peer-event",
               role: "source",
               sourceEpicKey: "MFG-17",
               sourceSiteAri: "ari:cloud:jira::site/blue-site",
@@ -90,7 +94,7 @@ describe("publishWorkPackage", () => {
     });
 
     expect(fetch).toHaveBeenCalledExactlyOnceWith(
-      "https://green.example/forge/webtrigger/receive-lean-event",
+      "https://green.example/forge/webtrigger/receive-peer-event",
       {
         body: JSON.stringify({
           data: {
@@ -106,7 +110,13 @@ describe("publishWorkPackage", () => {
           time: "2026-08-05T14:30:00.000Z",
           type: "scg:work-package:queued",
         }),
-        headers: { "Content-Type": "application/json" },
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "x-webtrigger-signature": expect.stringMatching(
+            /^sha256=[a-f0-9]{64}$/,
+          ),
+          "x-webtrigger-timestamp": "2026-08-05T14:30:00.000Z",
+        }),
         method: "POST",
       },
     );
@@ -114,14 +124,13 @@ describe("publishWorkPackage", () => {
 
   it("surfaces a Green rejection after queueing locally", async () => {
     vi.mocked(kvs.get).mockImplementation(async (key) =>
-      key === "demo-pairing-state"
+      key === "peer-pairing-state"
         ? ({
             pairings: [
               {
                 pairingId: "pairing-001",
-                peerDeliveryUrl: "https://green.example/legacy-delivery",
                 peerEventUrl:
-                  "https://green.example/forge/webtrigger/receive-lean-event",
+                  "https://green.example/forge/webtrigger/receive-peer-event",
                 role: "source",
                 sourceEpicKey: "MFG-17",
                 sourceSiteAri: "ari:cloud:jira::site/blue-site",

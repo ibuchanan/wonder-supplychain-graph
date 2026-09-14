@@ -1,4 +1,4 @@
-import type { DemoPairing } from "./apply-demo-pairing-seed";
+import type { PeerPairingState } from "./peer-pairing-state";
 
 export type LocalRole = "destination" | "source";
 
@@ -15,7 +15,7 @@ export interface LocalReadiness {
 export interface LocalReadinessInput {
   readonly activeConnectionId?: string;
   readonly failure?: { readonly code: string };
-  readonly pairings: readonly DemoPairing[];
+  readonly pairings: PeerPairingState["pairings"];
   readonly role?: LocalRole;
 }
 
@@ -35,7 +35,7 @@ export function determineLocalReadiness(
       (pairing) =>
         pairing.role === "source" &&
         pairing.status === "active" &&
-        Boolean(pairing.peerDeliveryUrl),
+        Boolean(pairing.peerEventUrl),
     )
       ? { status: "ready" }
       : { status: "waiting-for-pairing" };

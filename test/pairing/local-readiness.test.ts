@@ -15,16 +15,18 @@ describe("determineLocalReadiness", () => {
     });
   });
 
-  it("reports ready for a source Pairing with a local peer delivery endpoint", () => {
+  it("reports ready for a source Pairing with a peer event endpoint", () => {
     expect(
       determineLocalReadiness({
         pairings: [
           {
-            pairingId: "demo-pairing-001",
-            peerDeliveryUrl:
-              "https://supplier.example/forge/webtrigger/deliver",
+            pairingId: "pairing-001",
+            peerEventUrl:
+              "https://supplier.example/forge/webtrigger/peer-event",
             role: "source",
             sourceEpicKey: "MFG-17",
+            sourceSiteAri: "ari:cloud:jira::site/source-001",
+            sourceSiteUrl: "https://source.example.atlassian.net",
             status: "active",
           },
         ],

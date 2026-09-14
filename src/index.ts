@@ -21,14 +21,8 @@ export { handler } from "./resolvers";
 
 import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-comment-action";
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
-export { receiveLeanEvent } from "./collaboration/forge-lean-event-receiver";
-export { receiveStarterDelivery } from "./collaboration/forge-starter-peer-delivery";
-export { publishStarterDelivery } from "./collaboration/forge-source-starter-publication";
+export { receivePeerEvent } from "./collaboration/forge-peer-event-receiver";
 import { type OnConfigChangeResponse, onConfigChange } from "./cx-management";
-import {
-  seedDestinationPairing,
-  seedSourcePairing,
-} from "./pairing/forge-demo-pairing-seed";
 import {
   type PublishPackageToGraphInput,
   publishPackageToGraph as publishDemoPackageToGraph,
@@ -43,7 +37,7 @@ import {
 /**
  * Thin Forge entry point for the Supplychain Graph Rovo comment action.
  */
-export async function commentOnOriginEpic(payload: RovoCommentActionPayload) {
+export async function commentOriginEpic(payload: RovoCommentActionPayload) {
   return commentOnOriginatingEpicFromRovo(payload);
 }
 
@@ -64,8 +58,6 @@ export async function publishPackageToGraph(
 ) {
   return publishDemoPackageToGraph(payload);
 }
-
-export { seedDestinationPairing, seedSourcePairing };
 
 interface ForgeLifecycleEvent {
   readonly app: {

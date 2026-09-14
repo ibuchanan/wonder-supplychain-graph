@@ -26,12 +26,12 @@ describe("Automation Action configuration", () => {
         expect.objectContaining({
           config: { render: "native", resource: "publish-package-config" },
           key: "scg-publish-package",
-          resolver: { function: "actionConfigResolver" },
+          resolver: { function: "getActionConfig" },
         }),
         expect.objectContaining({
           config: { render: "native", resource: "publish-graph-config" },
           key: "scg-publish-package-graph",
-          resolver: { function: "actionConfigResolver" },
+          resolver: { function: "getActionConfig" },
         }),
       ]),
     );

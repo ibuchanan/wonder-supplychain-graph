@@ -5,7 +5,7 @@ import {
   type PublicationStateStore,
 } from "../../src/publication/automation-action";
 import type { PublicationState } from "../../src/publication/apply-command";
-import type { DemoSourcePairing } from "../../src/pairing/apply-demo-pairing-seed";
+import type { SourcePeerPairing } from "../../src/pairing/peer-pairing-state";
 
 function activePublicationState(): PublicationState {
   return {
@@ -141,10 +141,9 @@ describe("createDemoPublishWorkPackageAction", () => {
     vi.setSystemTime(new Date("2026-08-22T14:30:00.000Z"));
     vi.stubGlobal("crypto", { randomUUID: () => "event-001" });
     const emitLeanEvent = vi.fn().mockResolvedValue(undefined);
-    const sourcePairing: DemoSourcePairing = {
+    const sourcePairing: SourcePeerPairing = {
       pairingId: "pairing-001",
-      peerDeliveryUrl: "https://green.example/legacy-delivery",
-      peerEventUrl: "https://green.example/forge/webtrigger/receive-lean-event",
+      peerEventUrl: "https://green.example/forge/webtrigger/receive-peer-event",
       role: "source",
       sourceEpicKey: "MFG-17",
       sourceSiteAri: "ari:cloud:jira::site/blue-site",

@@ -19,7 +19,7 @@ describe("Rovo originating Epic comment action", () => {
       expect.arrayContaining([
         expect.objectContaining({
           actionVerb: "CREATE",
-          function: "commentOnOriginEpic",
+          function: "commentOriginEpic",
           inputs: {
             commentText: expect.objectContaining({
               required: true,

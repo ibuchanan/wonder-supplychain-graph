@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { loadManifest } from "./manifest-helpers";
 
-describe("lean event receiver Forge wiring", () => {
-  it("declares the dynamic receiver and Jira Automation backend egress", () => {
+describe("peer event receiver Forge wiring", () => {
+  it("declares the dynamic authenticated peer receiver and Jira Automation backend egress", () => {
     const manifest = loadManifest();
     const modules = manifest.modules as {
       readonly function?: readonly {
@@ -25,14 +25,14 @@ describe("lean event receiver Forge wiring", () => {
 
     expect(modules.function).toEqual(
       expect.arrayContaining([
-        { handler: "index.receiveLeanEvent", key: "receiveLeanEvent" },
+        { handler: "index.receivePeerEvent", key: "receivePeerEvent" },
       ]),
     );
     expect(modules.webtrigger).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          function: "receiveLeanEvent",
-          key: "scg-receive-lean-event",
+          function: "receivePeerEvent",
+          key: "scg-receive-peer-event",
           response: { type: "dynamic" },
           urlFormat: "v2",
         }),

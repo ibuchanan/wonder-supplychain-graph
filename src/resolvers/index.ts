@@ -4,7 +4,7 @@ import {
   determineLocalReadiness,
   type LocalRole,
 } from "../pairing/local-readiness";
-import { kvsDemoPairingStore } from "../pairing/kvs-demo-pairing-store";
+import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
 import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
 
 const resolver = new Resolver();
@@ -18,7 +18,7 @@ resolver.define("getLocalReadiness", async () => {
       ? configuredRole
       : undefined;
   const [pairingState, activeConnectionId] = await Promise.all([
-    kvsDemoPairingStore.read(),
+    kvsPeerPairingStore.read(),
     kvsPackageConnectionStore.getActiveConnectionId(),
   ]);
 

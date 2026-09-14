@@ -1,5 +1,5 @@
 import type { LeanEvent } from "../collaboration/lean-event-contract";
-import type { DemoSourcePairing } from "../pairing/apply-demo-pairing-seed";
+import type { SourcePeerPairing } from "../pairing/peer-pairing-state";
 import {
   applyPublicationCommand,
   type PublicationCommand,
@@ -25,7 +25,7 @@ export interface PublicationStateStore {
 
 export interface LeanEventEmitter {
   readonly emitLeanEvent: (
-    pairing: DemoSourcePairing,
+    pairing: SourcePeerPairing,
     event: LeanEvent,
   ) => Promise<void>;
 }
@@ -33,7 +33,7 @@ export interface LeanEventEmitter {
 export interface SourcePairingResolver {
   readonly resolveSourcePairing: (
     payload: PublishWorkPackageActionPayload,
-  ) => Promise<DemoSourcePairing | undefined>;
+  ) => Promise<SourcePeerPairing | undefined>;
 }
 
 export interface DemoPublishWorkPackageActionDependencies {
@@ -85,7 +85,7 @@ function toPublicationCommand(
 
 function toLeanEvent(
   payload: PublishWorkPackageActionPayload,
-  pairing: DemoSourcePairing,
+  pairing: SourcePeerPairing,
 ): LeanEvent {
   return {
     data: {

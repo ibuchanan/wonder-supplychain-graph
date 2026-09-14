@@ -14,7 +14,7 @@ modules:
         - atlassian:document
       datasource:
         onConnectionChange:
-          function: scg-connection-change
+          function: onConnectionChange
   jira:issuePanel:
     - key: scg-epic-panel
       resource: main
@@ -27,30 +27,22 @@ modules:
       render: native
       title: Supplychain Graph Simulator
   function:
-    - key: scg-connection-change
+    - key: onConnectionChange
       handler: index.onPackageConnectionChange
     - key: publishWorkPackage
       handler: index.publishWorkPackage
     - key: publishPackageToGraph
       handler: index.publishPackageToGraph
-    - key: commentOnOriginEpic
-      handler: index.commentOnOriginEpic
-    - key: actionConfigResolver
+    - key: commentOriginEpic
+      handler: index.commentOriginEpic
+    - key: getActionConfig
       handler: resolvers/index.handler
     - key: onInstalled
       handler: index.onInstalled
     - key: onUpgraded
       handler: index.onUpgraded
-    - key: seedSourcePairing
-      handler: index.seedSourcePairing
-    - key: seedDestinationPairing
-      handler: index.seedDestinationPairing
-    - key: receiveStarterDelivery
-      handler: index.receiveStarterDelivery
-    - key: publishStarterDelivery
-      handler: index.publishStarterDelivery
-    - key: receiveLeanEvent
-      handler: index.receiveLeanEvent
+    - key: receivePeerEvent
+      handler: index.receivePeerEvent
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -77,7 +69,7 @@ modules:
         resource: publish-package-config
         render: native
       resolver:
-        function: actionConfigResolver
+        function: getActionConfig
     - key: scg-publish-package-graph
       name: Publish package to Rovo demo
       function: publishPackageToGraph
@@ -98,10 +90,10 @@ modules:
         resource: publish-graph-config
         render: native
       resolver:
-        function: actionConfigResolver
+        function: getActionConfig
     - key: scg-comment-origin
       name: Comment on originating Epic
-      function: commentOnOriginEpic
+      function: commentOriginEpic
       actionVerb: CREATE
       description: Adds a package-related comment to the Source Epic resolved from
         current package provenance.
@@ -137,20 +129,8 @@ modules:
       events:
         - avi:forge:upgraded:app
   webtrigger:
-    - key: scg-seed-source
-      function: seedSourcePairing
-      urlFormat: v2
-    - key: scg-seed-destination
-      function: seedDestinationPairing
-      urlFormat: v2
-    - key: scg-receive-starter
-      function: receiveStarterDelivery
-      urlFormat: v2
-    - key: scg-publish-starter
-      function: publishStarterDelivery
-      urlFormat: v2
-    - key: scg-receive-lean-event
-      function: receiveLeanEvent
+    - key: scg-receive-peer-event
+      function: receivePeerEvent
       urlFormat: v2
       response:
         type: dynamic

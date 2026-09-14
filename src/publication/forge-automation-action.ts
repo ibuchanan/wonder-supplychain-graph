@@ -2,7 +2,8 @@ import { fetch } from "@forge/api";
 import { kvs } from "@forge/kvs";
 
 import type { LeanEvent } from "../collaboration/lean-event-contract";
-import { kvsDemoPairingStore } from "../pairing/kvs-demo-pairing-store";
+import { signPeerRequest } from "../collaboration/peer-hmac-auth";
+import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
 import { createActionExecutionMetadata } from "./action-execution-metadata";
 import type { PublicationState } from "./apply-command";
 import {
@@ -38,9 +39,18 @@ async function emitLeanEvent(
   pairing: { readonly peerEventUrl: string },
   event: LeanEvent,
 ): Promise<void> {
+  const body = JSON.stringify(event);
+  const authentication = signPeerRequest(
+    process.env["SCG_P2P_POC_SECRET"],
+    body,
+  );
+  if (!authentication) {
+    throw new Error("Unable to emit lean event: invalid peer HMAC secret");
+  }
+
   const response = await fetch(pairing.peerEventUrl, {
-    body: JSON.stringify(event),
-    headers: { "Content-Type": "application/json" },
+    body,
+    headers: { "Content-Type": "application/json", ...authentication },
     method: "POST",
   });
   if (!response.ok) {
@@ -51,7 +61,7 @@ async function emitLeanEvent(
 const publishDemoWorkPackage = createDemoPublishWorkPackageAction({
   emitLeanEvent,
   resolveSourcePairing: async (payload) => {
-    const { pairings } = await kvsDemoPairingStore.read();
+    const { pairings } = await kvsPeerPairingStore.read();
     const pairing = pairings.find(
       (candidate) =>
         candidate.role === "source" &&

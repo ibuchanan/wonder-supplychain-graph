@@ -5,11 +5,12 @@ import {
   type WebTriggerResponse,
 } from "@forge-ahead/triggers/webtrigger";
 
-import { kvsDemoPairingStore } from "../pairing/kvs-demo-pairing-store";
+import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
 import {
   enrichLeanEventForAutomation,
   parseLeanEvent,
 } from "./lean-event-contract";
+import { verifyPeerRequest } from "./peer-hmac-auth";
 
 function errorResponse(statusCode: number, error: string): WebTriggerResponse {
   return {
@@ -19,14 +20,22 @@ function errorResponse(statusCode: number, error: string): WebTriggerResponse {
   };
 }
 
-/** Receives one Blue event and forwards its Green-local enrichment to Automation. */
-export const receiveLeanEvent = defineWebTrigger(async (request) => {
+/** Receives one authenticated peer CloudEvent and forwards its local enrichment to Automation. */
+export const receivePeerEvent = defineWebTrigger(async (request) => {
+  const authenticationError = verifyPeerRequest(
+    request,
+    process.env["SCG_P2P_POC_SECRET"],
+  );
+  if (authenticationError) {
+    return errorResponse(401, authenticationError);
+  }
+
   const event = request.body ? parseLeanEvent(request.body) : undefined;
   if (!event) {
     return errorResponse(400, "invalid-lean-event");
   }
 
-  const { pairings } = await kvsDemoPairingStore.read();
+  const { pairings } = await kvsPeerPairingStore.read();
   const pairing = pairings.find(
     (candidate) =>
       candidate.role === "destination" &&
