@@ -27,12 +27,12 @@ modules:
       render: native
       resolver:
         function: getActionConfig
-      title: Peer POC readiness
+      title: Supplychain Graph Peer POC readiness
     - key: scg-peer-invitations
       resource: peer-invitations
       resolver:
         function: getActionConfig
-      title: Peer invitations
+      title: Supplychain Graph Peer invitations
       useAsConfig: true
   jira:globalPage:
     - key: scg-simulator

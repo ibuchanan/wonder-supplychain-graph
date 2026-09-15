@@ -24,7 +24,7 @@ describe("Peer POC readiness admin page", () => {
       render: "native",
       resolver: { function: "getActionConfig" },
       resource: "poc-readiness",
-      title: "Peer POC readiness",
+      title: "Supplychain Graph Peer POC readiness",
     });
     expect(resolvers).toContain('resolver.define("getPocReadiness"');
     expect(frontend).toContain('invoke<PocReadiness>("getPocReadiness")');
