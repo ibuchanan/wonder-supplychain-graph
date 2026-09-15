@@ -15,6 +15,10 @@ describe("Peer POC readiness admin page", () => {
       join(process.cwd(), "src/frontend/poc-readiness.tsx"),
       "utf8",
     );
+    const pageSource = readFileSync(
+      join(process.cwd(), "src/frontend/poc-readiness-page.tsx"),
+      "utf8",
+    );
     const resolvers = readFileSync(
       join(process.cwd(), "src/resolvers/index.ts"),
       "utf8",
@@ -28,7 +32,8 @@ describe("Peer POC readiness admin page", () => {
     });
     expect(resolvers).toContain('resolver.define("getPocReadiness"');
     expect(frontend).toContain('invoke<PocReadiness>("getPocReadiness")');
-    expect(frontend).toContain("This reports only local POC readiness.");
+    expect(pageSource).toContain("This reports only local POC readiness.");
     expect(frontend).not.toContain("SHARED_SECRET");
+    expect(pageSource).not.toContain("SHARED_SECRET");
   });
 });
