@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,6 +7,7 @@
     "defaultBranch": "main"
   },
   "files": {
+    "ignoreUnknown": false,
     "includes": [
       "**",
       "!.projen",
@@ -17,12 +18,28 @@
     ]
   },
   "formatter": {
+    "enabled": true,
     "indentStyle": "space"
   },
   "linter": {
+    "enabled": true,
     "rules": {
+      "preset": "recommended",
       "complexity": {
         "useLiteralKeys": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
       }
     }
   }
