@@ -1,6 +1,7 @@
 import {
   Button,
   DynamicTable,
+  Link,
   Lozenge,
   Stack,
   Tab,
@@ -9,6 +10,8 @@ import {
   Tabs,
   Text,
 } from "@forge/react";
+
+import type { ConfigurationConcern } from "./configuration-location";
 
 export type PocReadinessStatus = "blocked" | "ready";
 
@@ -52,7 +55,17 @@ export interface AdministratorOverview {
   readonly relationships: readonly RelationshipOverview[];
 }
 
+/**
+ * The configuration page's address per concern, already resolved. Resolving a
+ * module key is asynchronous and host-bound, so the page is handed the answer
+ * rather than asking for it; a concern is absent until its URL resolves.
+ */
+export type ConfigurationUrls = {
+  readonly [Concern in ConfigurationConcern]?: string;
+};
+
 export interface PocReadinessPageProps {
+  readonly configurationUrls: ConfigurationUrls;
   readonly onRevoke: (relationship: RelationshipOverview) => void;
   readonly overview: AdministratorOverview | undefined;
   readonly readiness: PocReadiness | undefined;
@@ -92,6 +105,7 @@ const content: Record<
  * Atlassian host.
  */
 export const PocReadinessPage = ({
+  configurationUrls,
   onRevoke,
   overview,
   readiness,
@@ -121,7 +135,14 @@ export const PocReadinessPage = ({
           </Text>
           <DynamicTable
             emptyView={
-              <Text>No Site relationship is recorded on this site.</Text>
+              <Stack space="space.100">
+                <Text>No Site relationship is recorded on this site.</Text>
+                {configurationUrls["site-relationship"] ? (
+                  <Link href={configurationUrls["site-relationship"]}>
+                    Create a site relationship
+                  </Link>
+                ) : null}
+              </Stack>
             }
             head={{
               cells: [
@@ -173,7 +194,14 @@ export const PocReadinessPage = ({
           </Text>
           <DynamicTable
             emptyView={
-              <Text>No audit evidence is recorded on this site yet.</Text>
+              <Stack space="space.100">
+                <Text>No audit evidence is recorded on this site yet.</Text>
+                {configurationUrls["log-sink"] ? (
+                  <Link href={configurationUrls["log-sink"]}>
+                    Set up a log sink
+                  </Link>
+                ) : null}
+              </Stack>
             }
             head={{
               cells: [

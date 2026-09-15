@@ -1,13 +1,23 @@
-import { invoke } from "@forge/bridge";
+import { invoke, router } from "@forge/bridge";
 import ForgeReconciler from "@forge/react";
 import React, { useCallback, useEffect, useState } from "react";
 
 import {
+  type ConfigurationConcern,
+  configurationLocation,
+} from "./configuration-location";
+import {
   type AdministratorOverview,
+  type ConfigurationUrls,
   type PocReadiness,
   PocReadinessPage,
   type RelationshipOverview,
 } from "./poc-readiness-page";
+
+const CONCERNS: readonly ConfigurationConcern[] = [
+  "log-sink",
+  "site-relationship",
+];
 
 function unwrap<Value>(value: Value | { readonly body: Value }): Value {
   return value && typeof value === "object" && "body" in value
@@ -18,6 +28,9 @@ function unwrap<Value>(value: Value | { readonly body: Value }): Value {
 const App = () => {
   const [readiness, setReadiness] = useState<PocReadiness>();
   const [overview, setOverview] = useState<AdministratorOverview>();
+  const [configurationUrls, setConfigurationUrls] = useState<ConfigurationUrls>(
+    {},
+  );
 
   const loadOverview = useCallback(() => {
     void invoke<AdministratorOverview>("getRelationshipOverview").then(
@@ -32,6 +45,23 @@ const App = () => {
       () => setReadiness({ status: "blocked" }),
     );
     loadOverview();
+
+    // A module key becomes a URL only by asking the host, so the empty states
+    // are handed resolved addresses rather than constructing admin URLs. A
+    // concern the host cannot resolve simply contributes no link.
+    void Promise.all(
+      CONCERNS.map(async (concern) => {
+        const url = await router
+          .getUrl(configurationLocation(concern))
+          .catch(() => null);
+
+        return [concern, url?.toString()] as const;
+      }),
+    ).then((resolved) =>
+      setConfigurationUrls(
+        Object.fromEntries(resolved.filter(([, url]) => url)),
+      ),
+    );
   }, [loadOverview]);
 
   const revoke = useCallback(
@@ -47,6 +77,7 @@ const App = () => {
 
   return (
     <PocReadinessPage
+      configurationUrls={configurationUrls}
       onRevoke={revoke}
       overview={overview}
       readiness={readiness}

@@ -20,6 +20,27 @@ const noRelationships: AdministratorOverview = {
   relationships: [],
 };
 
+const populated: AdministratorOverview = {
+  auditOutcomes: [
+    {
+      eventId: "event-1",
+      eventType: "site-relationship-activated",
+      occurredAt: "2026-01-02T03:04:05.000Z",
+      outcome: "recorded",
+    },
+  ],
+  relationships: [
+    {
+      agreedOperations: ["publish-work-package"],
+      agreementEndsAt: "2026-04-01T00:00:00.000Z",
+      counterpartSiteAri: "ari:cloud:platform::site/counterpart",
+      pairingCount: 1,
+      relationshipId: "relationship-1",
+      status: "active",
+    },
+  ],
+};
+
 function render(element: React.ReactElement): Element {
   return create(element).toJSON() as unknown as Element;
 }
@@ -50,10 +71,21 @@ function textOf(node: Node): string {
  * A `DynamicTable` carries its empty state in a prop rather than in its
  * children, so it is reachable only by rendering that prop on its own.
  */
-function emptyStatesIn(node: Node): readonly string[] {
+function emptyViewsIn(node: Node): readonly Element[] {
   return elementsOfType(node, "DynamicTable").map((table) =>
-    textOf(render(table.props.emptyView as React.ReactElement)),
+    render(table.props.emptyView as React.ReactElement),
   );
+}
+
+function emptyStatesIn(node: Node): readonly string[] {
+  return emptyViewsIn(node).map(textOf);
+}
+
+function linksIn(node: Node): readonly { href: string; text: string }[] {
+  return elementsOfType(node, "Link").map((link) => ({
+    href: link.props.href as string,
+    text: textOf(link),
+  }));
 }
 
 function manifestPageTitle(): string {
@@ -75,6 +107,7 @@ describe("Peer POC readiness page", () => {
   it("leaves the only page heading to the title declared in the manifest", () => {
     const page = render(
       <PocReadinessPage
+        configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
         readiness={{ status: "ready" }}
@@ -94,6 +127,7 @@ describe("Peer POC readiness page", () => {
   it("separates site relationships from audit outcomes into two tabs", () => {
     const page = render(
       <PocReadinessPage
+        configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
         readiness={{ status: "ready" }}
@@ -109,6 +143,7 @@ describe("Peer POC readiness page", () => {
   it("keeps readiness above the tabs, where either tab can see it", () => {
     const page = render(
       <PocReadinessPage
+        configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
         readiness={{ status: "blocked" }}
@@ -135,6 +170,7 @@ describe("Peer POC readiness page", () => {
   it("gives each tab its own description and its own empty state", () => {
     const page = render(
       <PocReadinessPage
+        configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
         readiness={{ status: "ready" }}
@@ -157,9 +193,65 @@ describe("Peer POC readiness page", () => {
     ]);
   });
 
+  it("sends an admin with no Site relationship to relationship setup by name", () => {
+    const page = render(
+      <PocReadinessPage
+        configurationUrls={{ "site-relationship": "/relationship-setup" }}
+        onRevoke={() => undefined}
+        overview={noRelationships}
+        readiness={{ status: "ready" }}
+      />,
+    );
+
+    const [relationships] = elementsOfType(page, "TabPanel");
+    const [emptyState] = emptyViewsIn(relationships as Element);
+
+    expect(linksIn(emptyState as Element)).toEqual([
+      { href: "/relationship-setup", text: "Create a site relationship" },
+    ]);
+  });
+
+  it("sends an admin with no audit evidence to log sink setup by name", () => {
+    const page = render(
+      <PocReadinessPage
+        configurationUrls={{ "log-sink": "/log-sink-setup" }}
+        onRevoke={() => undefined}
+        overview={noRelationships}
+        readiness={{ status: "ready" }}
+      />,
+    );
+
+    const [, audit] = elementsOfType(page, "TabPanel");
+    const [emptyState] = emptyViewsIn(audit as Element);
+
+    expect(linksIn(emptyState as Element)).toEqual([
+      { href: "/log-sink-setup", text: "Set up a log sink" },
+    ]);
+  });
+
+  it("keeps the setup links out of a populated page, which needs no setup", () => {
+    const page = render(
+      <PocReadinessPage
+        configurationUrls={{
+          "log-sink": "/log-sink-setup",
+          "site-relationship": "/relationship-setup",
+        }}
+        onRevoke={() => undefined}
+        overview={populated}
+        readiness={{ status: "ready" }}
+      />,
+    );
+
+    // Both tables have rows, so neither shows its empty view. A populated
+    // table renders its cells as children, so a setup link that leaked into a
+    // row would be reachable here.
+    expect(linksIn(page)).toEqual([]);
+  });
+
   it("pairs every tab with a panel inside one tab list, as tab semantics require", () => {
     const page = render(
       <PocReadinessPage
+        configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
         readiness={{ status: "ready" }}
