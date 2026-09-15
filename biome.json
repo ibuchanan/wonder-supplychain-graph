@@ -8,14 +8,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": [
-      "**",
-      "!.projen",
-      "!vendor",
-      "!coverage",
-      "!dist",
-      "!static/peer-invitations"
-    ]
+    "includes": ["**", "!.projen", "!vendor", "!coverage", "!dist"]
   },
   "formatter": {
     "enabled": true,

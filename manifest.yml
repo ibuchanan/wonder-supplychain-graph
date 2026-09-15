@@ -30,6 +30,7 @@ modules:
       title: Supplychain Graph Peer POC readiness
     - key: scg-peer-invitations
       resource: peer-invitations
+      render: native
       resolver:
         function: getActionConfig
       title: Supplychain Graph Peer invitations
@@ -177,4 +178,4 @@ resources:
   - key: publish-graph-config
     path: src/frontend/publish-graph-action-config.tsx
   - key: peer-invitations
-    path: static/peer-invitations
+    path: src/frontend/peer-invitations.tsx
