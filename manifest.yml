@@ -21,6 +21,13 @@ modules:
       render: native
       title: Supplychain Graph
       icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  jira:adminPage:
+    - key: scg-poc-readiness
+      resource: poc-readiness
+      render: native
+      resolver:
+        function: getActionConfig
+      title: Peer POC readiness
   jira:globalPage:
     - key: scg-simulator
       resource: simulator
@@ -158,6 +165,8 @@ resources:
     path: src/frontend/index.tsx
   - key: simulator
     path: src/frontend/simulator.tsx
+  - key: poc-readiness
+    path: src/frontend/poc-readiness.tsx
   - key: publish-package-config
     path: src/frontend/publish-package-action-config.tsx
   - key: publish-graph-config

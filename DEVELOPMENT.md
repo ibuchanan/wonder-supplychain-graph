@@ -66,7 +66,10 @@ npm run forge:variables:generate-shared-secret
 ```
 
 The script generates exactly 32 random bytes, base64-encodes them, and sets
-`SHARED_SECRET` with `forge variables set --encrypt`. It prefers Homebrew
+`SHARED_SECRET` with `forge variables set --encrypt`. The Peer POC readiness
+page uses trusted Forge runtime identity and fails closed when local prerequisites
+are unavailable; it never displays the secret or a secret-derived fingerprint. It
+prefers Homebrew
 OpenSSL 3, ignores a conflicting inherited `OPENSSL_CONF`, and fails rather
 than using an older LibreSSL binary. Set `OPENSSL_BIN` to override the selected
 OpenSSL 3 binary, or set `FORGE_ENVIRONMENT` to target a non-development Forge

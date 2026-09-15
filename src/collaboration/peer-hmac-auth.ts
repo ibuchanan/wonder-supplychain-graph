@@ -22,7 +22,11 @@ function decodeSecret(secret: string | undefined): Buffer | undefined {
   }
 
   const decoded = Buffer.from(secret, "base64");
-  return decoded.length >= 32 && decoded.length <= 64 ? decoded : undefined;
+  return decoded.toString("base64") === secret &&
+    decoded.length >= 32 &&
+    decoded.length <= 64
+    ? decoded
+    : undefined;
 }
 
 function signatureInput(timestamp: string, body: string): string {

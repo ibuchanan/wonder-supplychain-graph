@@ -33,6 +33,12 @@ describe("peer HMAC authentication", () => {
     ).toBeUndefined();
   });
 
+  it("rejects a non-canonical base64 secret", () => {
+    expect(
+      signPeerRequest(`${Buffer.alloc(33).toString("base64")}A`, body),
+    ).toBeUndefined();
+  });
+
   it("rejects missing, modified, duplicate, stale, future, and invalid-secret requests", () => {
     const headers = signPeerRequest(secret, body, timestamp);
     const request = {
