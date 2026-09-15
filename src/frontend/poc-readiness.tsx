@@ -135,7 +135,7 @@ const App = () => {
         blocks every Pairing under that relationship.
       </Text>
       <DynamicTable
-        emptyView="No Site relationship is recorded on this site."
+        emptyView={<Text>No Site relationship is recorded on this site.</Text>}
         head={{
           cells: [
             { content: "Counterpart", key: "counterpart" },
@@ -183,7 +183,7 @@ const App = () => {
         secret, signature, endpoint, or Jira content is recorded.
       </Text>
       <DynamicTable
-        emptyView="No audit evidence is recorded on this site yet."
+        emptyView={<Text>No audit evidence is recorded on this site yet.</Text>}
         head={{
           cells: [
             { content: "When", key: "when" },

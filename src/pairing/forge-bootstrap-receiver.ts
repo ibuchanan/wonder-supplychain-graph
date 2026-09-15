@@ -165,7 +165,11 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     // reads the outcome beside it.
     return buildSuccessResponse(
       "proposal" in proposed.value
-        ? { ...proposed.value.proposal, outcome: proposed.value.outcome }
+        ? {
+            ...proposed.value.proposal,
+            approvedIdentity: { ...proposed.value.proposal.approvedIdentity },
+            outcome: proposed.value.outcome,
+          }
         : { outcome: proposed.value.outcome },
     );
   }
