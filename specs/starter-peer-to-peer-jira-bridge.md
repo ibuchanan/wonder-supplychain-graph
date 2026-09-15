@@ -148,12 +148,15 @@ logs, but is not a persistent delivery workflow or idempotency key.
 
 ### Peer transport
 
-Use v2 Forge webtrigger URLs for the development peer transport. The source
-runtime may call the destination through a narrowly scoped backend egress rule
-for `*.webtrigger.atlassian.app`.
+Use v2 Forge webtrigger URLs for the development peer transport. Forge cannot
+currently express the needed per-peer destination rule, so the POC declares
+backend egress as `*` rather than a URL-specific allowlist. The app must rely
+on the authenticated pairing, route authorization, and request signing for its
+actual delivery boundary.
 
 This is a development-only transport choice. It is not the future production
-peer authorization model.
+peer authorization model, nor does the wildcard egress permission constitute
+peer authorization.
 
 ### Terminal harness
 

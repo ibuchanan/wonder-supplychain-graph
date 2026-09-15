@@ -157,14 +157,9 @@ permissions:
   external:
     fetch:
       backend:
-        - address: '*.execute-api.ap-southeast-2.amazonaws.com'
-          inScopeEUD: false
-        - address: '*.execute-api.eu-central-1.amazonaws.com'
-          inScopeEUD: false
-        - address: '*.execute-api.us-east-1.amazonaws.com'
-          inScopeEUD: false
-        - address: automation.atlassian.com
-          inScopeEUD: false
+        # Forge cannot express the POC's dynamic per-peer destinations.
+        # Pairing and request authorization enforce the delivery boundary.
+        - address: "*"
   scopes:
     - delete:object:jira
     - read:object:jira

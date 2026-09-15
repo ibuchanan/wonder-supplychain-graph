@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { loadManifest } from "./manifest-helpers";
 
 describe("peer event receiver Forge wiring", () => {
-  it("declares the dynamic authenticated peer receiver and Jira Automation backend egress", () => {
+  it("declares the dynamic authenticated peer receiver and unrestricted backend egress", () => {
     const manifest = loadManifest();
     const modules = manifest.modules as {
       readonly function?: readonly {
@@ -39,9 +39,7 @@ describe("peer event receiver Forge wiring", () => {
       ]),
     );
     expect(external.fetch?.backend).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ address: "automation.atlassian.com" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ address: "*" })]),
     );
   });
 });

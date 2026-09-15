@@ -43,8 +43,11 @@ sync work in these handlers.
 ## Security and cleanup
 
 Forge provides the execution environment for connector functions. The manifest
-must declare the external domains that the app can contact. This egress control
-limits where the connector can send data.
+must declare the external addresses that the app can contact. Where Forge can
+express a specific destination, this egress control limits where the connector
+can send data. The current peer POC needs dynamic per-peer destinations, which
+Forge cannot express precisely, so it declares backend egress as `*`; pairing
+and request authorization remain the delivery security boundary.
 
 When an administrator deletes a connection, Atlassian can purge graph data that
 belongs to its `connectionId`. The app should still remove its own local state
