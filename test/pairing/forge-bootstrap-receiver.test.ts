@@ -48,6 +48,7 @@ const nominationRequest = {
   operation: "site-relationship.nominate",
   protocolVersion: "v1",
   receiverEndpointStatus: "configured",
+  relationshipId: "relationship-001",
   requestId: "request-001",
   terms: {
     allowedOperations: ["starter.delivery"],
@@ -75,7 +76,11 @@ describe("receiveBootstrapRequest", () => {
     vi.mocked(kvs.get).mockImplementation(async (key: string) =>
       key === "invitation-workflow-state"
         ? ({ invitations: [invitation] } as never)
-        : ({ nominations: [], processedIdempotencyKeys: [] } as never),
+        : ({
+            nominations: [],
+            processedIdempotencyKeys: [],
+            relationships: [],
+          } as never),
     );
   });
 
@@ -118,16 +123,19 @@ describe("receiveBootstrapRequest", () => {
         nominations: [
           {
             correlationId: "correlation-001",
+            counterpartSiteAri: blueIdentity.siteAri,
             idempotencyKey: "nominate-001",
             invitationReference: "reference-001",
             nominatedIdentity: blueIdentity,
             receiverEndpointStatus: "configured",
+            relationshipId: "relationship-001",
             role: "green",
             status: "awaiting-green-approval",
             terms: nominationRequest.terms,
           },
         ],
         processedIdempotencyKeys: ["nominate-001"],
+        relationships: [],
       },
     );
   });
@@ -152,6 +160,152 @@ describe("receiveBootstrapRequest", () => {
       statusCode: 409,
     });
 
+    expect(kvs.set).not.toHaveBeenCalled();
+  });
+});
+
+const approvedNomination = {
+  correlationId: "correlation-001",
+  counterpartSiteAri: blueIdentity.siteAri,
+  decidedAt: "2026-09-14T17:00:00.000Z",
+  idempotencyKey: "nominate-001",
+  invitationReference: "reference-001",
+  nominatedIdentity: blueIdentity,
+  receiverEndpointStatus: "configured",
+  relationshipId: "relationship-001",
+  role: "green",
+  status: "awaiting-blue-confirmation",
+  terms: nominationRequest.terms,
+} as const;
+
+const pollRequest = {
+  correlationId: "correlation-001",
+  createdAt: timestamp,
+  intendedReceiverSiteAri: "ari:cloud:jira::site/green-cloud-id",
+  nominatedIdentity: blueIdentity,
+  operation: "site-relationship.poll",
+  protocolVersion: "v1",
+  relationshipId: "relationship-001",
+  requestId: "poll-request-001",
+} as const;
+
+const confirmationRequest = {
+  confirmedIdentity: blueIdentity,
+  correlationId: "correlation-001",
+  createdAt: timestamp,
+  idempotencyKey: "correlation-001:confirm",
+  intendedReceiverSiteAri: "ari:cloud:jira::site/green-cloud-id",
+  leaseEndsAt: nominationRequest.terms.expiresAt,
+  operation: "site-relationship.confirm",
+  protocolVersion: "v1",
+  relationshipId: "relationship-001",
+  requestId: "confirm-request-001",
+  termsVersion: "v1",
+} as const;
+
+describe("receiveBootstrapRequest bilateral confirmation", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(timestamp));
+    vi.stubEnv("SHARED_SECRET", secret);
+    vi.mocked(kvs.get).mockImplementation(async (key: string) =>
+      key === "invitation-workflow-state"
+        ? ({ invitations: [invitation] } as never)
+        : ({
+            nominations: [approvedNomination],
+            processedIdempotencyKeys: ["nominate-001"],
+            relationships: [],
+          } as never),
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  });
+
+  it("answers an authenticated poll with the approved proposal and writes nothing", async () => {
+    const response = await receiveBootstrapRequest(
+      signedRequest(JSON.stringify(pollRequest)),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(String(response.body))).toMatchObject({
+      approvedIdentity: blueIdentity,
+      correlationId: "correlation-001",
+      counterpartSiteAri: "ari:cloud:jira::site/green-cloud-id",
+      leaseEndsAt: nominationRequest.terms.expiresAt,
+      operation: "site-relationship.activation-proposal",
+      outcome: "awaiting-blue-confirmation",
+      relationshipId: "relationship-001",
+      termsVersion: "v1",
+    });
+    expect(String(response.body)).not.toContain("webtrigger");
+    expect(kvs.set).not.toHaveBeenCalled();
+  });
+
+  it("activates the local relationship on an authenticated confirmation", async () => {
+    const response = await receiveBootstrapRequest(
+      signedRequest(JSON.stringify(confirmationRequest)),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(String(response.body))).toMatchObject({
+      correlationId: "correlation-001",
+      outcome: "active",
+      relationshipId: "relationship-001",
+    });
+    expect(kvs.set).toHaveBeenCalledExactlyOnceWith(
+      "site-relationship-setup-state",
+      {
+        nominations: [
+          {
+            ...approvedNomination,
+            confirmedAt: timestamp,
+            status: "active",
+          },
+        ],
+        processedIdempotencyKeys: ["nominate-001", "correlation-001:confirm"],
+        relationships: [
+          {
+            counterpartSiteAri: blueIdentity.siteAri,
+            leaseEndsAt: nominationRequest.terms.expiresAt,
+            relationshipId: "relationship-001",
+            status: "active",
+            termsVersion: "v1",
+          },
+        ],
+      },
+    );
+  });
+
+  it("denies a confirmation for an unknown relationship without activating", async () => {
+    const response = await receiveBootstrapRequest(
+      signedRequest(
+        JSON.stringify({
+          ...confirmationRequest,
+          relationshipId: "relationship-002",
+        }),
+      ),
+    );
+
+    expect(response).toEqual({
+      body: JSON.stringify({ error: "confirmation-mismatch" }),
+      headers: { "Content-Type": ["application/json"] },
+      statusCode: 409,
+    });
+    expect(kvs.set).not.toHaveBeenCalled();
+  });
+
+  it("rejects a signed body that is not a bootstrap operation", async () => {
+    const response = await receiveBootstrapRequest(
+      signedRequest(
+        JSON.stringify({ ...pollRequest, operation: "starter.delivery" }),
+      ),
+    );
+
+    expect(response.statusCode).toBe(400);
     expect(kvs.set).not.toHaveBeenCalled();
   });
 });

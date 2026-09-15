@@ -6,6 +6,7 @@ const siteRelationshipSetupStateKey = "site-relationship-setup-state";
 const emptyState: SiteRelationshipSetupState = {
   nominations: [],
   processedIdempotencyKeys: [],
+  relationships: [],
 };
 
 export const kvsSiteRelationshipStore = {

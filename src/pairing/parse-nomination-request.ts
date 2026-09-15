@@ -1,6 +1,11 @@
 import { V1_PEER_OPERATIONS } from "../collaboration/protocol";
+import {
+  isIsoTimestamp,
+  isNonEmptyString,
+  isRecord,
+  readIdentity,
+} from "./envelope-fields";
 import type {
-  NominatedIdentity,
   NominationRequest,
   NominationTerms,
   ReceiverEndpointStatus,
@@ -8,35 +13,6 @@ import type {
 
 const allowedOperations = new Set<string>(V1_PEER_OPERATIONS);
 const endpointStatuses = new Set<string>(["configured", "not-configured"]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function isIsoTimestamp(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    Number.isFinite(Date.parse(value)) &&
-    new Date(value).toISOString() === value
-  );
-}
-
-function readIdentity(value: unknown): NominatedIdentity | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const { environmentAri, installationAri, siteAri } = value;
-  return isNonEmptyString(environmentAri) &&
-    isNonEmptyString(installationAri) &&
-    isNonEmptyString(siteAri)
-    ? { environmentAri, installationAri, siteAri }
-    : undefined;
-}
 
 function readTerms(value: unknown): NominationTerms | undefined {
   if (!isRecord(value)) {
@@ -82,6 +58,7 @@ export function parseNominationRequest(
       operation,
       protocolVersion,
       receiverEndpointStatus,
+      relationshipId,
       requestId,
     } = value;
     const nominatedIdentity = readIdentity(value["nominatedIdentity"]);
@@ -97,6 +74,7 @@ export function parseNominationRequest(
       !isNonEmptyString(idempotencyKey) ||
       !isNonEmptyString(intendedReceiverSiteAri) ||
       !isNonEmptyString(invitationReference) ||
+      !isNonEmptyString(relationshipId) ||
       !isNonEmptyString(requestId) ||
       typeof receiverEndpointStatus !== "string" ||
       !endpointStatuses.has(receiverEndpointStatus)
@@ -114,6 +92,7 @@ export function parseNominationRequest(
       operation,
       protocolVersion,
       receiverEndpointStatus: receiverEndpointStatus as ReceiverEndpointStatus,
+      relationshipId,
       requestId,
       terms,
     };

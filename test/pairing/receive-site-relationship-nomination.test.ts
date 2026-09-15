@@ -13,6 +13,7 @@ import {
 const emptyState = (): SiteRelationshipSetupState => ({
   nominations: [],
   processedIdempotencyKeys: [],
+  relationships: [],
 });
 
 const greenSiteAri = "ari:cloud:jira::site/green-site";
@@ -52,6 +53,7 @@ function invited(): {
       operation: "site-relationship.nominate",
       protocolVersion: "v1",
       receiverEndpointStatus: "configured",
+      relationshipId: "relationship-001",
       requestId: "request-001",
       terms: {
         allowedOperations: invitation.allowedOperations,
@@ -80,16 +82,19 @@ describe("receiveSiteRelationshipNomination", () => {
       nominations: [
         {
           correlationId: request.correlationId,
+          counterpartSiteAri: blueIdentity.siteAri,
           idempotencyKey: "nominate-001",
           invitationReference: request.invitationReference,
           nominatedIdentity: blueIdentity,
           receiverEndpointStatus: "configured",
+          relationshipId: "relationship-001",
           role: "green",
           status: "awaiting-green-approval",
           terms: request.terms,
         },
       ],
       processedIdempotencyKeys: ["nominate-001"],
+      relationships: [],
     });
     expect(result.value.receipt).toEqual({
       correlationId: request.correlationId,

@@ -16,6 +16,7 @@ const validRequest = {
   operation: "site-relationship.nominate",
   protocolVersion: "v1",
   receiverEndpointStatus: "configured",
+  relationshipId: "relationship-001",
   requestId: "request-001",
   terms: {
     allowedOperations: ["starter.delivery"],
@@ -45,6 +46,10 @@ describe("parseNominationRequest", () => {
     [
       JSON.stringify({ ...validRequest, requestId: "" }),
       "the one-time request ID is empty",
+    ],
+    [
+      JSON.stringify({ ...validRequest, relationshipId: undefined }),
+      "the proposed relationship ID is missing",
     ],
     [
       JSON.stringify({ ...validRequest, idempotencyKey: undefined }),

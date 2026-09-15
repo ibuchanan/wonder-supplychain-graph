@@ -13,7 +13,15 @@ import {
   type LocalRole,
 } from "../pairing/local-readiness";
 import { readPocReadiness } from "../pairing/read-poc-readiness";
+import {
+  pollGreenForActivation,
+  sendConfirmation,
+} from "../pairing/request-activation";
 import { sendNomination } from "../pairing/send-nomination";
+import {
+  acceptActivationProposal,
+  activateAfterConfirmation,
+} from "../pairing/site-relationship-activation";
 import {
   type DecideNominationCommand,
   decideSiteRelationshipNomination,
@@ -224,11 +232,19 @@ resolver.define<NominatePayload, unknown>(
       .catch(() => undefined);
 
     const state = await kvsSiteRelationshipStore.read();
+    const idempotencyKey = `${payload.correlationId}:nominate`;
+    // A resubmitted consent must keep proposing the same relationship ID, so
+    // Blue and Green never disagree about which relationship this is.
+    const recorded = state.nominations.find(
+      (candidate) =>
+        candidate.role === "blue" &&
+        candidate.idempotencyKey === idempotencyKey,
+    );
     const nominated = nominateSiteRelationship(state, {
       actor: "blue-administrator",
       consentedAt: new Date().toISOString(),
       correlationId: payload.correlationId,
-      idempotencyKey: `${payload.correlationId}:nominate`,
+      idempotencyKey,
       intendedReceiverSiteAri: payload.intendedReceiverSiteAri,
       invitationReference: payload.invitationReference,
       localIdentity: identity,
@@ -237,6 +253,8 @@ resolver.define<NominatePayload, unknown>(
       receiverEndpointStatus: receiverEndpoint
         ? "configured"
         : "not-configured",
+      relationshipId:
+        recorded?.relationshipId ?? globalThis.crypto.randomUUID(),
       requestId: globalThis.crypto.randomUUID(),
       terms: payload.terms as never,
     });
@@ -255,6 +273,95 @@ resolver.define<NominatePayload, unknown>(
     return sent.isErr()
       ? { reason: sent.error.code, status: "awaiting-retry" }
       : { status: "awaiting-green-approval" };
+  },
+);
+
+interface ConfirmActivationPayload {
+  readonly correlationId: string;
+  readonly greenBootstrapUrl: string;
+}
+
+/**
+ * Blue's Waiting for Green approval action. One invocation is one bounded
+ * poll: it keeps no session open, and it activates Blue's local record only
+ * after Green's authenticated success response.
+ */
+resolver.define<ConfirmActivationPayload, unknown>(
+  "confirmActivation",
+  async ({ payload }) => {
+    const identity = localIdentity();
+    if (!identity) {
+      return { reason: "local-identity-unavailable", status: "blocked" };
+    }
+
+    const transport = { fetch, secret: process.env["SHARED_SECRET"] };
+    const state = await kvsSiteRelationshipStore.read();
+    const pending = state.nominations.find(
+      (candidate) =>
+        candidate.role === "blue" &&
+        candidate.correlationId === payload.correlationId,
+    );
+    if (!pending) {
+      return { reason: "pending-nomination-not-found", status: "blocked" };
+    }
+
+    const polled = await pollGreenForActivation(
+      payload.greenBootstrapUrl,
+      {
+        correlationId: pending.correlationId,
+        createdAt: new Date().toISOString(),
+        intendedReceiverSiteAri: pending.counterpartSiteAri,
+        nominatedIdentity: identity,
+        operation: "site-relationship.poll",
+        protocolVersion: "v1",
+        relationshipId: pending.relationshipId,
+        requestId: globalThis.crypto.randomUUID(),
+      },
+      transport,
+    );
+    if (polled.isErr()) {
+      return { reason: polled.error.code, status: "awaiting-retry" };
+    }
+    if (!("proposal" in polled.value)) {
+      return { status: polled.value.outcome };
+    }
+
+    const accepted = acceptActivationProposal(state, polled.value.proposal, {
+      idempotencyKey: `${pending.correlationId}:confirm`,
+      localIdentity: identity,
+      now: new Date().toISOString(),
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    if (accepted.isErr()) {
+      return { reason: accepted.error.code, status: "blocked" };
+    }
+
+    await kvsSiteRelationshipStore.write(accepted.value.nextState);
+
+    const sent = await sendConfirmation(
+      payload.greenBootstrapUrl,
+      accepted.value.confirmation,
+      transport,
+    );
+    if (sent.isErr()) {
+      return { reason: sent.error.code, status: "awaiting-retry" };
+    }
+
+    const activated = activateAfterConfirmation(
+      accepted.value.nextState,
+      sent.value,
+      { now: new Date().toISOString() },
+    );
+    if (activated.isErr()) {
+      return { reason: activated.error.code, status: "blocked" };
+    }
+
+    await kvsSiteRelationshipStore.write(activated.value.nextState);
+
+    return {
+      relationshipId: activated.value.relationship.relationshipId,
+      status: "active",
+    };
   },
 );
 

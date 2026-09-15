@@ -10,6 +10,14 @@
   replace the separate authorization required for each Pairing.
 - **Site relationship invitation**: a pending proposal to establish a Site
   relationship, distinct from an Invitation to pair two Epics.
+- **Activation proposal**: what the approving site returns to an authenticated
+  poll after its administrator approves a nomination. It names the approved
+  counterpart identity, relationship ID, terms version, and agreement end
+  instant, and never an endpoint URL.
+- **Bilateral confirmation**: the exchange that activates both local records. A
+  site activates only after the matching confirmation it can verify: the
+  approver on the confirmation it receives, the nominator on the authenticated
+  success response.
 - **Pairing**: the bilateral relationship between exactly one Source Epic and one
   Paired Epic. Each Pairing requires its own authorization within an active Site
   relationship; revoking one Pairing does not revoke other Pairings.

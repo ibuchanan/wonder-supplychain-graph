@@ -22,16 +22,19 @@ const nominatedState = (): SiteRelationshipSetupState => ({
   nominations: [
     {
       correlationId: "correlation-001",
+      counterpartSiteAri: blueIdentity.siteAri,
       idempotencyKey: "nominate-001",
       invitationReference: "reference-001",
       nominatedIdentity: blueIdentity,
       receiverEndpointStatus: "configured",
+      relationshipId: "relationship-001",
       role: "green",
       status: "awaiting-green-approval",
       terms,
     },
   ],
   processedIdempotencyKeys: ["nominate-001"],
+  relationships: [],
 });
 
 const approveCommand: DecideNominationCommand = {
@@ -66,6 +69,7 @@ describe("decideSiteRelationshipNomination", () => {
         },
       ],
       processedIdempotencyKeys: ["nominate-001", "decision-001"],
+      relationships: [],
     });
   });
 

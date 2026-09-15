@@ -5,6 +5,7 @@ import type {
   Invitation,
   InvitationWorkflowState,
 } from "./invitation-workflow";
+import type { SiteRelationship } from "./site-relationship";
 
 /**
  * Site/installation/environment identity a site observes about itself and
@@ -31,18 +32,27 @@ export interface NominationTerms {
 export type ReceiverEndpointStatus = "configured" | "not-configured";
 
 export type NominationStatus =
+  | "active"
   | "awaiting-blue-confirmation"
   | "awaiting-green-approval"
   | "invalidated"
   | "rejected";
 
 export interface SiteRelationshipNomination {
+  /** When this site recorded its own acceptance of the activation proposal. */
+  readonly acceptedAt?: string;
+  /** When bilateral confirmation completed and the local record activated. */
+  readonly confirmedAt?: string;
   readonly correlationId: string;
+  /** The other site in this setup: Green for a Blue record, Blue for Green's. */
+  readonly counterpartSiteAri: string;
   readonly decidedAt?: string;
   readonly idempotencyKey: string;
   readonly invitationReference: string;
   readonly nominatedIdentity: NominatedIdentity;
   readonly receiverEndpointStatus: ReceiverEndpointStatus;
+  /** Minted by Blue with its pending record; both sites must agree on it. */
+  readonly relationshipId: string;
   readonly role: "blue" | "green";
   readonly safeReason?: string;
   readonly status: NominationStatus;
@@ -52,6 +62,8 @@ export interface SiteRelationshipNomination {
 export interface SiteRelationshipSetupState {
   readonly nominations: readonly SiteRelationshipNomination[];
   readonly processedIdempotencyKeys: readonly string[];
+  /** Local Site relationships, written only on bilateral confirmation. */
+  readonly relationships: readonly SiteRelationship[];
 }
 
 export interface NominateSiteRelationshipCommand {
@@ -65,6 +77,7 @@ export interface NominateSiteRelationshipCommand {
   readonly localReadiness: "blocked" | "ready";
   readonly operation: "site-relationship.nominate";
   readonly receiverEndpointStatus: ReceiverEndpointStatus;
+  readonly relationshipId: string;
   readonly requestId: string;
   readonly terms: NominationTerms;
 }
@@ -83,6 +96,7 @@ export interface NominationRequest {
   readonly operation: "site-relationship.nominate";
   readonly protocolVersion: ProtocolVersion;
   readonly receiverEndpointStatus: ReceiverEndpointStatus;
+  readonly relationshipId: string;
   readonly requestId: string;
   readonly terms: NominationTerms;
 }
@@ -110,10 +124,12 @@ export function nominateSiteRelationship(
 
   const nomination: SiteRelationshipNomination = Object.freeze({
     correlationId: command.correlationId,
+    counterpartSiteAri: command.intendedReceiverSiteAri,
     idempotencyKey: command.idempotencyKey,
     invitationReference: command.invitationReference,
     nominatedIdentity: command.localIdentity,
     receiverEndpointStatus: command.receiverEndpointStatus,
+    relationshipId: command.relationshipId,
     role: "blue" as const,
     status: "awaiting-green-approval" as const,
     terms: command.terms,
@@ -123,6 +139,7 @@ export function nominateSiteRelationship(
     nextState: recorded
       ? state
       : {
+          ...state,
           nominations: [...state.nominations, nomination],
           processedIdempotencyKeys: [
             ...state.processedIdempotencyKeys,
@@ -139,6 +156,7 @@ export function nominateSiteRelationship(
       operation: command.operation,
       protocolVersion: "v1" as const,
       receiverEndpointStatus: command.receiverEndpointStatus,
+      relationshipId: command.relationshipId,
       requestId: command.requestId,
       terms: command.terms,
     }),
@@ -223,10 +241,12 @@ export function receiveSiteRelationshipNomination(
 
   const nomination: SiteRelationshipNomination = Object.freeze({
     correlationId: request.correlationId,
+    counterpartSiteAri: request.nominatedIdentity.siteAri,
     idempotencyKey: request.idempotencyKey,
     invitationReference: request.invitationReference,
     nominatedIdentity: request.nominatedIdentity,
     receiverEndpointStatus: request.receiverEndpointStatus,
+    relationshipId: request.relationshipId,
     role: "green" as const,
     status: "awaiting-green-approval" as const,
     terms: request.terms,
@@ -242,6 +262,7 @@ export function receiveSiteRelationshipNomination(
     nextState: recorded
       ? state
       : {
+          ...state,
           nominations: [...state.nominations, nomination],
           processedIdempotencyKeys: [
             ...state.processedIdempotencyKeys,
@@ -280,7 +301,8 @@ export type DecideNominationError =
   | { readonly code: "pending-nomination-not-found" }
   | { readonly code: "safe-reason-required" };
 
-function identitiesMatch(
+/** Identities are compared whole: any differing ARI is a different site. */
+export function identitiesMatch(
   reviewed: NominatedIdentity,
   nominated: NominatedIdentity,
 ): boolean {
@@ -345,6 +367,7 @@ export function decideSiteRelationshipNomination(
     return err({
       code: "nomination-changed",
       nextState: {
+        ...state,
         nominations: state.nominations.map((candidate) =>
           candidate === nomination
             ? {
@@ -378,6 +401,7 @@ export function decideSiteRelationshipNomination(
 
   return ok({
     nextState: {
+      ...state,
       nominations: state.nominations.map((candidate) =>
         candidate === nomination ? decided : candidate,
       ),
