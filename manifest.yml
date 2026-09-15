@@ -157,10 +157,14 @@ permissions:
   external:
     fetch:
       backend:
-        # Addresses can be tuned down to:
-        # - List of known peers
-        # - CloudEvent log sink
-        - address: '*'
+        - address: '*.execute-api.ap-southeast-2.amazonaws.com'
+          inScopeEUD: false
+        - address: '*.execute-api.eu-central-1.amazonaws.com'
+          inScopeEUD: false
+        - address: '*.execute-api.us-east-1.amazonaws.com'
+          inScopeEUD: false
+        - address: automation.atlassian.com
+          inScopeEUD: false
   scopes:
     - delete:object:jira
     - read:object:jira
