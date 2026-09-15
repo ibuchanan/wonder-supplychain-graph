@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { shipLogEvent } from "../../src/observability/log-shipping";
+import {
+  shipLogEvent,
+  validateCloudEventsWebhook,
+} from "../../src/observability/log-shipping";
 
 describe("log shipping port", () => {
   it("renders a domain event as a redacted CloudEvent and sends it with bearer authentication", async () => {
@@ -147,5 +150,98 @@ describe("log shipping port", () => {
         installationId: "ari:cloud:ecosystem::installation/tenant-001",
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it("validates a CloudEvents webhook before shipping an identical event with webhook semantics", async () => {
+    const requests: unknown[] = [];
+    const configuration = {
+      authMethod: "cloudevents-webhook" as const,
+      targetUrl: "https://ingest.execute-api.us-east-1.amazonaws.com/v1/events",
+    };
+    const deliver = async (request: unknown) => {
+      requests.push(request);
+      return {
+        headers: {
+          "webhook-allowed-origin":
+            "ari:cloud:ecosystem::installation/tenant-001",
+        },
+        ok: true,
+      };
+    };
+
+    await expect(
+      validateCloudEventsWebhook({
+        configuration,
+        deliver,
+        installationId: "ari:cloud:ecosystem::installation/tenant-001",
+      }),
+    ).resolves.toEqual({ status: "validated" });
+
+    await shipLogEvent({
+      configuration,
+      deliver,
+      event: {
+        correlationId: "corr-001",
+        fields: { event: "scg.peer.request.denied", outcome: "denied" },
+        id: "event-001",
+        occurredAt: "2026-09-15T12:00:00.000Z",
+      },
+      installationId: "ari:cloud:ecosystem::installation/tenant-001",
+      secret: "unchanged-secret",
+    });
+
+    expect(requests).toEqual([
+      {
+        headers: {
+          "WebHook-Request-Origin":
+            "ari:cloud:ecosystem::installation/tenant-001",
+        },
+        method: "OPTIONS",
+        url: configuration.targetUrl,
+      },
+      {
+        body: {
+          data: {
+            correlationId: "corr-001",
+            event: "scg.peer.request.denied",
+            outcome: "denied",
+          },
+          datacontenttype: "application/json",
+          id: "event-001",
+          source: "ari:cloud:ecosystem::installation/tenant-001",
+          specversion: "1.0",
+          time: "2026-09-15T12:00:00.000Z",
+          type: "scg.peer.request.denied",
+        },
+        headers: {
+          "WebHook-Request-Origin":
+            "ari:cloud:ecosystem::installation/tenant-001",
+        },
+        url: configuration.targetUrl,
+      },
+    ]);
+    expect(JSON.stringify(requests)).not.toContain("unchanged-secret");
+  });
+
+  it("refuses a webhook that does not authorize this installation", async () => {
+    await expect(
+      validateCloudEventsWebhook({
+        configuration: {
+          authMethod: "cloudevents-webhook",
+          targetUrl:
+            "https://ingest.execute-api.us-east-1.amazonaws.com/v1/events",
+        },
+        deliver: async () => ({
+          headers: {
+            "WebHook-Allowed-Origin": "ari:cloud:ecosystem::installation/other",
+          },
+          ok: true,
+        }),
+        installationId: "ari:cloud:ecosystem::installation/tenant-001",
+      }),
+    ).resolves.toEqual({
+      reason: "webhook-origin-not-allowed",
+      status: "rejected",
+    });
   });
 });

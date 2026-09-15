@@ -216,6 +216,10 @@ const sinkRejections: Record<string, string> = {
   "log-sink-url-not-absolute":
     "Enter an absolute URL, including the https:// scheme.",
   "log-sink-url-not-https": "The sink target URL must use https.",
+  "webhook-origin-not-allowed":
+    "The webhook does not allow this site as its event origin. Update its allowed origins and save again.",
+  "webhook-validation-failed":
+    "The webhook validation request failed. Confirm that the sink accepts HTTPS OPTIONS requests and try again.",
 };
 
 const LogSinkForm = () => {

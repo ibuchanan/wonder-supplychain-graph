@@ -35,6 +35,7 @@ import {
   nominateSiteRelationship,
 } from "../pairing/site-relationship-nomination";
 import { kvsLogSinkStore } from "../observability/kvs-log-sink-store";
+import { validateCloudEventsWebhook } from "../observability/log-shipping";
 import {
   clearLogSink,
   configureLogSink,
@@ -659,11 +660,37 @@ resolver.define("saveLogSink", async ({ context, payload }) => {
     authMethod: request.authMethod,
     occurredAt: new Date().toISOString(),
     permittedSinkHosts,
-    secret: request.secret,
+    secret: request.secret.trim() || (await kvsLogSinkStore.readSecret()) || "",
     targetUrl: request.targetUrl,
   });
   if (configured.isErr()) {
     return { reason: configured.error.code, status: "rejected" };
+  }
+
+  const validated = await validateCloudEventsWebhook({
+    configuration: configured.value.configuration,
+    deliver: async (delivery) => {
+      if (!("method" in delivery)) {
+        throw new Error("Webhook validation must use OPTIONS");
+      }
+
+      const response = await fetch(delivery.url, {
+        headers: delivery.headers,
+        method: delivery.method,
+      });
+
+      return {
+        headers: {
+          "WebHook-Allowed-Origin":
+            response.headers.get("WebHook-Allowed-Origin") ?? "",
+        },
+        ok: response.ok,
+      };
+    },
+    installationId: getAppContext().installationAri.toString(),
+  });
+  if (validated.status === "rejected") {
+    return { reason: validated.reason, status: "rejected" };
   }
 
   await kvsLogSinkStore.write(

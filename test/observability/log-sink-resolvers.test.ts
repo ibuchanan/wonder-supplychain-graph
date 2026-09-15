@@ -5,6 +5,7 @@
  * never read back.
  */
 
+import { fetch } from "@forge/api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const plainStorage = new Map<string, unknown>();
@@ -91,7 +92,91 @@ describe("log sink configuration resolvers", () => {
     );
   });
 
+  it("validates a CloudEvents webhook before persisting it", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      headers: new Headers({
+        "WebHook-Allowed-Origin": "ari:cloud:ecosystem::installation/test",
+      }),
+      ok: true,
+    } as never);
+
+    await expect(
+      invoke("saveLogSink", {
+        authMethod: "cloudevents-webhook",
+        secret: "unchanged-secret",
+        targetUrl: permittedSink,
+      }),
+    ).resolves.toEqual({ status: "saved" });
+
+    expect(fetch).toHaveBeenCalledWith(permittedSink, {
+      headers: {
+        "WebHook-Request-Origin": "ari:cloud:ecosystem::installation/test",
+      },
+      method: "OPTIONS",
+    });
+    expect(plainStorage.get("log-sink-configuration")).toEqual({
+      authMethod: "cloudevents-webhook",
+      targetUrl: permittedSink,
+    });
+  });
+
+  it("reuses the encrypted secret when an administrator switches auth methods", async () => {
+    await invoke("saveLogSink", {
+      authMethod: "bearer-token",
+      secret: "saved-secret",
+      targetUrl: permittedSink,
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      headers: new Headers({
+        "WebHook-Allowed-Origin": "ari:cloud:ecosystem::installation/test",
+      }),
+      ok: true,
+    } as never);
+
+    await expect(
+      invoke("saveLogSink", {
+        authMethod: "cloudevents-webhook",
+        secret: "",
+        targetUrl: permittedSink,
+      }),
+    ).resolves.toEqual({ status: "saved" });
+
+    expect(secretStorage.get("log-sink-secret")).toBe("saved-secret");
+    expect(plainStorage.get("log-sink-configuration")).toEqual({
+      authMethod: "cloudevents-webhook",
+      targetUrl: permittedSink,
+    });
+  });
+
+  it("rejects an unapproved webhook without storing it or exposing its secret", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      headers: new Headers(),
+      ok: true,
+    } as never);
+
+    const rejected = await invoke("saveLogSink", {
+      authMethod: "cloudevents-webhook",
+      secret: "unchanged-secret",
+      targetUrl: permittedSink,
+    });
+
+    expect(rejected).toEqual({
+      reason: "webhook-origin-not-allowed",
+      status: "rejected",
+    });
+    expect(plainStorage.has("log-sink-configuration")).toBe(false);
+    expect(secretStorage.size).toBe(0);
+    expect(JSON.stringify(rejected)).not.toContain("unchanged-secret");
+  });
+
   it("reflects the saved state on reload without ever returning the secret", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      headers: new Headers({
+        "WebHook-Allowed-Origin": "ari:cloud:ecosystem::installation/test",
+      }),
+      ok: true,
+    } as never);
+
     await invoke("saveLogSink", {
       authMethod: "cloudevents-webhook",
       secret: "sink-bearer-token",

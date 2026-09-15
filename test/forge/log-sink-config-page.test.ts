@@ -44,5 +44,7 @@ describe("CloudEvent log sink section of the configuration page", () => {
 
     expect(page).toContain('"rejected"');
     expect(page).toContain("log-sink-host-not-permitted");
+    expect(page).toContain("webhook-origin-not-allowed");
+    expect(page).toContain("does not allow this site as its event origin");
   });
 });

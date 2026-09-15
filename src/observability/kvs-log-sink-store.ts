@@ -35,6 +35,8 @@ export const kvsLogSinkStore = {
 
     return { configuration, hasSecret: Boolean(secret) };
   },
+  readSecret: (): Promise<string | undefined> =>
+    kvs.getSecret<string>(secretKey),
   write: async (
     configuration: LogSinkConfiguration,
     secret: string,
