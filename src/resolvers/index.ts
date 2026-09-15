@@ -310,12 +310,14 @@ resolver.define<ConfirmActivationPayload, unknown>(
       {
         correlationId: pending.correlationId,
         createdAt: new Date().toISOString(),
+        direction: "blue-to-green",
         intendedReceiverSiteAri: pending.counterpartSiteAri,
         nominatedIdentity: identity,
         operation: "site-relationship.poll",
         protocolVersion: "v1",
         relationshipId: pending.relationshipId,
         requestId: globalThis.crypto.randomUUID(),
+        termsVersion: pending.terms.termsVersion,
       },
       transport,
     );

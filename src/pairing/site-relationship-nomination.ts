@@ -1,6 +1,10 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
 
-import type { PeerOperation, ProtocolVersion } from "../collaboration/protocol";
+import type {
+  PeerOperation,
+  ProtocolVersion,
+  SetupDirection,
+} from "../collaboration/protocol";
 import type {
   Invitation,
   InvitationWorkflowState,
@@ -89,6 +93,7 @@ export interface NominateSiteRelationshipCommand {
 export interface NominationRequest {
   readonly correlationId: string;
   readonly createdAt: string;
+  readonly direction: SetupDirection;
   readonly idempotencyKey: string;
   readonly intendedReceiverSiteAri: string;
   readonly invitationReference: string;
@@ -149,6 +154,7 @@ export function nominateSiteRelationship(
     request: Object.freeze({
       correlationId: command.correlationId,
       createdAt: command.consentedAt,
+      direction: "blue-to-green" as const,
       idempotencyKey: command.idempotencyKey,
       intendedReceiverSiteAri: command.intendedReceiverSiteAri,
       invitationReference: command.invitationReference,

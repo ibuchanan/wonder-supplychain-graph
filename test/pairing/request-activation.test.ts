@@ -27,9 +27,11 @@ const pollRequest: ActivationPollRequest = {
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   nominatedIdentity: blueIdentity,
   operation: "site-relationship.poll",
+  direction: "blue-to-green",
   protocolVersion: "v1",
   relationshipId: "relationship-001",
   requestId: "poll-request-001",
+  termsVersion: "v1",
 };
 
 const proposal = {
@@ -38,6 +40,7 @@ const proposal = {
   counterpartSiteAri: "ari:cloud:jira::site/green-site",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
   operation: "site-relationship.activation-proposal",
+  direction: "green-to-blue",
   protocolVersion: "v1",
   relationshipId: "relationship-001",
   termsVersion: "v1",
@@ -51,6 +54,7 @@ const confirmationRequest: ConfirmationRequest = {
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
   operation: "site-relationship.confirm",
+  direction: "blue-to-green",
   protocolVersion: "v1",
   relationshipId: "relationship-001",
   requestId: "confirm-request-001",

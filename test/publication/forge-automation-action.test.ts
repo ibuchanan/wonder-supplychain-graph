@@ -2,7 +2,15 @@ import { fetch } from "@forge/api";
 import { kvs } from "@forge/kvs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@forge/api", () => ({ fetch: vi.fn() }));
+vi.mock("@forge/api", () => ({
+  fetch: vi.fn(),
+  getAppContext: vi.fn(() => ({
+    environmentAri: "ari:cloud:ecosystem::environment/blue-development",
+    environmentType: "DEVELOPMENT",
+    installation: { contexts: [{ cloudId: "blue-cloud-id" }] },
+    installationAri: "ari:cloud:ecosystem::installation/blue-installation",
+  })),
+}));
 vi.mock("@forge/kvs", () => ({
   kvs: {
     get: vi.fn(),
@@ -11,6 +19,45 @@ vi.mock("@forge/kvs", () => ({
 }));
 
 import { publishWorkPackage } from "../../src/publication/forge-automation-action";
+
+const sourcePairing = {
+  allowedOperations: ["starter.delivery"],
+  pairingId: "pairing-001",
+  peerEventUrl: "https://green.example/forge/webtrigger/receive-peer-event",
+  relationshipId: "relationship-001",
+  role: "source",
+  sourceEpicKey: "MFG-17",
+  sourceSiteAri: "ari:cloud:jira::site/blue-cloud-id",
+  sourceSiteUrl: "https://blue.example",
+  status: "active",
+};
+
+const relationship = {
+  counterpartSiteAri: "ari:cloud:jira::site/green-site",
+  leaseEndsAt: "2027-08-05T14:30:00.000Z",
+  relationshipId: "relationship-001",
+  status: "active",
+  termsVersion: "v1",
+};
+
+function mockStores(
+  overrides: {
+    readonly pairings?: readonly unknown[];
+    readonly relationships?: readonly unknown[];
+  } = {},
+) {
+  vi.mocked(kvs.get).mockImplementation(async (key) =>
+    key === "peer-pairing-state"
+      ? ({ pairings: overrides.pairings ?? [sourcePairing] } as never)
+      : key === "site-relationship-setup-state"
+        ? ({
+            nominations: [],
+            processedIdempotencyKeys: [],
+            relationships: overrides.relationships ?? [relationship],
+          } as never)
+        : undefined,
+  );
+}
 
 describe("publishWorkPackage", () => {
   beforeEach(() => {
@@ -66,26 +113,8 @@ describe("publishWorkPackage", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("posts one lean event to the active source pairing after queueing", async () => {
-    vi.mocked(kvs.get).mockImplementation(async (key) => {
-      if (key === "peer-pairing-state") {
-        return {
-          pairings: [
-            {
-              pairingId: "pairing-001",
-              peerEventUrl:
-                "https://green.example/forge/webtrigger/receive-peer-event",
-              role: "source",
-              sourceEpicKey: "MFG-17",
-              sourceSiteAri: "ari:cloud:jira::site/blue-site",
-              sourceSiteUrl: "https://blue.example",
-              status: "active",
-            },
-          ],
-        } as never;
-      }
-      return undefined;
-    });
+  it("posts one signed operation envelope to the active source pairing after queueing", async () => {
+    mockStores();
     vi.mocked(fetch).mockResolvedValue({ ok: true } as never);
 
     await publishWorkPackage({
@@ -97,18 +126,36 @@ describe("publishWorkPackage", () => {
       "https://green.example/forge/webtrigger/receive-peer-event",
       {
         body: JSON.stringify({
-          data: {
-            issueKey: "MFG-17",
-            pairingId: "pairing-001",
-            updatedFields: [],
+          createdAt: "2026-08-05T14:30:00.000Z",
+          direction: "source-to-destination",
+          event: {
+            data: {
+              issueKey: "MFG-17",
+              pairingId: "pairing-001",
+              updatedFields: [],
+            },
+            datacontenttype: "application/json",
+            id: "execution-003",
+            source: "ari:cloud:jira::site/blue-cloud-id",
+            specversion: "1.0",
+            subject: "issue/MFG-17",
+            time: "2026-08-05T14:30:00.000Z",
+            type: "scg:work-package:queued",
           },
-          datacontenttype: "application/json",
-          id: "execution-003",
-          source: "ari:cloud:jira::site/blue-site",
-          specversion: "1.0",
-          subject: "issue/MFG-17",
-          time: "2026-08-05T14:30:00.000Z",
-          type: "scg:work-package:queued",
+          idempotencyKey: "scg:MFG-17:execution-003",
+          intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
+          operation: "starter.delivery",
+          pairingId: "pairing-001",
+          protocolVersion: "v1",
+          relationshipId: "relationship-001",
+          requestId: "execution-003",
+          senderIdentity: {
+            environmentAri: "ari:cloud:ecosystem::environment/blue-development",
+            installationAri:
+              "ari:cloud:ecosystem::installation/blue-installation",
+            siteAri: "ari:cloud:jira::site/blue-cloud-id",
+          },
+          termsVersion: "v1",
         }),
         headers: expect.objectContaining({
           "Content-Type": "application/json",
@@ -122,25 +169,34 @@ describe("publishWorkPackage", () => {
     );
   });
 
+  it("refuses to send once the local relationship is revoked or out of lease", async () => {
+    // Revocation blocks this tenant's send authorization immediately; it does
+    // not wait for the peer to reject the delivery.
+    mockStores({ relationships: [{ ...relationship, status: "revoked" }] });
+
+    await expect(
+      publishWorkPackage({
+        publisherId: "account:automation-001",
+        sourceEpicId: "MFG-17",
+      }),
+    ).rejects.toThrow("Unable to emit lean event: relationship-unauthorized");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("refuses to send an operation absent from the pairing's allowlist", async () => {
+    mockStores({ pairings: [{ ...sourcePairing, allowedOperations: [] }] });
+
+    await expect(
+      publishWorkPackage({
+        publisherId: "account:automation-001",
+        sourceEpicId: "MFG-17",
+      }),
+    ).rejects.toThrow("Unable to emit lean event: operation-not-allowed");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("surfaces a Green rejection after queueing locally", async () => {
-    vi.mocked(kvs.get).mockImplementation(async (key) =>
-      key === "peer-pairing-state"
-        ? ({
-            pairings: [
-              {
-                pairingId: "pairing-001",
-                peerEventUrl:
-                  "https://green.example/forge/webtrigger/receive-peer-event",
-                role: "source",
-                sourceEpicKey: "MFG-17",
-                sourceSiteAri: "ari:cloud:jira::site/blue-site",
-                sourceSiteUrl: "https://blue.example",
-                status: "active",
-              },
-            ],
-          } as never)
-        : undefined,
-    );
+    mockStores();
     vi.mocked(fetch).mockResolvedValue({ ok: false } as never);
 
     await expect(

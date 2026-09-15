@@ -141,6 +141,8 @@ describe("createDemoPublishWorkPackageAction", () => {
     vi.stubGlobal("crypto", { randomUUID: () => "event-001" });
     const emitLeanEvent = vi.fn().mockResolvedValue(undefined);
     const sourcePairing: SourcePeerPairing = {
+      allowedOperations: ["starter.delivery"],
+      relationshipId: "relationship-001",
       pairingId: "pairing-001",
       peerEventUrl: "https://green.example/forge/webtrigger/receive-peer-event",
       role: "source",
@@ -165,20 +167,25 @@ describe("createDemoPublishWorkPackageAction", () => {
       sourceEpicId: "MFG-17",
     });
 
-    expect(emitLeanEvent).toHaveBeenCalledExactlyOnceWith(sourcePairing, {
-      data: {
-        issueKey: "MFG-17",
-        pairingId: "pairing-001",
-        updatedFields: [],
+    expect(emitLeanEvent).toHaveBeenCalledExactlyOnceWith(
+      sourcePairing,
+      {
+        data: {
+          issueKey: "MFG-17",
+          pairingId: "pairing-001",
+          updatedFields: [],
+        },
+        datacontenttype: "application/json",
+        id: "event-001",
+        source: "ari:cloud:jira::site/blue-site",
+        specversion: "1.0",
+        subject: "issue/MFG-17",
+        time: "2026-08-22T14:30:00.000Z",
+        type: "scg:work-package:queued",
       },
-      datacontenttype: "application/json",
-      id: "event-001",
-      source: "ari:cloud:jira::site/blue-site",
-      specversion: "1.0",
-      subject: "issue/MFG-17",
-      time: "2026-08-22T14:30:00.000Z",
-      type: "scg:work-package:queued",
-    });
+      // The business operation's own key, kept out of the event body.
+      "automation-run-005",
+    );
   });
 
   afterEach(() => {

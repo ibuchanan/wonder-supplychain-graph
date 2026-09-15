@@ -16,12 +16,14 @@ const blueIdentity = {
 const validPoll = {
   correlationId: "correlation-001",
   createdAt: "2026-09-14T19:05:00.000Z",
+  direction: "blue-to-green",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   nominatedIdentity: blueIdentity,
   operation: "site-relationship.poll",
   protocolVersion: "v1",
   relationshipId: "relationship-001",
   requestId: "poll-request-001",
+  termsVersion: "v1",
 } as const;
 
 describe("parseActivationPollRequest", () => {
@@ -65,6 +67,18 @@ describe("parseActivationPollRequest", () => {
       }),
       "the polling identity is incomplete",
     ],
+    [
+      JSON.stringify({ ...validPoll, direction: undefined }),
+      "the permitted direction is missing",
+    ],
+    [
+      JSON.stringify({ ...validPoll, direction: "green-to-blue" }),
+      "the direction reverses the one this operation permits",
+    ],
+    [
+      JSON.stringify({ ...validPoll, termsVersion: undefined }),
+      "the immutable terms reference is missing",
+    ],
   ])("rejects a poll request when %s", (body) => {
     expect(parseActivationPollRequest(body)).toBeUndefined();
   });
@@ -74,6 +88,7 @@ const validConfirmation = {
   confirmedIdentity: blueIdentity,
   correlationId: "correlation-001",
   createdAt: "2026-09-14T19:10:00.000Z",
+  direction: "blue-to-green",
   idempotencyKey: "correlation-001:confirm",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
@@ -132,6 +147,14 @@ describe("parseConfirmationRequest", () => {
       }),
       "the confirming identity is incomplete",
     ],
+    [
+      JSON.stringify({ ...validConfirmation, direction: undefined }),
+      "the permitted direction is missing",
+    ],
+    [
+      JSON.stringify({ ...validConfirmation, direction: "green-to-blue" }),
+      "the direction reverses the one this operation permits",
+    ],
   ])("rejects a confirmation request when %s", (body) => {
     expect(parseConfirmationRequest(body)).toBeUndefined();
   });
@@ -141,6 +164,7 @@ const validProposal = {
   approvedIdentity: blueIdentity,
   correlationId: "correlation-001",
   counterpartSiteAri: "ari:cloud:jira::site/green-site",
+  direction: "green-to-blue",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
   operation: "site-relationship.activation-proposal",
   protocolVersion: "v1",
@@ -199,6 +223,14 @@ describe("parseActivationProposal", () => {
         approvedIdentity: { siteAri: blueIdentity.siteAri },
       }),
       "the approved identity is incomplete",
+    ],
+    [
+      JSON.stringify({ ...validProposal, direction: undefined }),
+      "the permitted direction is missing",
+    ],
+    [
+      JSON.stringify({ ...validProposal, direction: "blue-to-green" }),
+      "the direction reverses the one this response permits",
     ],
   ])("rejects an activation proposal when %s", (body) => {
     expect(parseActivationProposal(body)).toBeUndefined();

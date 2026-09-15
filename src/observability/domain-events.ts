@@ -2,6 +2,34 @@ export interface DomainEventLogger {
   readonly info: (fields: Record<string, unknown>, message: string) => void;
 }
 
+export interface PeerRequestDeniedEvent {
+  readonly correlationId?: string;
+  /** A safe reason code, never a signature, secret, endpoint, or Jira content. */
+  readonly reason: string;
+  readonly route: "bootstrap" | "peer-event";
+}
+
+/**
+ * Records why a peer request was refused. The caller receives only an opaque
+ * error, so this local, non-content evidence is the sole place an
+ * administrator can tell a forged signature from an unauthorized relationship.
+ */
+export function logPeerRequestDenied(
+  logger: DomainEventLogger,
+  event: PeerRequestDeniedEvent,
+): void {
+  logger.info(
+    {
+      ...(event.correlationId ? { correlationId: event.correlationId } : {}),
+      event: "scg.peer.request.denied",
+      outcome: "denied",
+      reason: event.reason,
+      route: event.route,
+    },
+    "Supplychain Graph peer request denied",
+  );
+}
+
 export interface GraphConnectionChangedEvent {
   readonly action: "CREATED" | "DELETED" | "UPDATED";
   readonly connectionId: string;

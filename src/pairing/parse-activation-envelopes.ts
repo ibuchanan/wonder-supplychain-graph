@@ -26,17 +26,21 @@ export function parseActivationPollRequest(
     const {
       correlationId,
       createdAt,
+      direction,
       intendedReceiverSiteAri,
       operation,
       protocolVersion,
       relationshipId,
       requestId,
+      termsVersion,
     } = value;
     const nominatedIdentity = readIdentity(value["nominatedIdentity"]);
 
     if (
       operation !== "site-relationship.poll" ||
       protocolVersion !== "v1" ||
+      direction !== "blue-to-green" ||
+      !isNonEmptyString(termsVersion) ||
       !nominatedIdentity ||
       !isNonEmptyString(correlationId) ||
       !isIsoTimestamp(createdAt) ||
@@ -50,12 +54,14 @@ export function parseActivationPollRequest(
     return {
       correlationId,
       createdAt,
+      direction,
       intendedReceiverSiteAri,
       nominatedIdentity,
       operation,
       protocolVersion,
       relationshipId,
       requestId,
+      termsVersion,
     };
   } catch {
     return undefined;
@@ -78,6 +84,7 @@ export function parseConfirmationRequest(
     const {
       correlationId,
       createdAt,
+      direction,
       idempotencyKey,
       intendedReceiverSiteAri,
       leaseEndsAt,
@@ -92,6 +99,7 @@ export function parseConfirmationRequest(
     if (
       operation !== "site-relationship.confirm" ||
       protocolVersion !== "v1" ||
+      direction !== "blue-to-green" ||
       !confirmedIdentity ||
       !isNonEmptyString(correlationId) ||
       !isIsoTimestamp(createdAt) ||
@@ -109,6 +117,7 @@ export function parseConfirmationRequest(
       confirmedIdentity,
       correlationId,
       createdAt,
+      direction,
       idempotencyKey,
       intendedReceiverSiteAri,
       leaseEndsAt,
@@ -140,6 +149,7 @@ export function parseActivationProposal(
     const {
       correlationId,
       counterpartSiteAri,
+      direction,
       leaseEndsAt,
       operation,
       protocolVersion,
@@ -151,6 +161,7 @@ export function parseActivationProposal(
     if (
       operation !== "site-relationship.activation-proposal" ||
       protocolVersion !== "v1" ||
+      direction !== "green-to-blue" ||
       !approvedIdentity ||
       !isNonEmptyString(correlationId) ||
       !isNonEmptyString(counterpartSiteAri) ||
@@ -165,6 +176,7 @@ export function parseActivationProposal(
       approvedIdentity,
       correlationId,
       counterpartSiteAri,
+      direction,
       leaseEndsAt,
       operation,
       protocolVersion,

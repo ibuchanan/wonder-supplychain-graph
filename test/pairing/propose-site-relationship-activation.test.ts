@@ -52,9 +52,11 @@ const pollRequest: ActivationPollRequest = {
   intendedReceiverSiteAri: greenIdentity.siteAri,
   nominatedIdentity: blueIdentity,
   operation: "site-relationship.poll",
+  direction: "blue-to-green",
   protocolVersion: "v1",
   relationshipId: "relationship-001",
   requestId: "poll-request-001",
+  termsVersion: "v1",
 };
 
 const context = {
@@ -96,6 +98,7 @@ describe("proposeSiteRelationshipActivation", () => {
         counterpartSiteAri: greenIdentity.siteAri,
         leaseEndsAt: terms.expiresAt,
         operation: "site-relationship.activation-proposal",
+        direction: "green-to-blue",
         protocolVersion: "v1",
         relationshipId: "relationship-001",
         termsVersion: "v1",
@@ -128,6 +131,11 @@ describe("proposeSiteRelationshipActivation", () => {
         },
       },
       reason: "the polling site is not the approved counterpart",
+    },
+    {
+      code: "nomination-terms-mismatch",
+      override: { termsVersion: "v2" },
+      reason: "the poll names terms Green never approved",
     },
   ] as const)(
     "denies a poll and proposes nothing when $reason",
@@ -182,6 +190,7 @@ describe("proposeSiteRelationshipActivation", () => {
         counterpartSiteAri: greenIdentity.siteAri,
         leaseEndsAt: terms.expiresAt,
         operation: "site-relationship.activation-proposal",
+        direction: "green-to-blue",
         protocolVersion: "v1",
         relationshipId: "relationship-001",
         termsVersion: "v1",

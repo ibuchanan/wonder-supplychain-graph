@@ -6,6 +6,9 @@ import {
 } from "@forge-ahead/triggers/webtrigger";
 
 import { verifyPeerRequest } from "../collaboration/peer-hmac-auth";
+import { consumeRequestId } from "../collaboration/peer-replay-guard";
+import { logger } from "../logging";
+import { logPeerRequestDenied } from "../observability/domain-events";
 import { kvsInvitationStore } from "./kvs-invitation-store";
 import { kvsSiteRelationshipStore } from "./kvs-site-relationship-store";
 import {
@@ -22,11 +25,32 @@ import {
   receiveSiteRelationshipNomination,
 } from "./site-relationship-nomination";
 
-function errorResponse(statusCode: number, error: string): WebTriggerResponse {
+/**
+ * The only three answers a denied caller ever gets. Peer requests are refused
+ * with an opaque body so the route cannot be used as an oracle for which check
+ * failed, or for whether an invitation, relationship, or nomination exists.
+ */
+const deniedResponses = Object.freeze({
+  "bad-request": 400,
+  forbidden: 403,
+  unauthorized: 401,
+});
+
+function deny(
+  error: keyof typeof deniedResponses,
+  reason: string,
+  correlationId?: string,
+): WebTriggerResponse {
+  logPeerRequestDenied(logger, {
+    ...(correlationId ? { correlationId } : {}),
+    reason,
+    route: "bootstrap",
+  });
+
   return {
     body: JSON.stringify({ error }),
     headers: { "Content-Type": ["application/json"] },
-    statusCode,
+    statusCode: deniedResponses[error],
   };
 }
 
@@ -57,23 +81,43 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     process.env["SHARED_SECRET"],
   );
   if (authenticationError) {
-    return errorResponse(401, authenticationError);
+    return deny("unauthorized", authenticationError);
   }
 
   const body = request.body ?? "";
   const nomination = parseNominationRequest(body);
   const poll = parseActivationPollRequest(body);
   const confirmation = parseConfirmationRequest(body);
-  if (!nomination && !poll && !confirmation) {
-    return errorResponse(400, "invalid-bootstrap-request");
+  const envelope = nomination ?? poll ?? confirmation;
+  if (!envelope) {
+    return deny("bad-request", "invalid-bootstrap-request");
   }
 
   const identity = localIdentity();
   if (!identity) {
-    return errorResponse(409, "local-identity-unavailable");
+    return deny("forbidden", "local-identity-unavailable");
   }
 
   const now = new Date().toISOString();
+
+  // Claimed before any state is read or written, and before the outcome of any
+  // check can be disclosed, so a captured request cannot repeat its effect.
+  const consumption = await consumeRequestId(
+    {
+      receiverSiteAri: identity.siteAri,
+      relationshipId: envelope.relationshipId,
+      requestId: envelope.requestId,
+    },
+    now,
+  );
+  if (consumption !== "consumed") {
+    return deny(
+      "forbidden",
+      consumption === "replayed" ? "request-replayed" : consumption,
+      envelope.correlationId,
+    );
+  }
+
   const state = await kvsSiteRelationshipStore.read();
 
   if (poll) {
@@ -83,7 +127,7 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     });
 
     if (proposed.isErr()) {
-      return errorResponse(409, proposed.error.code);
+      return deny("forbidden", proposed.error.code, poll.correlationId);
     }
 
     // The proposal is the response: Blue parses one versioned envelope and
@@ -101,7 +145,11 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
       now,
     });
     if (confirmed.isErr()) {
-      return errorResponse(409, confirmed.error.code);
+      return deny(
+        "forbidden",
+        confirmed.error.code,
+        confirmation.correlationId,
+      );
     }
 
     await kvsSiteRelationshipStore.write(confirmed.value.nextState);
@@ -110,7 +158,7 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
   }
 
   if (!nomination) {
-    return errorResponse(400, "invalid-bootstrap-request");
+    return deny("bad-request", "invalid-bootstrap-request");
   }
 
   const received = receiveSiteRelationshipNomination(state, nomination, {
@@ -119,7 +167,7 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     now,
   });
   if (received.isErr()) {
-    return errorResponse(409, received.error.code);
+    return deny("forbidden", received.error.code, nomination.correlationId);
   }
 
   await kvsSiteRelationshipStore.write(received.value.nextState);

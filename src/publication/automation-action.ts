@@ -24,9 +24,15 @@ export interface PublicationStateStore {
 }
 
 export interface LeanEventEmitter {
+  /**
+   * The business operation's idempotency key travels with the event so the
+   * emitter can keep it stable while its own per-request signing evidence
+   * stays fresh.
+   */
   readonly emitLeanEvent: (
     pairing: SourcePeerPairing,
     event: LeanEvent,
+    idempotencyKey: string,
   ) => Promise<void>;
 }
 
@@ -151,7 +157,11 @@ export function createDemoPublishWorkPackageAction({
         );
       }
       // ponytail: at-most-once delivery; add an outbox with retry and receipts if reliability matters.
-      await emitLeanEvent(sourcePairing, toLeanEvent(payload, sourcePairing));
+      await emitLeanEvent(
+        sourcePairing,
+        toLeanEvent(payload, sourcePairing),
+        payload.idempotencyKey,
+      );
     }
 
     return {

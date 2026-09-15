@@ -39,6 +39,31 @@ describe("peer HMAC authentication", () => {
     ).toBeUndefined();
   });
 
+  it("rejects a correctly signed timestamp that is not RFC-3339", () => {
+    // Date.parse accepts far more than RFC-3339. A date-only or
+    // space-separated instant is unambiguously outside the profile the peer
+    // agreed to sign, so it cannot be admitted merely because the HMAC matches.
+    for (const loose of ["2026-09-14", "2026-09-14 16:00:00Z", "1789404000"]) {
+      const headers = signPeerRequest(secret, body, loose);
+
+      expect(
+        verifyPeerRequest(
+          {
+            body,
+            headers: Object.fromEntries(
+              Object.entries(headers ?? {}).map(([key, value]) => [
+                key,
+                [value],
+              ]),
+            ),
+          },
+          secret,
+          Date.parse(timestamp),
+        ),
+      ).toBe("invalid-hmac-timestamp");
+    }
+  });
+
   it("rejects missing, modified, duplicate, stale, future, and invalid-secret requests", () => {
     const headers = signPeerRequest(secret, body, timestamp);
     const request = {

@@ -5,6 +5,9 @@ const timestampHeaderName = "x-webtrigger-timestamp";
 const signaturePrefix = "sha256=";
 const maxAgeMilliseconds = 5 * 60 * 1000;
 const maxFutureSkewMilliseconds = 30 * 1000;
+/** RFC-3339 date-time: the only timestamp shape this profile signs or accepts. */
+const rfc3339Pattern =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 export interface HmacHeaders {
   readonly "x-webtrigger-signature": string;
@@ -83,6 +86,7 @@ export function verifyPeerRequest(
   const timestampMilliseconds = timestamp ? Date.parse(timestamp) : Number.NaN;
   if (
     !timestamp ||
+    !rfc3339Pattern.test(timestamp) ||
     Number.isNaN(timestampMilliseconds) ||
     timestampMilliseconds < now - maxAgeMilliseconds ||
     timestampMilliseconds > now + maxFutureSkewMilliseconds

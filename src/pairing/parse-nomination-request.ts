@@ -52,6 +52,7 @@ export function parseNominationRequest(
     const {
       correlationId,
       createdAt,
+      direction,
       idempotencyKey,
       intendedReceiverSiteAri,
       invitationReference,
@@ -67,6 +68,7 @@ export function parseNominationRequest(
     if (
       operation !== "site-relationship.nominate" ||
       protocolVersion !== "v1" ||
+      direction !== "blue-to-green" ||
       !nominatedIdentity ||
       !terms ||
       !isNonEmptyString(correlationId) ||
@@ -85,6 +87,7 @@ export function parseNominationRequest(
     return {
       correlationId,
       createdAt,
+      direction,
       idempotencyKey,
       intendedReceiverSiteAri,
       invitationReference,

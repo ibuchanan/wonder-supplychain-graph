@@ -1,6 +1,9 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
 
-import type { ProtocolVersion } from "../collaboration/protocol";
+import type {
+  ProtocolVersion,
+  SetupDirection,
+} from "../collaboration/protocol";
 import type { SiteRelationship } from "./site-relationship";
 import {
   identitiesMatch,
@@ -16,12 +19,14 @@ import {
 export interface ActivationPollRequest {
   readonly correlationId: string;
   readonly createdAt: string;
+  readonly direction: SetupDirection;
   readonly intendedReceiverSiteAri: string;
   readonly nominatedIdentity: NominatedIdentity;
   readonly operation: "site-relationship.poll";
   readonly protocolVersion: ProtocolVersion;
   readonly relationshipId: string;
   readonly requestId: string;
+  readonly termsVersion: string;
 }
 
 /**
@@ -33,6 +38,7 @@ export interface ActivationProposal {
   readonly approvedIdentity: NominatedIdentity;
   readonly correlationId: string;
   readonly counterpartSiteAri: string;
+  readonly direction: SetupDirection;
   readonly leaseEndsAt: string;
   readonly operation: "site-relationship.activation-proposal";
   readonly protocolVersion: ProtocolVersion;
@@ -56,6 +62,7 @@ export type ProposeActivationError = {
     | "lease-expired"
     | "nomination-identity-mismatch"
     | "nomination-not-found"
+    | "nomination-terms-mismatch"
     | "relationship-id-mismatch";
 };
 
@@ -98,6 +105,12 @@ export function proposeSiteRelationshipActivation(
     return err({ code: "nomination-identity-mismatch" });
   }
 
+  // Terms are immutable: a poll that names a different version is asking
+  // about consent Green never gave.
+  if (request.termsVersion !== nomination.terms.termsVersion) {
+    return err({ code: "nomination-terms-mismatch" });
+  }
+
   if (
     nomination.status !== "awaiting-blue-confirmation" &&
     nomination.status !== "active"
@@ -118,6 +131,7 @@ export function proposeSiteRelationshipActivation(
       approvedIdentity: nomination.nominatedIdentity,
       correlationId: nomination.correlationId,
       counterpartSiteAri: context.localIdentity.siteAri,
+      direction: "green-to-blue" as const,
       leaseEndsAt: nomination.terms.expiresAt,
       operation: "site-relationship.activation-proposal" as const,
       protocolVersion: "v1" as const,
@@ -136,6 +150,7 @@ export interface ConfirmationRequest {
   readonly confirmedIdentity: NominatedIdentity;
   readonly correlationId: string;
   readonly createdAt: string;
+  readonly direction: SetupDirection;
   readonly idempotencyKey: string;
   readonly intendedReceiverSiteAri: string;
   readonly leaseEndsAt: string;
@@ -215,6 +230,7 @@ export function acceptActivationProposal(
       confirmedIdentity: context.localIdentity,
       correlationId: nomination.correlationId,
       createdAt: context.now,
+      direction: "blue-to-green" as const,
       idempotencyKey: context.idempotencyKey,
       intendedReceiverSiteAri: nomination.counterpartSiteAri,
       leaseEndsAt: nomination.terms.expiresAt,

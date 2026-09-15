@@ -5,6 +5,7 @@ import { parseNominationRequest } from "../../src/pairing/parse-nomination-reque
 const validRequest = {
   correlationId: "correlation-001",
   createdAt: "2026-09-14T18:00:00.000Z",
+  direction: "blue-to-green",
   idempotencyKey: "nominate-001",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   invitationReference: "reference-001",
@@ -94,6 +95,14 @@ describe("parseNominationRequest", () => {
     [
       JSON.stringify({ ...validRequest, receiverEndpointStatus: "pending" }),
       "the endpoint status is not a safe status value",
+    ],
+    [
+      JSON.stringify({ ...validRequest, direction: undefined }),
+      "the permitted direction is missing",
+    ],
+    [
+      JSON.stringify({ ...validRequest, direction: "green-to-blue" }),
+      "the direction reverses the one this operation permits",
     ],
     [
       JSON.stringify({
