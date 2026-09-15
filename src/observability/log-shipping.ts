@@ -66,6 +66,7 @@ export type CloudEventsWebhookValidationResult =
 
 const permittedDataFields = new Set([
   "action",
+  "actorAccountId",
   "appId",
   "appVersion",
   "commentId",
@@ -79,6 +80,7 @@ const permittedDataFields = new Set([
   "relationshipId",
   "route",
   "status",
+  "sourceEpicId",
   "version",
 ]);
 
