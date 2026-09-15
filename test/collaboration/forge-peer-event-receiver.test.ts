@@ -153,6 +153,65 @@ describe("receivePeerEvent", () => {
     );
   });
 
+  it("records an accepted delivery as one correlated, safe gate trace", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true } as never);
+
+    await receivePeerEvent(signedRequest());
+
+    const records = vi.mocked(logger.info).mock.calls.map(([fields]) => fields);
+    const trace = records.filter(
+      (fields) => fields["event"] === "scg.peer.event.flow",
+    );
+
+    expect(trace).toEqual([
+      expect.objectContaining({ outcome: "received", route: "peer-event" }),
+      expect.objectContaining({
+        outcome: "authenticated",
+        route: "peer-event",
+      }),
+      expect.objectContaining({
+        outcome: "replay-checked",
+        route: "peer-event",
+      }),
+      expect.objectContaining({ outcome: "authorized", route: "peer-event" }),
+      expect.objectContaining({ outcome: "forwarded", route: "peer-event" }),
+    ]);
+    expect(new Set(trace.map((fields) => fields["correlationId"])).size).toBe(
+      1,
+    );
+    expect(JSON.stringify(trace)).not.toContain(secret);
+    expect(JSON.stringify(trace)).not.toContain(pairing.automationWebhookUrl);
+  });
+
+  it("records each refusal with its own reason under one correlation ID", async () => {
+    mockStores({ pairings: [{ ...pairing, allowedOperations: [] }] });
+
+    await receivePeerEvent(signedRequest());
+
+    const records = vi.mocked(logger.info).mock.calls.map(([fields]) => fields);
+    const arrival = records.find(
+      (fields) =>
+        fields["event"] === "scg.peer.event.flow" &&
+        fields["outcome"] === "received",
+    );
+    const denial = records.find(
+      (fields) => fields["event"] === "scg.peer.request.denied",
+    );
+
+    expect(arrival).toMatchObject({
+      event: "scg.peer.event.flow",
+      outcome: "received",
+      route: "peer-event",
+    });
+    expect(denial).toMatchObject({
+      event: "scg.peer.request.denied",
+      outcome: "denied",
+      reason: "operation-not-allowed",
+      route: "peer-event",
+    });
+    expect(denial?.["correlationId"]).toBe(arrival?.["correlationId"]);
+  });
+
   it("rejects missing or modified signatures before local reads or Automation delivery", async () => {
     await expect(
       receivePeerEvent({ body: JSON.stringify(validEnvelope) }),

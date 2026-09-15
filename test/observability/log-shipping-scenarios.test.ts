@@ -23,6 +23,7 @@ const emittedEventTypes = [
   "scg.graph.connection.rejected",
   "scg.graph.publish.completed",
   "scg.peer.request.denied",
+  "scg.peer.event.flow",
   "scg.rovo.comment.completed",
   "scg.audit.relationship.revoked",
 ] as const;

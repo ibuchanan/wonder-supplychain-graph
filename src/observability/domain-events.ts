@@ -30,6 +30,34 @@ export function logPeerRequestDenied(
   );
 }
 
+export interface PeerEventFlowEvent {
+  readonly correlationId: string;
+  readonly outcome:
+    | "application-failed"
+    | "authenticated"
+    | "authorized"
+    | "forwarded"
+    | "received"
+    | "replay-checked";
+  readonly route: "peer-event";
+}
+
+/** Records the safe milestones of one peer-event delivery attempt. */
+export function logPeerEventFlow(
+  logger: DomainEventLogger,
+  event: PeerEventFlowEvent,
+): void {
+  logger.info(
+    {
+      correlationId: event.correlationId,
+      event: "scg.peer.event.flow",
+      outcome: event.outcome,
+      route: event.route,
+    },
+    "Supplychain Graph peer event flow",
+  );
+}
+
 export interface GraphConnectionChangedEvent {
   readonly action: "CREATED" | "DELETED" | "UPDATED";
   readonly connectionId: string;

@@ -7,7 +7,10 @@ import {
 import { recordLifecycleOutcome } from "../audit/kvs-lifecycle-journal-store";
 import type { LifecycleEventType } from "../audit/lifecycle-journal";
 import { logger } from "../logging";
-import { logPeerRequestDenied } from "../observability/domain-events";
+import {
+  logPeerEventFlow,
+  logPeerRequestDenied,
+} from "../observability/domain-events";
 import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
 import { kvsSiteRelationshipStore } from "../pairing/kvs-site-relationship-store";
 import { enrichLeanEventForAutomation } from "./lean-event-contract";
@@ -39,8 +42,9 @@ const durableDenials: Readonly<Record<string, LifecycleEventType>> =
 async function deny(
   error: keyof typeof deniedResponses,
   reason: string,
+  correlationId: string,
 ): Promise<WebTriggerResponse> {
-  logPeerRequestDenied(logger, { reason, route: "peer-event" });
+  logPeerRequestDenied(logger, { correlationId, reason, route: "peer-event" });
 
   const eventType = durableDenials[reason];
   if (eventType) {
@@ -81,28 +85,38 @@ function localSiteAri(): string | undefined {
  * operation. Nothing is delivered until all four pass.
  */
 export const receivePeerEvent = defineWebTrigger(async (request) => {
+  const correlationId = globalThis.crypto.randomUUID();
+  const trace = (outcome: Parameters<typeof logPeerEventFlow>[1]["outcome"]) =>
+    logPeerEventFlow(logger, { correlationId, outcome, route: "peer-event" });
+
+  trace("received");
   const authenticationError = verifyPeerRequest(
     request,
     process.env["SHARED_SECRET"],
   );
   if (authenticationError) {
-    return deny("unauthorized", authenticationError);
+    return deny("unauthorized", authenticationError, correlationId);
   }
+  trace("authenticated");
 
   const envelope = parsePeerOperationEnvelope(request.body ?? "");
   if (!envelope) {
-    return deny("bad-request", "invalid-peer-operation-envelope");
+    return deny(
+      "bad-request",
+      "invalid-peer-operation-envelope",
+      correlationId,
+    );
   }
 
   const receiverSiteAri = localSiteAri();
   if (!receiverSiteAri) {
-    return deny("forbidden", "local-identity-unavailable");
+    return deny("forbidden", "local-identity-unavailable", correlationId);
   }
 
   // An envelope addressed elsewhere is not this receiver's to apply, however
   // validly it is signed.
   if (envelope.intendedReceiverSiteAri !== receiverSiteAri) {
-    return deny("forbidden", "receiver-mismatch");
+    return deny("forbidden", "receiver-mismatch", correlationId);
   }
 
   const now = new Date().toISOString();
@@ -118,8 +132,10 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
     return deny(
       "forbidden",
       consumption === "replayed" ? "request-replayed" : consumption,
+      correlationId,
     );
   }
+  trace("replay-checked");
 
   const [{ relationships }, { pairings }] = await Promise.all([
     kvsSiteRelationshipStore.read(),
@@ -135,13 +151,14 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
     sourceEpicKey: envelope.event.data.issueKey,
   });
   if (authorized.isErr()) {
-    return deny("forbidden", authorized.error.code);
+    return deny("forbidden", authorized.error.code, correlationId);
   }
 
   const { pairing } = authorized.value;
   if (pairing.role !== "destination") {
-    return deny("forbidden", "pairing-unauthorized");
+    return deny("forbidden", "pairing-unauthorized", correlationId);
   }
+  trace("authorized");
 
   try {
     const response = await fetch(pairing.automationWebhookUrl, {
@@ -152,6 +169,7 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
       method: "POST",
     });
     if (!response.ok) {
+      trace("application-failed");
       return {
         body: JSON.stringify({ error: "automation-webhook-failed" }),
         headers: { "Content-Type": ["application/json"] },
@@ -159,6 +177,7 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
       };
     }
   } catch {
+    trace("application-failed");
     return {
       body: JSON.stringify({ error: "automation-webhook-failed" }),
       headers: { "Content-Type": ["application/json"] },
@@ -166,5 +185,6 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
     };
   }
 
+  trace("forwarded");
   return buildSuccessResponse({ outcome: "forwarded" });
 });
