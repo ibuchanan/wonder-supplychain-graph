@@ -1,45 +1,139 @@
+app:
+  id: ari:cloud:ecosystem::app/5c6de3cf-cb86-4873-8621-3f28f2537757
+  runtime:
+    architecture: arm64
+    memoryMB: 256
+    name: nodejs24.x
 modules:
+  rovo:agent:
+    - key: scg-package-agent
+      name: Supplychain Graph
+      description: Find the current Supplychain Graph package and add attributable comments to its originating Epic.
+      actions:
+        - scg-comment-origin
+      conversationStarters:
+        - Add a comment about the current Supplychain Graph package to its originating Epic.
+      prompt: You help users comment on the originating Epic for a current Supplychain Graph package. Use the Comment on originating Epic action when the user provides comment text. Never ask the user for, infer, or accept a connection ID or destination issue key; the action resolves both from tenant-local current-package provenance. Explain failures precisely and do not claim a comment was created unless the action confirms it.
+  action:
+    - key: scg-publish-package
+      name: Publish work package
+      description: Queues a governed work-package publication for a Source Epic.
+      actionVerb: CREATE
+      config:
+        render: native
+        resource: publish-package-config
+      function: publishWorkPackage
+      inputs:
+        publisherId:
+          title: Publisher account ID
+          description: The Automation publisher account ID.
+          required: true
+          type: string
+        sourceEpicId:
+          title: Source Epic ID
+          description: The Source Epic key, for example {{issue.key}}.
+          required: true
+          type: string
+      resolver:
+        function: getActionConfig
+    - key: scg-publish-package-graph
+      name: Publish package to Rovo demo
+      description: Promotes and indexes the current demo work package for Rovo discovery.
+      actionVerb: CREATE
+      config:
+        render: native
+        resource: publish-graph-config
+      function: publishPackageToGraph
+      inputs:
+        publisherId:
+          title: Publisher account ID
+          description: The Automation publisher account ID.
+          required: true
+          type: string
+        sourceEpicId:
+          title: Source Epic ID
+          description: The Source Epic key, for example {{issue.key}}.
+          required: true
+          type: string
+      resolver:
+        function: getActionConfig
+    - key: scg-comment-origin
+      name: Comment on originating Epic
+      description: Adds a package-related comment to the Source Epic resolved from current package provenance.
+      actionVerb: CREATE
+      function: commentOriginEpic
+      inputs:
+        commentText:
+          title: Comment text
+          description: The package-related comment to add to the originating Epic.
+          required: true
+          type: string
+  automation:actionProvider:
+    - key: scg-publish-package-provider
+      actions:
+        - scg-publish-package
+        - scg-publish-package-graph
   graph:connector:
     - key: scg-package-connector
       name: Supplychain Graph Package
       capabilities:
         replicatesPermissions: false
-        syncFidelity: mirror
         supportsIncrementalSync: false
-      icons:
-        light: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
-        dark: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
-      objectTypes:
-        - atlassian:work-item
-        - atlassian:document
+        syncFidelity: mirror
       datasource:
         onConnectionChange:
           function: onConnectionChange
-  jira:issuePanel:
-    - key: scg-epic-panel
-      resource: main
-      render: native
-      title: Supplychain Graph
-      icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      icons:
+        dark: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+        light: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      objectTypes:
+        - atlassian:work-item
+        - atlassian:document
   jira:adminPage:
     - key: scg-poc-readiness
-      resource: poc-readiness
-      render: native
-      resolver:
-        function: getActionConfig
       title: Supplychain Graph Peer POC readiness
-    - key: scg-peer-invitations
-      resource: peer-invitations
       render: native
       resolver:
         function: getActionConfig
+      resource: poc-readiness
+    - key: scg-peer-invitations
       title: Supplychain Graph Peer invitations
+      render: native
+      resolver:
+        function: getActionConfig
+      resource: peer-invitations
       useAsConfig: true
   jira:globalPage:
     - key: scg-simulator
-      resource: simulator
-      render: native
       title: Supplychain Graph Simulator
+      render: native
+      resource: simulator
+  jira:issuePanel:
+    - key: scg-epic-panel
+      title: Supplychain Graph
+      icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      render: native
+      resource: main
+  trigger:
+    - key: scg-on-installed
+      events:
+        - avi:forge:installed:app
+      function: onInstalled
+    - key: scg-on-upgraded
+      events:
+        - avi:forge:upgraded:app
+      function: onUpgraded
+  webtrigger:
+    - key: scg-receive-peer-event
+      function: receivePeerEvent
+      response:
+        type: dynamic
+      urlFormat: v2
+    - key: scg-receive-bootstrap-request
+      function: receiveBootstrapRequest
+      response:
+        type: dynamic
+      urlFormat: v2
   function:
     - key: onConnectionChange
       handler: index.onPackageConnectionChange
@@ -59,101 +153,14 @@ modules:
       handler: index.receivePeerEvent
     - key: receiveBootstrapRequest
       handler: index.receiveBootstrapRequest
-  automation:actionProvider:
-    - key: scg-publish-package-provider
-      actions:
-        - scg-publish-package
-        - scg-publish-package-graph
-  action:
-    - key: scg-publish-package
-      name: Publish work package
-      function: publishWorkPackage
-      description: Queues a governed work-package publication for a Source Epic.
-      inputs:
-        sourceEpicId:
-          title: Source Epic ID
-          type: string
-          description: The Source Epic key, for example {{issue.key}}.
-          required: true
-        publisherId:
-          title: Publisher account ID
-          type: string
-          description: The Automation publisher account ID.
-          required: true
-      actionVerb: CREATE
-      config:
-        resource: publish-package-config
-        render: native
-      resolver:
-        function: getActionConfig
-    - key: scg-publish-package-graph
-      name: Publish package to Rovo demo
-      function: publishPackageToGraph
-      description: Promotes and indexes the current demo work package for Rovo discovery.
-      inputs:
-        sourceEpicId:
-          title: Source Epic ID
-          type: string
-          description: The Source Epic key, for example {{issue.key}}.
-          required: true
-        publisherId:
-          title: Publisher account ID
-          type: string
-          description: The Automation publisher account ID.
-          required: true
-      actionVerb: CREATE
-      config:
-        resource: publish-graph-config
-        render: native
-      resolver:
-        function: getActionConfig
-    - key: scg-comment-origin
-      name: Comment on originating Epic
-      function: commentOriginEpic
-      actionVerb: CREATE
-      description: Adds a package-related comment to the Source Epic resolved from current package provenance.
-      inputs:
-        commentText:
-          title: Comment text
-          type: string
-          required: true
-          description: The package-related comment to add to the originating Epic.
-  rovo:agent:
-    - key: scg-package-agent
-      name: Supplychain Graph
-      description: Find the current Supplychain Graph package and add attributable comments to its originating Epic.
-      prompt: You help users comment on the originating Epic for a current Supplychain Graph package. Use the Comment on originating Epic action when the user provides comment text. Never ask the user for, infer, or accept a connection ID or destination issue key; the action resolves both from tenant-local current-package provenance. Explain failures precisely and do not claim a comment was created unless the action confirms it.
-      conversationStarters:
-        - Add a comment about the current Supplychain Graph package to its originating Epic.
-      actions:
-        - scg-comment-origin
-  trigger:
-    - key: scg-on-installed
-      function: onInstalled
-      events:
-        - avi:forge:installed:app
-    - key: scg-on-upgraded
-      function: onUpgraded
-      events:
-        - avi:forge:upgraded:app
-  webtrigger:
-    - key: scg-receive-peer-event
-      function: receivePeerEvent
-      urlFormat: v2
-      response:
-        type: dynamic
-    - key: scg-receive-bootstrap-request
-      function: receiveBootstrapRequest
-      urlFormat: v2
-      response:
-        type: dynamic
-app:
-  runtime:
-    name: nodejs24.x
-    memoryMB: 256
-    architecture: arm64
-  id: ari:cloud:ecosystem::app/5c6de3cf-cb86-4873-8621-3f28f2537757
 permissions:
+  external:
+    fetch:
+      backend:
+        # Addresses can be tuned down to:
+        # - List of known peers
+        # - CloudEvent log sink
+        - address: '*'
   scopes:
     - delete:object:jira
     - read:object:jira
@@ -161,18 +168,6 @@ permissions:
     - write:object:jira
     - write:jira-work
     - read:jira-work
-  external:
-    fetch:
-      backend:
-        - address: "*.webtrigger.atlassian.app"
-        - address: automation.atlassian.com
-        # The CloudEvent log sink allowlist. An admin-supplied sink URL is
-        # constrained to these region-pinned AWS API Gateway ingest stacks so
-        # egress stays validated. Keep identical to permittedSinkHosts in
-        # src/observability/log-sink-configuration.ts.
-        - address: "*.execute-api.ap-southeast-2.amazonaws.com"
-        - address: "*.execute-api.eu-central-1.amazonaws.com"
-        - address: "*.execute-api.us-east-1.amazonaws.com"
 resources:
   - key: main
     path: src/frontend/index.tsx
