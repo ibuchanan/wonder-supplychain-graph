@@ -7,6 +7,8 @@
 
 /** Every lifecycle and security outcome this tenant keeps evidence of. */
 export type LifecycleEventType =
+  | "logging.sink-cleared"
+  | "logging.sink-configured"
   | "peer.authentication-failed"
   | "peer.request-replayed"
   | "relationship.activated"
