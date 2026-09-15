@@ -28,6 +28,12 @@ modules:
       resolver:
         function: getActionConfig
       title: Peer POC readiness
+    - key: scg-peer-invitations
+      resource: peer-invitations
+      resolver:
+        function: getActionConfig
+      title: Peer invitations
+      useAsConfig: true
   jira:globalPage:
     - key: scg-simulator
       resource: simulator
@@ -102,8 +108,7 @@ modules:
       name: Comment on originating Epic
       function: commentOriginEpic
       actionVerb: CREATE
-      description: Adds a package-related comment to the Source Epic resolved from
-        current package provenance.
+      description: Adds a package-related comment to the Source Epic resolved from current package provenance.
       inputs:
         commentText:
           title: Comment text
@@ -113,17 +118,10 @@ modules:
   rovo:agent:
     - key: scg-package-agent
       name: Supplychain Graph
-      description: Find the current Supplychain Graph package and add attributable
-        comments to its originating Epic.
-      prompt: You help users comment on the originating Epic for a current Supplychain
-        Graph package. Use the Comment on originating Epic action when the user
-        provides comment text. Never ask the user for, infer, or accept a
-        connection ID or destination issue key; the action resolves both from
-        tenant-local current-package provenance. Explain failures precisely and
-        do not claim a comment was created unless the action confirms it.
+      description: Find the current Supplychain Graph package and add attributable comments to its originating Epic.
+      prompt: You help users comment on the originating Epic for a current Supplychain Graph package. Use the Comment on originating Epic action when the user provides comment text. Never ask the user for, infer, or accept a connection ID or destination issue key; the action resolves both from tenant-local current-package provenance. Explain failures precisely and do not claim a comment was created unless the action confirms it.
       conversationStarters:
-        - Add a comment about the current Supplychain Graph package to its
-          originating Epic.
+        - Add a comment about the current Supplychain Graph package to its originating Epic.
       actions:
         - scg-comment-origin
   trigger:
@@ -171,3 +169,5 @@ resources:
     path: src/frontend/publish-package-action-config.tsx
   - key: publish-graph-config
     path: src/frontend/publish-graph-action-config.tsx
+  - key: peer-invitations
+    path: static/peer-invitations

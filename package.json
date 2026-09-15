@@ -4,10 +4,10 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && vite build --config vite.peer-invitations.config.mjs",
     "changelog": "git cliff",
     "check": "lefthook run pre-push",
-    "clean": "rm -rf ./node_modules ./dist",
+    "clean": "rm -rf ./node_modules ./dist ./static/peer-invitations",
     "dev": "tsc -p tsconfig.json --watch",
     "forge:deploy": "secretspec run --reason \"npm run forge:deploy\" -- sh -c 'forge deploy --environment \"$FORGE_ENVIRONMENT\"'",
     "forge:install": "secretspec run --reason \"npm run forge:install\" -- sh -c 'forge install --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
@@ -32,7 +32,8 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest watch",
     "todo": "rg --glob '!vendor/**' --glob '!package.json' 'TODO' || echo 'No TODOs found!'",
-    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "build:peer-invitations": "vite build --config vite.peer-invitations.config.mjs"
   },
   "dependencies": {
     "@forge-ahead/atlassian-api-types": "github:ibuchanan/forge-ahead-atlassian-api-types",
@@ -58,6 +59,7 @@
     "lefthook": "^2.1",
     "size-limit": "^13.0",
     "typescript": "^5.9",
+    "vite": "^8.3.0",
     "vitest": "^4.1",
     "yaml": "^2.9"
   },
