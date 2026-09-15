@@ -4,9 +4,15 @@ import {
   Link,
   Lozenge,
   Stack,
+  // The Tabs family is documented UI Kit, but predates the approved-export
+  // list prelint checks, so each of its specifiers is suppressed here.
+  // ast-grep-ignore: no-unapproved-forge-react-components-tsx
   Tab,
+  // ast-grep-ignore: no-unapproved-forge-react-components-tsx
   TabList,
+  // ast-grep-ignore: no-unapproved-forge-react-components-tsx
   TabPanel,
+  // ast-grep-ignore: no-unapproved-forge-react-components-tsx
   Tabs,
   Text,
 } from "@forge/react";

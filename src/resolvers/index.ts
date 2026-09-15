@@ -1,4 +1,4 @@
-import { fetch, getAppContext, webTrigger } from "@forge/api";
+import { fetch as forgeFetch, getAppContext, webTrigger } from "@forge/api";
 import Resolver from "@forge/resolver";
 
 import {
@@ -330,7 +330,7 @@ resolver.define<NominatePayload, unknown>(
     const sent = await sendNomination(
       payload.greenBootstrapUrl,
       nominated.value.request,
-      { fetch, secret: process.env["SHARED_SECRET"] },
+      { fetch: forgeFetch, secret: process.env["SHARED_SECRET"] },
     );
 
     return sent.isErr()
@@ -357,7 +357,10 @@ resolver.define<ConfirmActivationPayload, unknown>(
       return { reason: "local-identity-unavailable", status: "blocked" };
     }
 
-    const transport = { fetch, secret: process.env["SHARED_SECRET"] };
+    const transport = {
+      fetch: forgeFetch,
+      secret: process.env["SHARED_SECRET"],
+    };
     const state = await kvsSiteRelationshipStore.read();
     const pending = state.nominations.find(
       (candidate) =>
@@ -674,7 +677,7 @@ resolver.define("saveLogSink", async ({ context, payload }) => {
         throw new Error("Webhook validation must use OPTIONS");
       }
 
-      const response = await fetch(delivery.url, {
+      const response = await forgeFetch(delivery.url, {
         headers: delivery.headers,
         method: delivery.method,
       });
