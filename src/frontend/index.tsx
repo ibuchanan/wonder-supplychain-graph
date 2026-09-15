@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
 import { invoke } from "@forge/bridge";
 import ForgeReconciler, { Heading, Stack, Text } from "@forge/react";
+import React, { useEffect, useState } from "react";
 
 type LocalReadinessStatus =
   | "failed"

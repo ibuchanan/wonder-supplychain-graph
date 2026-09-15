@@ -1,16 +1,15 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
-
+import type { SupplierReceiptError } from "../receipt/apply-command";
+import type { PackageProjectionSuppressionReason } from "./build-package-projection";
 import {
   ingestPackageProjection,
   type PackageGraphPort,
 } from "./ingest-package-projection";
-import type { PackageProjectionSuppressionReason } from "./build-package-projection";
 import {
-  promoteDemoPackage,
   type DemoPackagePromotionRequest,
+  promoteDemoPackage,
   type SupplierReceiptStateStore,
 } from "./promote-demo-package";
-import type { SupplierReceiptError } from "../receipt/apply-command";
 
 export interface DemoPackageGraphDependencies {
   readonly graph: PackageGraphPort;

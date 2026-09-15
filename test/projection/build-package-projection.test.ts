@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vitest";
-
 import type { Result } from "@forge-ahead/errors";
+import { describe, expect, it } from "vitest";
 
 import { buildPackageProjection } from "../../src/projection/build-package-projection";
 import {

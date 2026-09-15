@@ -3,12 +3,11 @@ import { err, ok } from "@forge-ahead/errors";
 
 import { logger } from "../logging";
 import { logRovoCommentResult } from "../observability/domain-events";
-
+import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
 import {
   commentOnOriginatingEpic,
   type JiraCommentPort,
 } from "./comment-on-originating-epic";
-import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
 
 export interface RovoCommentActionPayload {
   readonly commentText: string;

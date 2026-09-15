@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { appendAuditEvents, type AuditJournal } from "../../src/audit/journal";
+import { type AuditJournal, appendAuditEvents } from "../../src/audit/journal";
 
 const queuedEvent = {
   candidateId: "candidate:event-one",

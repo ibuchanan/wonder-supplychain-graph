@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  logAppInstalled,
+  logAppUpgraded,
   logGraphConnectionChanged,
   logGraphConnectionResult,
   logGraphPublishResult,
   logRovoCommentResult,
-  logAppInstalled,
-  logAppUpgraded,
 } from "../../src/observability/domain-events";
 
 describe("Supplychain Graph domain events", () => {

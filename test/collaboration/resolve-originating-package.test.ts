@@ -2,8 +2,8 @@ import type { Result } from "@forge-ahead/errors";
 import { describe, expect, it } from "vitest";
 
 import {
-  resolveOriginatingPackage,
   type CurrentPackageStore,
+  resolveOriginatingPackage,
 } from "../../src/collaboration/comment-on-originating-epic";
 import type { SupplierReceiptState } from "../../src/receipt/apply-command";
 

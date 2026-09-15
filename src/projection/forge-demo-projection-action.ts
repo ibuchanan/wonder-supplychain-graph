@@ -4,11 +4,11 @@ import { logger } from "../logging";
 import { logGraphPublishResult } from "../observability/domain-events";
 import { createActionExecutionMetadata } from "../publication/action-execution-metadata";
 import { kvsPackageConnectionStore } from "./kvs-connection-store";
-import {
-  publishDemoPackageToGraph,
-  type DemoPackageGraphResult,
-} from "./publish-demo-package-to-graph";
 import type { DemoPackagePromotionRequest } from "./promote-demo-package";
+import {
+  type DemoPackageGraphResult,
+  publishDemoPackageToGraph,
+} from "./publish-demo-package-to-graph";
 
 export type PublishPackageToGraphResult =
   | {

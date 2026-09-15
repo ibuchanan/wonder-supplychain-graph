@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-
+import type { SourcePeerPairing } from "../../src/pairing/peer-pairing-state";
+import type { PublicationState } from "../../src/publication/apply-command";
 import {
   createDemoPublishWorkPackageAction,
   type PublicationStateStore,
 } from "../../src/publication/automation-action";
-import type { PublicationState } from "../../src/publication/apply-command";
-import type { SourcePeerPairing } from "../../src/pairing/peer-pairing-state";
 
 function activePublicationState(): PublicationState {
   return {

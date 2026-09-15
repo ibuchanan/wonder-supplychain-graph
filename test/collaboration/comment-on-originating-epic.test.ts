@@ -2,8 +2,8 @@ import { ok, type Result } from "@forge-ahead/errors";
 import { describe, expect, it } from "vitest";
 
 import {
-  commentOnOriginatingEpic,
   type CurrentPackageStore,
+  commentOnOriginatingEpic,
   type JiraCommentPort,
 } from "../../src/collaboration/comment-on-originating-epic";
 import type { SupplierReceiptState } from "../../src/receipt/apply-command";

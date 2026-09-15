@@ -7,7 +7,14 @@
     "defaultBranch": "main"
   },
   "files": {
-    "includes": ["**", "!.projen", "!vendor", "!coverage", "!dist"]
+    "includes": [
+      "**",
+      "!.projen",
+      "!vendor",
+      "!coverage",
+      "!dist",
+      "!static/peer-invitations"
+    ]
   },
   "formatter": {
     "indentStyle": "space"

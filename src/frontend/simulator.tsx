@@ -1,13 +1,13 @@
-import React from "react";
 import ForgeReconciler, { Button, Heading, Stack, Text } from "@forge/react";
+import React from "react";
 
 import {
   applyDeterministicSupplierReceipt,
   createAuthorizedSupplierScenario,
   createSupplierPackageScenario,
-  toSupplierPackageView,
   type SupplierPackageScenario,
   type SupplierReceiptDelivery,
+  toSupplierPackageView,
 } from "../simulator/authorized-supplier-package";
 
 const Simulator = () => {

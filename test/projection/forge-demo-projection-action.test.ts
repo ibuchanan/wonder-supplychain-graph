@@ -1,5 +1,5 @@
-import { graph } from "@forge/teamwork-graph";
 import { kvs } from "@forge/kvs";
+import { graph } from "@forge/teamwork-graph";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@forge/kvs", () => ({

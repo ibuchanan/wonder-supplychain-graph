@@ -1,7 +1,6 @@
 import { kvs } from "@forge/kvs";
-
-import type { SupplierReceiptState } from "../receipt/apply-command";
 import type { PackageConnectionStore } from "../cx-management";
+import type { SupplierReceiptState } from "../receipt/apply-command";
 import type { SupplierReceiptStateStore } from "./promote-demo-package";
 
 const activeConnectionKey = "active-graph-connection-id";

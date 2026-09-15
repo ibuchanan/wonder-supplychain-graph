@@ -1,12 +1,11 @@
 import type { Result } from "@forge-ahead/errors";
 import { describe, expect, it } from "vitest";
-
-import {
-  publishDemoPackageToGraph,
-  type DemoPackageGraphDependencies,
-} from "../../src/projection/publish-demo-package-to-graph";
 import type { PackageGraphPort } from "../../src/projection/ingest-package-projection";
 import type { SupplierReceiptStateStore } from "../../src/projection/promote-demo-package";
+import {
+  type DemoPackageGraphDependencies,
+  publishDemoPackageToGraph,
+} from "../../src/projection/publish-demo-package-to-graph";
 import type { SupplierReceiptState } from "../../src/receipt/apply-command";
 
 function expectOk<T, E>(result: Result<T, E>): T {
