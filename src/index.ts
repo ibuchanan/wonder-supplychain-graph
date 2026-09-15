@@ -124,14 +124,49 @@ export async function onPackageConnectionChange(
     connectionId: request.value.connectionId,
     connectionName: request.value.name,
   });
-  const response = await onConfigChange(
-    { graph, store: kvsPackageConnectionStore },
-    request.value,
-  );
+  let response: OnConfigChangeResponse;
+  try {
+    response = await onConfigChange(
+      { graph, store: kvsPackageConnectionStore },
+      request.value,
+    );
+  } catch {
+    logGraphConnectionResult(logger, {
+      action: request.value.action,
+      connectionId: request.value.connectionId,
+      connectionName: request.value.name,
+      message: "Graph projection failed.",
+      reason: "graph-write-failed",
+      status: "failed",
+      success: false,
+    });
+    return { message: "Graph projection failed.", success: false };
+  }
+  const currentPackage = (
+    await kvsPackageConnectionStore.read(request.value.connectionId)
+  ).currentPackage;
+  const ingested = /^Indexed (\d+) current package object/.exec(
+    response.message,
+  )?.[1];
+  const suppressed = /^Suppressed discovery: (.+)\.$/.exec(
+    response.message,
+  )?.[1];
+
   logGraphConnectionResult(logger, {
     action: request.value.action,
     connectionId: request.value.connectionId,
     connectionName: request.value.name,
+    ...(currentPackage
+      ? {
+          correlationId: currentPackage.correlationId,
+          sourceEpicId: currentPackage.sourceEpicId,
+        }
+      : {}),
+    ...(ingested
+      ? { ingested: Number(ingested), status: "indexed" as const }
+      : suppressed
+        ? { reason: suppressed, status: "suppressed" as const }
+        : { status: "failed" as const }),
     ...response,
   });
 

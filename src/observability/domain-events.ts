@@ -66,7 +66,15 @@ export interface GraphConnectionChangedEvent {
 
 export interface GraphConnectionResultEvent
   extends GraphConnectionChangedEvent {
+  /** Correlates a projection outcome to the package publication that produced it. */
+  readonly correlationId?: string;
+  /** Present for an indexed projection so the sink identifies its published subject. */
+  readonly ingested?: number;
   readonly message: string;
+  /** A safe machine-readable explanation for a suppressed or failed projection. */
+  readonly reason?: string;
+  readonly sourceEpicId?: string;
+  readonly status?: "failed" | "indexed" | "suppressed";
   readonly success: boolean;
 }
 
@@ -94,8 +102,13 @@ export function logGraphConnectionResult(
       action: event.action,
       connectionId: event.connectionId,
       connectionName: event.connectionName,
+      correlationId: event.correlationId,
       event: "scg.graph.connection.completed",
+      ingested: event.ingested,
       message: event.message,
+      reason: event.reason,
+      sourceEpicId: event.sourceEpicId,
+      status: event.status,
       success: event.success,
     },
     "Supplychain Graph connection change completed",

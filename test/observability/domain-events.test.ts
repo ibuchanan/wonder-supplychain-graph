@@ -26,8 +26,12 @@ describe("Supplychain Graph domain events", () => {
     logGraphConnectionResult(logger, {
       action: "CREATED",
       connectionId: "connection-001",
-      message: "Suppressed discovery: no-current-package.",
       connectionName: "Demo manufacturer connection",
+      correlationId: "scg:execution-001",
+      ingested: 3,
+      message: "Indexed 3 current package objects.",
+      sourceEpicId: "MFG-17",
+      status: "indexed",
       success: true,
     });
 
@@ -72,8 +76,12 @@ describe("Supplychain Graph domain events", () => {
         action: "CREATED",
         connectionId: "connection-001",
         connectionName: "Demo manufacturer connection",
+        correlationId: "scg:execution-001",
         event: "scg.graph.connection.completed",
-        message: "Suppressed discovery: no-current-package.",
+        ingested: 3,
+        message: "Indexed 3 current package objects.",
+        sourceEpicId: "MFG-17",
+        status: "indexed",
         success: true,
       }),
       expect.objectContaining({
