@@ -20,6 +20,7 @@ describe("determineLocalReadiness", () => {
       determineLocalReadiness({
         pairings: [
           {
+            pairedEpicKey: "SUP-3",
             pairingId: "pairing-001",
             peerEventUrl:
               "https://supplier.example/forge/webtrigger/peer-event",

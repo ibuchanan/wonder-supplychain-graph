@@ -11,6 +11,7 @@ interface PairingAuthorization {
 }
 
 export interface SourcePeerPairing extends PairingAuthorization {
+  readonly pairedEpicKey: string;
   readonly peerEventUrl: string;
   readonly pairingId: string;
   readonly role: "source";

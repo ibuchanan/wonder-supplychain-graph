@@ -22,6 +22,7 @@ import { publishWorkPackage } from "../../src/publication/forge-automation-actio
 
 const sourcePairing = {
   allowedOperations: ["starter.delivery"],
+  pairedEpicKey: "GREEN-42",
   pairingId: "pairing-001",
   peerEventUrl: "https://green.example/forge/webtrigger/receive-peer-event",
   relationshipId: "relationship-001",

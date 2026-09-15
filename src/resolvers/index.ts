@@ -2,6 +2,11 @@ import { fetch, getAppContext, webTrigger } from "@forge/api";
 import Resolver from "@forge/resolver";
 
 import {
+  kvsLifecycleJournalStore,
+  recordLifecycleOutcome,
+} from "../audit/kvs-lifecycle-journal-store";
+import { authorizePairing } from "../pairing/authorize-pairing";
+import {
   createInvitation,
   readInvitation,
 } from "../pairing/invitation-workflow";
@@ -13,6 +18,8 @@ import {
   type LocalRole,
 } from "../pairing/local-readiness";
 import { readPocReadiness } from "../pairing/read-poc-readiness";
+import { summarizeForAdministrator } from "../pairing/relationship-overview";
+import { revokeSiteRelationship } from "../pairing/revoke-site-relationship";
 import {
   pollGreenForActivation,
   sendConfirmation,
@@ -75,7 +82,7 @@ function readCreateInvitationPayload(
 
 resolver.define("getActionConfigStatus", () => ({ ready: true }));
 
-resolver.define("createInvitation", async ({ payload }) => {
+resolver.define("createInvitation", async ({ context, payload }) => {
   const request = readCreateInvitationPayload(payload);
   if (!request) {
     return { status: "blocked" as const };
@@ -94,6 +101,16 @@ resolver.define("createInvitation", async ({ payload }) => {
     });
 
     await kvsInvitationStore.write(created.nextState);
+    await recordLifecycleOutcome({
+      ...(typeof context["accountId"] === "string"
+        ? { actorAccountId: context["accountId"] }
+        : {}),
+      correlationId: created.invitation.correlationId,
+      eventId: `audit:${created.invitation.invitationId}:invitation-created`,
+      eventType: "relationship.invitation-created",
+      occurredAt: created.invitation.createdAt,
+      outcome: "recorded",
+    });
 
     return {
       correlationId: created.invitation.correlationId,
@@ -121,9 +138,34 @@ resolver.define<{ readonly reference: string }, unknown>(
       payload.reference,
       accountId,
     );
+    const occurredAt = new Date().toISOString();
+
     if (result.isErr()) {
+      // An invitation is recipient-bound, so a mismatch is a security outcome
+      // worth evidence rather than a missing page. The reference itself is
+      // never recorded: it is the hand-off token.
+      if (result.error.code === "invitation-recipient-mismatch") {
+        await recordLifecycleOutcome({
+          actorAccountId: accountId,
+          eventId: `audit:invitation-recipient-mismatch:${globalThis.crypto.randomUUID()}`,
+          eventType: "relationship.invitation-recipient-mismatch",
+          occurredAt,
+          outcome: "denied",
+          reason: result.error.code,
+        });
+      }
+
       return { status: "unavailable" as const };
     }
+
+    await recordLifecycleOutcome({
+      actorAccountId: accountId,
+      correlationId: result.value.correlationId,
+      eventId: `audit:${result.value.correlationId}:invitation-viewed`,
+      eventType: "relationship.invitation-viewed",
+      occurredAt,
+      outcome: "recorded",
+    });
 
     return { invitation: result.value, status: "available" as const };
   },
@@ -206,7 +248,7 @@ interface NominatePayload {
  */
 resolver.define<NominatePayload, unknown>(
   "nominateSite",
-  async ({ payload }) => {
+  async ({ context, payload }) => {
     const identity = localIdentity();
     const readiness = await readPocReadiness({
       getIdentity: () => {
@@ -263,6 +305,19 @@ resolver.define<NominatePayload, unknown>(
     }
 
     await kvsSiteRelationshipStore.write(nominated.value.nextState);
+    // Local consent is recorded before the request is sent, so the evidence
+    // exists whether or not the delivery succeeds.
+    await recordLifecycleOutcome({
+      ...(typeof context["accountId"] === "string"
+        ? { actorAccountId: context["accountId"] }
+        : {}),
+      correlationId: payload.correlationId,
+      eventId: `audit:${idempotencyKey}:nominated`,
+      eventType: "relationship.nominated",
+      occurredAt: nominated.value.request.createdAt,
+      outcome: "recorded",
+      relationshipId: nominated.value.request.relationshipId,
+    });
 
     const sent = await sendNomination(
       payload.greenBootstrapUrl,
@@ -359,6 +414,22 @@ resolver.define<ConfirmActivationPayload, unknown>(
     }
 
     await kvsSiteRelationshipStore.write(activated.value.nextState);
+    // Blue activates only after Green's authenticated success receipt, so one
+    // exchange is evidence of both the confirmation and the activation.
+    const occurredAt = new Date().toISOString();
+    for (const eventType of [
+      "relationship.confirmed",
+      "relationship.activated",
+    ] as const) {
+      await recordLifecycleOutcome({
+        correlationId: pending.correlationId,
+        eventId: `audit:${pending.correlationId}:${eventType}`,
+        eventType,
+        occurredAt,
+        outcome: "recorded",
+        relationshipId: activated.value.relationship.relationshipId,
+      });
+    }
 
     return {
       relationshipId: activated.value.relationship.relationshipId,
@@ -388,7 +459,7 @@ resolver.define("listNominations", async () => {
 /** Green's approve, reject, or leave-pending decision. */
 resolver.define<Omit<DecideNominationCommand, "actor" | "decidedAt">, unknown>(
   "decideNomination",
-  async ({ payload }) => {
+  async ({ context, payload }) => {
     const state = await kvsSiteRelationshipStore.read();
     const decided = decideSiteRelationshipNomination(state, {
       ...payload,
@@ -406,7 +477,120 @@ resolver.define<Omit<DecideNominationCommand, "actor" | "decidedAt">, unknown>(
 
     await kvsSiteRelationshipStore.write(decided.value.nextState);
 
+    if (decided.value.outcome !== "awaiting-green-approval") {
+      await recordLifecycleOutcome({
+        ...(typeof context["accountId"] === "string"
+          ? { actorAccountId: context["accountId"] }
+          : {}),
+        correlationId: payload.correlationId,
+        eventId: `audit:${payload.idempotencyKey}:${decided.value.outcome}`,
+        eventType:
+          decided.value.outcome === "rejected"
+            ? "relationship.nomination-rejected"
+            : "relationship.nomination-approved",
+        occurredAt: new Date().toISOString(),
+        outcome: "recorded",
+        ...(payload.safeReason ? { reason: payload.safeReason } : {}),
+      });
+    }
+
     return { outcome: decided.value.outcome, status: "decided" };
+  },
+);
+
+/**
+ * The administrator's own view of this tenant's relationships. It is built
+ * from local state alone and carries no secret, signature, peer delivery
+ * endpoint, or Jira content, because an administrator screen is a place any of
+ * those would leak from permanently.
+ */
+resolver.define("getRelationshipOverview", async () => {
+  const [state, { pairings }, journal] = await Promise.all([
+    kvsSiteRelationshipStore.read(),
+    kvsPeerPairingStore.read(),
+    kvsLifecycleJournalStore.read(),
+  ]);
+
+  return summarizeForAdministrator({
+    journal,
+    now: new Date().toISOString(),
+    pairings,
+    state,
+  });
+});
+
+interface AuthorizePairingPayload {
+  readonly allowedOperations: readonly string[];
+  readonly correlationId: string;
+  readonly pairing: unknown;
+}
+
+/**
+ * An administrator's authorization of one Pairing. An active relationship is
+ * the precondition; this call still has to bind the two Epics and the explicit
+ * operation allowlist the Pairing may operate under.
+ */
+resolver.define<AuthorizePairingPayload, unknown>(
+  "authorizePairing",
+  async ({ payload }) => {
+    const [state, pairingState] = await Promise.all([
+      kvsSiteRelationshipStore.read(),
+      kvsPeerPairingStore.read(),
+    ]);
+    const authorizedAt = new Date().toISOString();
+    const authorized = authorizePairing(state, pairingState, {
+      actor: "local-administrator",
+      allowedOperations: payload.allowedOperations as never,
+      authorizedAt,
+      correlationId: payload.correlationId,
+      pairing: payload.pairing as never,
+    });
+    if (authorized.isErr()) {
+      return { reason: authorized.error.code, status: "blocked" };
+    }
+
+    await kvsPeerPairingStore.write(authorized.value.nextState);
+
+    return { status: "authorized" };
+  },
+);
+
+interface RevokeRelationshipPayload {
+  readonly correlationId: string;
+  readonly relationshipId: string;
+  readonly safeReason: string;
+}
+
+/**
+ * Either local administrator's unilateral revocation. It takes effect on this
+ * tenant's own state, so it needs no counterpart consent and no successful
+ * notification: the counterpart learns of it when its next request is refused.
+ */
+resolver.define<RevokeRelationshipPayload, unknown>(
+  "revokeRelationship",
+  async ({ context, payload }) => {
+    const state = await kvsSiteRelationshipStore.read();
+    const revokedAt = new Date().toISOString();
+    const revoked = revokeSiteRelationship(state, {
+      actor: "local-administrator",
+      correlationId: payload.correlationId,
+      relationshipId: payload.relationshipId,
+      revokedAt,
+      safeReason: payload.safeReason,
+    });
+    if (revoked.isErr()) {
+      return { reason: revoked.error.code, status: "blocked" };
+    }
+
+    await kvsSiteRelationshipStore.write(revoked.value.nextState);
+    await recordLifecycleOutcome({
+      ...revoked.value.auditEvent,
+      ...(typeof context["accountId"] === "string"
+        ? { actorAccountId: context["accountId"] }
+        : {}),
+    });
+
+    return { status: "revoked" };
   },
 );
 

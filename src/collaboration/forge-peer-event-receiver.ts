@@ -4,6 +4,8 @@ import {
   defineWebTrigger,
   type WebTriggerResponse,
 } from "@forge-ahead/triggers/webtrigger";
+import { recordLifecycleOutcome } from "../audit/kvs-lifecycle-journal-store";
+import type { LifecycleEventType } from "../audit/lifecycle-journal";
 import { logger } from "../logging";
 import { logPeerRequestDenied } from "../observability/domain-events";
 import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
@@ -21,11 +23,36 @@ const deniedResponses = Object.freeze({
   unauthorized: 401,
 });
 
-function deny(
+/**
+ * Denials an administrator must still be able to investigate after the logs
+ * have aged out. Both are security outcomes with no trustworthy correlation
+ * ID: an unauthenticated body carries only attacker-supplied identifiers.
+ */
+const durableDenials: Readonly<Record<string, LifecycleEventType>> =
+  Object.freeze({
+    "invalid-hmac-secret": "peer.authentication-failed",
+    "invalid-hmac-signature": "peer.authentication-failed",
+    "invalid-hmac-timestamp": "peer.authentication-failed",
+    "request-replayed": "peer.request-replayed",
+  });
+
+async function deny(
   error: keyof typeof deniedResponses,
   reason: string,
-): WebTriggerResponse {
+): Promise<WebTriggerResponse> {
   logPeerRequestDenied(logger, { reason, route: "peer-event" });
+
+  const eventType = durableDenials[reason];
+  if (eventType) {
+    // The failure category, never the signature that produced it.
+    await recordLifecycleOutcome({
+      eventId: `audit:peer-event:${reason}:${globalThis.crypto.randomUUID()}`,
+      eventType,
+      occurredAt: new Date().toISOString(),
+      outcome: "denied",
+      reason,
+    });
+  }
 
   return {
     body: JSON.stringify({ error }),
@@ -105,16 +132,14 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
     pairingId: envelope.pairingId,
     relationshipId: envelope.relationshipId,
     role: "destination",
+    sourceEpicKey: envelope.event.data.issueKey,
   });
   if (authorized.isErr()) {
     return deny("forbidden", authorized.error.code);
   }
 
   const { pairing } = authorized.value;
-  if (
-    pairing.role !== "destination" ||
-    pairing.sourceEpicKey !== envelope.event.data.issueKey
-  ) {
+  if (pairing.role !== "destination") {
     return deny("forbidden", "pairing-unauthorized");
   }
 

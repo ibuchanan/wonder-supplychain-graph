@@ -33,6 +33,7 @@ const request = {
   pairingId: "pairing-001",
   relationshipId: "relationship-001",
   role: "destination",
+  sourceEpicKey: "GREEN-1",
 } as const;
 
 describe("authorizePeerRoute", () => {
@@ -117,6 +118,18 @@ describe("authorizePeerRoute", () => {
         request,
       ),
     ).toMatchObject({ error: { code: "operation-not-allowed" } });
+  });
+
+  it("denies an Epic this pairing does not bind", () => {
+    // A Pairing binds exactly one Source Epic. An active relationship and an
+    // allowed operation say nothing about which Epic may be exchanged, so the
+    // gate itself has to refuse a substituted Epic.
+    expect(
+      authorizePeerRoute([relationship], [pairing], {
+        ...request,
+        sourceEpicKey: "GREEN-2",
+      }),
+    ).toMatchObject({ error: { code: "epic-not-bound" } });
   });
 
   it("denies a pairing bound to the other role on this route", () => {

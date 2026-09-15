@@ -70,6 +70,13 @@ function stateWrites(): unknown[][] {
     .mock.calls.filter(([key]) => key === "site-relationship-setup-state");
 }
 
+function recordedEvidence(): unknown[] {
+  return vi
+    .mocked(kvs.set)
+    .mock.calls.filter(([key]) => key === "lifecycle-audit-journal")
+    .flatMap(([, value]) => (value as { events: unknown[] }).events);
+}
+
 function signedRequest(body = JSON.stringify(nominationRequest)) {
   const headers = signPeerRequest(secret, body, timestamp);
   return {
@@ -89,11 +96,13 @@ describe("receiveBootstrapRequest", () => {
     vi.mocked(kvs.get).mockImplementation(async (key: string) =>
       key === "invitation-workflow-state"
         ? ({ invitations: [invitation] } as never)
-        : ({
-            nominations: [],
-            processedIdempotencyKeys: [],
-            relationships: [],
-          } as never),
+        : key === "site-relationship-setup-state"
+          ? ({
+              nominations: [],
+              processedIdempotencyKeys: [],
+              relationships: [],
+            } as never)
+          : (undefined as never),
     );
   });
 
@@ -117,8 +126,34 @@ describe("receiveBootstrapRequest", () => {
       }),
     ).resolves.toMatchObject({ statusCode: 401 });
 
-    expect(kvs.get).not.toHaveBeenCalled();
-    expect(kvs.set).not.toHaveBeenCalled();
+    // Recording the denial is the only durable state an unauthenticated
+    // caller may touch: it reaches no invitation or relationship state.
+    expect(kvs.get).not.toHaveBeenCalledWith("invitation-workflow-state");
+    expect(kvs.get).not.toHaveBeenCalledWith("site-relationship-setup-state");
+    expect(stateWrites()).toHaveLength(0);
+  });
+
+  it("keeps durable evidence of a nomination and of an HMAC failure", async () => {
+    // A tenant investigating later reads its journal, not its logs. The
+    // correlation ID joins the evidence to the counterpart's own record; the
+    // signature that failed is never part of it.
+    await receiveBootstrapRequest({ body: JSON.stringify(nominationRequest) });
+    await receiveBootstrapRequest(signedRequest());
+
+    expect(recordedEvidence()).toMatchObject([
+      {
+        eventType: "peer.authentication-failed",
+        outcome: "denied",
+        reason: "invalid-hmac-timestamp",
+      },
+      {
+        correlationId: "correlation-001",
+        eventType: "relationship.nominated",
+        outcome: "recorded",
+        relationshipId: "relationship-001",
+      },
+    ]);
+    expect(JSON.stringify(recordedEvidence())).not.toContain(secret);
   });
 
   it("discloses no failed check to the caller while logging the safe reason", async () => {
@@ -418,7 +453,9 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
           claimed.add(key);
           return;
         }
-        stored = value;
+        if (key === "site-relationship-setup-state") {
+          stored = value;
+        }
       },
     );
 

@@ -83,6 +83,7 @@ async function emitLeanEvent(
     pairingId: pairing.pairingId,
     relationshipId: pairing.relationshipId,
     role: "source",
+    sourceEpicKey: event.data.issueKey,
   });
   if (authorized.isErr() || !relationship) {
     throw new Error(

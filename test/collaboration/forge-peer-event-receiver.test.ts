@@ -168,7 +168,10 @@ describe("receivePeerEvent", () => {
       }),
     ).resolves.toMatchObject({ statusCode: 401 });
 
-    expect(kvs.get).not.toHaveBeenCalled();
+    // Recording the denial is the only durable state an unauthenticated
+    // caller may touch: it reaches no relationship, pairing, or replay state.
+    expect(kvs.get).not.toHaveBeenCalledWith("peer-pairing-state");
+    expect(kvs.get).not.toHaveBeenCalledWith("site-relationship-setup-state");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -253,6 +256,28 @@ describe("receivePeerEvent", () => {
     expect(first.statusCode).toBe(200);
     expect(replayed).toEqual(forbidden);
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps durable evidence of an HMAC failure and of a replay rejection", async () => {
+    // Logs age out, so the journal is the only record an administrator can
+    // still read when asking why a peer was refused. The reason code is kept
+    // in the evidence; the signature that failed never is.
+    vi.mocked(fetch).mockResolvedValue({ ok: true } as never);
+
+    await receivePeerEvent({ body: JSON.stringify(validEnvelope) });
+    await receivePeerEvent(signedRequest());
+    await receivePeerEvent(signedRequest());
+
+    const recorded = vi
+      .mocked(kvs.set)
+      .mock.calls.filter(([key]) => key === "lifecycle-audit-journal")
+      .flatMap(([, value]) => (value as { events: unknown[] }).events);
+
+    expect(recorded).toMatchObject([
+      { eventType: "peer.authentication-failed", outcome: "denied" },
+      { eventType: "peer.request-replayed", outcome: "denied" },
+    ]);
+    expect(JSON.stringify(recorded)).not.toContain(secret);
   });
 
   it("fails closed without delivering when durable replay state is unavailable", async () => {

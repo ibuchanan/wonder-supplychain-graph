@@ -19,10 +19,13 @@ export interface PeerRouteRequest {
   readonly pairingId: string;
   readonly relationshipId: string;
   readonly role: "destination" | "source";
+  /** The Source Epic this request claims to carry. */
+  readonly sourceEpicKey: string;
 }
 
 export type PeerRouteDenial = {
   readonly code:
+    | "epic-not-bound"
     | "operation-not-allowed"
     | "pairing-unauthorized"
     | "relationship-unauthorized";
@@ -33,11 +36,12 @@ export interface PeerRouteAuthorization {
 }
 
 /**
- * The single gate every enabled peer route passes through. The three checks
- * are deliberately independent: site trust, then the exact Pairing, then that
- * Pairing's own operation allowlist. Satisfying one never implies another, so
- * a reusable relationship cannot widen a Pairing and an authorized Pairing
- * cannot outlive its relationship's lease or revocation.
+ * The single gate every enabled peer route passes through. The four checks are
+ * deliberately independent: site trust, then the exact Pairing, then that
+ * Pairing's own operation allowlist, then the one Source Epic it binds.
+ * Satisfying one never implies another, so a reusable relationship cannot
+ * widen a Pairing, an authorized Pairing cannot outlive its relationship's
+ * lease or revocation, and an allowed operation cannot substitute an Epic.
  */
 export function authorizePeerRoute(
   relationships: readonly SiteRelationship[],
@@ -68,7 +72,13 @@ export function authorizePeerRoute(
     return err({ code: "pairing-unauthorized" });
   }
 
-  return pairing.allowedOperations?.includes(request.operation)
+  if (!pairing.allowedOperations?.includes(request.operation)) {
+    return err({ code: "operation-not-allowed" });
+  }
+
+  // A Pairing binds exactly one Source Epic. Neither the relationship nor the
+  // operation allowlist says anything about which Epic may be exchanged.
+  return pairing.sourceEpicKey === request.sourceEpicKey
     ? ok({ pairing })
-    : err({ code: "operation-not-allowed" });
+    : err({ code: "epic-not-bound" });
 }

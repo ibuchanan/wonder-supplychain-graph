@@ -5,6 +5,8 @@ import {
   type WebTriggerResponse,
 } from "@forge-ahead/triggers/webtrigger";
 
+import { recordLifecycleOutcome } from "../audit/kvs-lifecycle-journal-store";
+import type { LifecycleEventType } from "../audit/lifecycle-journal";
 import { verifyPeerRequest } from "../collaboration/peer-hmac-auth";
 import { consumeRequestId } from "../collaboration/peer-replay-guard";
 import { logger } from "../logging";
@@ -36,16 +38,45 @@ const deniedResponses = Object.freeze({
   unauthorized: 401,
 });
 
-function deny(
+/**
+ * Security denials an administrator must still be able to investigate once the
+ * logs have aged out. Every other denial is a setup decision the counterpart
+ * can retry, and is left to the log.
+ */
+const durableDenials: Readonly<Record<string, LifecycleEventType>> =
+  Object.freeze({
+    "invalid-hmac-secret": "peer.authentication-failed",
+    "invalid-hmac-signature": "peer.authentication-failed",
+    "invalid-hmac-timestamp": "peer.authentication-failed",
+    // The agreement end instant passes without any event to trigger it, so the
+    // first request it refuses is where the tenant observes the expiry.
+    "lease-expired": "relationship.expired",
+    "request-replayed": "peer.request-replayed",
+  });
+
+async function deny(
   error: keyof typeof deniedResponses,
   reason: string,
   correlationId?: string,
-): WebTriggerResponse {
+): Promise<WebTriggerResponse> {
   logPeerRequestDenied(logger, {
     ...(correlationId ? { correlationId } : {}),
     reason,
     route: "bootstrap",
   });
+
+  const eventType = durableDenials[reason];
+  if (eventType) {
+    // The failure category, never the signature that produced it.
+    await recordLifecycleOutcome({
+      ...(correlationId ? { correlationId } : {}),
+      eventId: `audit:bootstrap:${reason}:${globalThis.crypto.randomUUID()}`,
+      eventType,
+      occurredAt: new Date().toISOString(),
+      outcome: "denied",
+      reason,
+    });
+  }
 
   return {
     body: JSON.stringify({ error }),
@@ -153,6 +184,24 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     }
 
     await kvsSiteRelationshipStore.write(confirmed.value.nextState);
+    // Bilateral confirmation is what activates Green's local record, so one
+    // exchange is evidence of both outcomes.
+    await recordLifecycleOutcome({
+      correlationId: confirmation.correlationId,
+      eventId: `audit:${confirmation.idempotencyKey}:confirmed`,
+      eventType: "relationship.confirmed",
+      occurredAt: now,
+      outcome: "recorded",
+      relationshipId: confirmation.relationshipId,
+    });
+    await recordLifecycleOutcome({
+      correlationId: confirmation.correlationId,
+      eventId: `audit:${confirmation.idempotencyKey}:activated`,
+      eventType: "relationship.activated",
+      occurredAt: now,
+      outcome: "recorded",
+      relationshipId: confirmation.relationshipId,
+    });
 
     return buildSuccessResponse({ ...confirmed.value.receipt });
   }
@@ -171,6 +220,14 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
   }
 
   await kvsSiteRelationshipStore.write(received.value.nextState);
+  await recordLifecycleOutcome({
+    correlationId: nomination.correlationId,
+    eventId: `audit:${nomination.idempotencyKey}:nominated`,
+    eventType: "relationship.nominated",
+    occurredAt: now,
+    outcome: "recorded",
+    relationshipId: nomination.relationshipId,
+  });
 
   return buildSuccessResponse({ ...received.value.receipt });
 });
