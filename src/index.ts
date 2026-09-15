@@ -23,6 +23,7 @@ import type { RovoCommentActionPayload } from "./collaboration/forge-rovo-commen
 import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-comment-action";
 
 export { receivePeerEvent } from "./collaboration/forge-peer-event-receiver";
+export { receiveBootstrapRequest } from "./pairing/forge-bootstrap-receiver";
 
 import { type OnConfigChangeResponse, onConfigChange } from "./cx-management";
 import {

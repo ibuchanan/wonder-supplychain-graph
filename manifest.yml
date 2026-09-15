@@ -56,6 +56,8 @@ modules:
       handler: index.onUpgraded
     - key: receivePeerEvent
       handler: index.receivePeerEvent
+    - key: receiveBootstrapRequest
+      handler: index.receiveBootstrapRequest
   automation:actionProvider:
     - key: scg-publish-package-provider
       actions:
@@ -136,6 +138,11 @@ modules:
   webtrigger:
     - key: scg-receive-peer-event
       function: receivePeerEvent
+      urlFormat: v2
+      response:
+        type: dynamic
+    - key: scg-receive-bootstrap-request
+      function: receiveBootstrapRequest
       urlFormat: v2
       response:
         type: dynamic
