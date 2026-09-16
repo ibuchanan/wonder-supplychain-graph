@@ -19,10 +19,10 @@ import {
 
 import type { ConfigurationConcern } from "./configuration-location";
 
-export type PocReadinessStatus = "blocked" | "ready";
+export type InstallationReadinessStatus = "blocked" | "ready";
 
-export interface PocReadiness {
-  readonly status: PocReadinessStatus;
+export interface InstallationReadiness {
+  readonly status: InstallationReadinessStatus;
 }
 
 export type RelationshipStatus =
@@ -70,11 +70,11 @@ export type ConfigurationUrls = {
   readonly [Concern in ConfigurationConcern]?: string;
 };
 
-export interface PocReadinessPageProps {
+export interface StatusPageProps {
   readonly configurationUrls: ConfigurationUrls;
   readonly onRevoke: (relationship: RelationshipOverview) => void;
   readonly overview: AdministratorOverview | undefined;
-  readonly readiness: PocReadiness | undefined;
+  readonly readiness: InstallationReadiness | undefined;
 }
 
 const relationshipAppearance: Record<
@@ -89,7 +89,7 @@ const relationshipAppearance: Record<
 };
 
 const content: Record<
-  PocReadinessStatus,
+  InstallationReadinessStatus,
   {
     readonly appearance: "success" | "warning";
     readonly text: string;
@@ -106,16 +106,17 @@ const content: Record<
 };
 
 /**
- * The administrator's view of local POC readiness. It takes everything it
- * shows as props so that the page's structure can be exercised without an
- * Atlassian host.
+ * The administrator's read-only view of this site: whether the installation is
+ * ready, which Site relationships exist, and what evidence has been recorded.
+ * It takes everything it shows as props so that the page's structure can be
+ * exercised without an Atlassian host.
  */
-export const PocReadinessPage = ({
+export const StatusPage = ({
   configurationUrls,
   onRevoke,
   overview,
   readiness,
-}: PocReadinessPageProps) => (
+}: StatusPageProps) => (
   <Stack space="space.200">
     {readiness ? (
       <>
@@ -128,7 +129,7 @@ export const PocReadinessPage = ({
       <Text>Checking local POC readiness…</Text>
     )}
 
-    <Tabs id="poc-readiness-sections">
+    <Tabs id="status-sections">
       <TabList>
         <Tab>Site relationships</Tab>
         <Tab>Recent audit outcomes</Tab>

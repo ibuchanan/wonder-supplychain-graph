@@ -9,10 +9,10 @@ import {
 import {
   type AdministratorOverview,
   type ConfigurationUrls,
-  type PocReadiness,
-  PocReadinessPage,
+  type InstallationReadiness,
   type RelationshipOverview,
-} from "./poc-readiness-page";
+  StatusPage,
+} from "./status-page";
 
 const CONCERNS: readonly ConfigurationConcern[] = [
   "log-sink",
@@ -26,7 +26,7 @@ function unwrap<Value>(value: Value | { readonly body: Value }): Value {
 }
 
 const App = () => {
-  const [readiness, setReadiness] = useState<PocReadiness>();
+  const [readiness, setReadiness] = useState<InstallationReadiness>();
   const [overview, setOverview] = useState<AdministratorOverview>();
   const [configurationUrls, setConfigurationUrls] = useState<ConfigurationUrls>(
     {},
@@ -40,7 +40,7 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    void invoke<PocReadiness>("getPocReadiness").then(
+    void invoke<InstallationReadiness>("getInstallationReadiness").then(
       (value) => setReadiness(unwrap(value)),
       () => setReadiness({ status: "blocked" }),
     );
@@ -76,7 +76,7 @@ const App = () => {
   );
 
   return (
-    <PocReadinessPage
+    <StatusPage
       configurationUrls={configurationUrls}
       onRevoke={revoke}
       overview={overview}

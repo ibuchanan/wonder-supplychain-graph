@@ -1,9 +1,11 @@
-import { evaluatePocReadiness, type PocReadiness } from "./poc-readiness";
+import {
+  evaluateInstallationReadiness,
+  type InstallationReadiness,
+} from "./installation-readiness";
 
-export interface PocReadinessDependencies {
+export interface InstallationReadinessDependencies {
   readonly getIdentity: () => {
     readonly environmentAri?: string;
-    readonly environmentType?: string;
     readonly installationAri?: string;
     readonly siteAri?: string;
   };
@@ -11,14 +13,14 @@ export interface PocReadinessDependencies {
   readonly readDurableState: () => Promise<unknown>;
 }
 
-export async function readPocReadiness(
-  dependencies: PocReadinessDependencies,
-): Promise<PocReadiness> {
+export async function readInstallationReadiness(
+  dependencies: InstallationReadinessDependencies,
+): Promise<InstallationReadiness> {
   try {
     await dependencies.readDurableState();
     const secret = dependencies.getSecret();
 
-    return evaluatePocReadiness({
+    return evaluateInstallationReadiness({
       durableStateAvailable: true,
       ...dependencies.getIdentity(),
       ...(secret ? { secret } : {}),

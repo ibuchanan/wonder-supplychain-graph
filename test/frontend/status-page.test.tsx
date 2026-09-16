@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   type AdministratorOverview,
-  PocReadinessPage,
-} from "../../src/frontend/poc-readiness-page";
+  StatusPage,
+} from "../../src/frontend/status-page";
 import { loadManifest } from "../forge/manifest-helpers";
 
 type Element = {
@@ -94,10 +94,10 @@ function manifestPageTitle(): string {
       "jira:adminPage"?: Array<{ key: string; title: string }>;
     }
   )["jira:adminPage"];
-  const page = pages?.find((entry) => entry.key === "scg-poc-readiness");
+  const page = pages?.find((entry) => entry.key === "scg-status");
 
   if (!page) {
-    throw new Error("The manifest declares no scg-poc-readiness admin page.");
+    throw new Error("The manifest declares no scg-status admin page.");
   }
 
   return page.title;
@@ -106,7 +106,7 @@ function manifestPageTitle(): string {
 describe("Peer POC readiness page", () => {
   it("leaves the only page heading to the title declared in the manifest", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
@@ -126,7 +126,7 @@ describe("Peer POC readiness page", () => {
 
   it("separates site relationships from audit outcomes into two tabs", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
@@ -142,7 +142,7 @@ describe("Peer POC readiness page", () => {
 
   it("keeps readiness above the tabs, where either tab can see it", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
@@ -169,7 +169,7 @@ describe("Peer POC readiness page", () => {
 
   it("gives each tab its own description and its own empty state", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}
@@ -195,7 +195,7 @@ describe("Peer POC readiness page", () => {
 
   it("sends an admin with no Site relationship to relationship setup by name", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{ "site-relationship": "/relationship-setup" }}
         onRevoke={() => undefined}
         overview={noRelationships}
@@ -213,7 +213,7 @@ describe("Peer POC readiness page", () => {
 
   it("sends an admin with no audit evidence to log sink setup by name", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{ "log-sink": "/log-sink-setup" }}
         onRevoke={() => undefined}
         overview={noRelationships}
@@ -231,7 +231,7 @@ describe("Peer POC readiness page", () => {
 
   it("keeps the setup links out of a populated page, which needs no setup", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{
           "log-sink": "/log-sink-setup",
           "site-relationship": "/relationship-setup",
@@ -250,7 +250,7 @@ describe("Peer POC readiness page", () => {
 
   it("pairs every tab with a panel inside one tab list, as tab semantics require", () => {
     const page = render(
-      <PocReadinessPage
+      <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
         overview={noRelationships}

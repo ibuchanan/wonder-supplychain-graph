@@ -90,12 +90,12 @@ modules:
         - atlassian:work-item
         - atlassian:document
   jira:adminPage:
-    - key: scg-poc-readiness
-      title: Supplychain Graph Peer POC readiness
+    - key: scg-status
+      title: Supplychain Graph Status
       render: native
       resolver:
         function: getActionConfig
-      resource: poc-readiness
+      resource: status
     - key: scg-peer-invitations
       title: Supplychain Graph Peer invitations
       render: native
@@ -172,8 +172,8 @@ resources:
     path: src/frontend/index.tsx
   - key: simulator
     path: src/frontend/simulator.tsx
-  - key: poc-readiness
-    path: src/frontend/poc-readiness.tsx
+  - key: status
+    path: src/frontend/status.tsx
   - key: publish-package-config
     path: src/frontend/publish-package-action-config.tsx
   - key: publish-graph-config

@@ -1,13 +1,18 @@
-export type PocReadinessStatus = "blocked" | "ready";
+/**
+ * Whether this installation is provisioned to exchange work packages at all:
+ * it knows who it is, its durable state answers, and it holds a usable secret.
+ * This is about the installation, not about any relationship or pairing — see
+ * `local-readiness.ts` for the readiness of a role under a pairing.
+ */
+export type InstallationReadinessStatus = "blocked" | "ready";
 
-export interface PocReadiness {
-  readonly status: PocReadinessStatus;
+export interface InstallationReadiness {
+  readonly status: InstallationReadinessStatus;
 }
 
-export interface PocReadinessInput {
+export interface InstallationReadinessInput {
   readonly durableStateAvailable: boolean;
   readonly environmentAri?: string;
-  readonly environmentType?: string;
   readonly installationAri?: string;
   readonly secret?: string;
   readonly siteAri?: string;
@@ -26,9 +31,10 @@ function hasValidSecret(secret: string | undefined): boolean {
   );
 }
 
-export function evaluatePocReadiness(input: PocReadinessInput): PocReadiness {
+export function evaluateInstallationReadiness(
+  input: InstallationReadinessInput,
+): InstallationReadiness {
   if (
-    input.environmentType !== "DEVELOPMENT" ||
     !input.environmentAri ||
     !input.installationAri ||
     !input.siteAri ||

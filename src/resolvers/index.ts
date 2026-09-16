@@ -5,6 +5,14 @@ import {
   kvsLifecycleJournalStore,
   recordLifecycleOutcome,
 } from "../audit/kvs-lifecycle-journal-store";
+import { kvsLogSinkStore } from "../observability/kvs-log-sink-store";
+import { validateCloudEventsWebhook } from "../observability/log-shipping";
+import {
+  clearLogSink,
+  configureLogSink,
+  describeLogSink,
+  permittedSinkHosts,
+} from "../observability/log-sink-configuration";
 import { authorizePairing } from "../pairing/authorize-pairing";
 import {
   createInvitation,
@@ -17,13 +25,13 @@ import {
   determineLocalReadiness,
   type LocalRole,
 } from "../pairing/local-readiness";
-import { readPocReadiness } from "../pairing/read-poc-readiness";
+import { readInstallationReadiness } from "../pairing/read-installation-readiness";
 import { summarizeForAdministrator } from "../pairing/relationship-overview";
-import { revokeSiteRelationship } from "../pairing/revoke-site-relationship";
 import {
   pollGreenForActivation,
   sendConfirmation,
 } from "../pairing/request-activation";
+import { revokeSiteRelationship } from "../pairing/revoke-site-relationship";
 import { sendNomination } from "../pairing/send-nomination";
 import {
   acceptActivationProposal,
@@ -34,14 +42,6 @@ import {
   decideSiteRelationshipNomination,
   nominateSiteRelationship,
 } from "../pairing/site-relationship-nomination";
-import { kvsLogSinkStore } from "../observability/kvs-log-sink-store";
-import { validateCloudEventsWebhook } from "../observability/log-shipping";
-import {
-  clearLogSink,
-  configureLogSink,
-  describeLogSink,
-  permittedSinkHosts,
-} from "../observability/log-sink-configuration";
 import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
 
 const resolver = new Resolver();
@@ -179,8 +179,8 @@ resolver.define<{ readonly reference: string }, unknown>(
   },
 );
 
-resolver.define("getPocReadiness", () =>
-  readPocReadiness({
+resolver.define("getInstallationReadiness", () =>
+  readInstallationReadiness({
     getIdentity: () => {
       const context = getAppContext();
       const cloudId = context.installation?.contexts.find(
@@ -189,7 +189,6 @@ resolver.define("getPocReadiness", () =>
 
       return {
         environmentAri: context.environmentAri.toString(),
-        environmentType: context.environmentType,
         installationAri: context.installationAri.toString(),
         ...(cloudId ? { siteAri: `ari:cloud:jira::site/${cloudId}` } : {}),
       };
@@ -258,12 +257,11 @@ resolver.define<NominatePayload, unknown>(
   "nominateSite",
   async ({ context, payload }) => {
     const identity = localIdentity();
-    const readiness = await readPocReadiness({
+    const readiness = await readInstallationReadiness({
       getIdentity: () => {
         const context = getAppContext();
         return {
           environmentAri: context.environmentAri.toString(),
-          environmentType: context.environmentType,
           installationAri: context.installationAri.toString(),
           ...(identity ? { siteAri: identity.siteAri } : {}),
         };
