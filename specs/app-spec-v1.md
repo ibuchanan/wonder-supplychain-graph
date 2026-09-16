@@ -85,10 +85,24 @@ as `expired` without anything having been written when its lease passed.
 
 ### Naming in code
 
-`PeerCX` and `GraphCX` in type and identifier names; `peerCx` and `graphCx` in
-camelCase positions; `peer-cx` and `graph-cx` in file names and storage keys.
-The qualifier is always spelled out, so no identifier is ever a bare `cx`,
-`pcx`, or `gcx`.
+`PeerCX` and `GraphCX` in prose, including comments and this glossary. In code,
+`PeerCx` and `GraphCx` in type and compound identifier names, `peerCx` and
+`graphCx` in camelCase positions, and `peer-cx` and `graph-cx` in file names,
+storage keys, wire operation names, and audit event types. The qualifier is
+always spelled out, so no identifier is ever a bare `cx`, `pcx`, or `gcx`.
+
+Three platform boundaries keep the platform's own spelling rather than ours,
+each marked with a comment where it is read or written: the `graph:connector`
+payload field, the Forge Graph API request field, and the manifest's
+`onConnectionChange` callback key.
+
+### Naming in the admin UI
+
+The administrator-facing word is **connection**, lower case: a Jira site
+administrator has no reason to learn `PeerCX`. PeerCX and GraphCX are the
+precise domain terms, used in code, in specifications, and in logs, where the
+distinction between the two has to be unambiguous. Where a screen needs to name
+one specifically, it says Teamwork Graph connection for a GraphCX.
 
 ## 3. Roles and Authority
 

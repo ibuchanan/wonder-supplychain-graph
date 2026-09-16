@@ -5,7 +5,10 @@
 - **PeerCX**: Peer Connection. The bilaterally approved trust relationship
   between two sites, reusable across separately authorized Pairings. It does not
   grant access to all work on either site. Revoking it stops exchange for all
-  its Pairings. Never shortened to a bare `connection` or `cx`.
+  its Pairings. Written `PeerCx` in code identifiers, `peerCx` in camelCase,
+  and `peer-cx` in file names, storage keys, wire operations, and audit event
+  types. Never shortened to a bare `cx`. The administrator-facing word for one
+  is simply "connection", lower case.
 - **GraphCX**: Graph Connection. A Teamwork Graph datasource connection,
   configured in the product and reported through the `graph:connector`
   connection-change callback. It carries no peer authority and crosses no tenant
