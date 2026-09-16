@@ -17,12 +17,14 @@ import ForgeReconciler, {
   Text,
   TextArea,
   Textfield,
+  UserPicker,
   useForm,
   useProductContext,
 } from "@forge/react";
 import React, { useCallback, useEffect, useState } from "react";
 
 import { chooseInvitationView } from "./peer-invitations-view";
+import { defaultSafeLabel } from "./safe-label-default";
 
 /**
  * The safe recipient projection. It deliberately has no field for the
@@ -98,33 +100,56 @@ const RecipientInvitation = ({ reference }: { readonly reference: string }) => {
 };
 
 const InvitationForm = () => {
+  // Suggested once per mounted form, so the label a reader sees is the label
+  // the invitation will carry rather than one that changes as they type.
+  const [suggestedSafeLabel] = useState(defaultSafeLabel);
   const { formState, getFieldId, handleSubmit, register } =
-    useForm<InvitationFormFields>();
-  const [response, setResponse] = useState<CreateInvitationResponse>();
-
-  const submit = useCallback(async (fields: InvitationFormFields) => {
-    // The recipient reaches this same module through its own URL, so the
-    // invitation has to carry the module's navigable address rather than a
-    // guess at one.
-    const navigationUrl = await router.getUrl({
-      moduleKey: "scg-peer-invitations",
-      target: "module",
+    useForm<InvitationFormFields>({
+      defaultValues: { safeLabel: suggestedSafeLabel },
     });
+  const [response, setResponse] = useState<CreateInvitationResponse>();
+  // The user picker reports a whole user rather than a form value, so only the
+  // account ID is kept here and it is validated on submit rather than
+  // registered.
+  const [recipientAccountId, setRecipientAccountId] = useState("");
+  const [recipientMissing, setRecipientMissing] = useState(false);
 
-    if (!navigationUrl) {
-      setResponse({ status: "blocked" });
-      return;
-    }
+  const submit = useCallback(
+    async (fields: InvitationFormFields) => {
+      if (!recipientAccountId) {
+        setRecipientMissing(true);
+        return;
+      }
 
-    const created = await invoke<CreateInvitationResponse>("createInvitation", {
-      greenNavigationUrl: navigationUrl.toString(),
-      purpose: fields.purpose,
-      recipientAccountId: fields.recipientAccountId,
-      safeLabel: fields.safeLabel || undefined,
-    }).then(unwrap, () => ({ status: "blocked" }) as const);
+      setRecipientMissing(false);
 
-    setResponse(created);
-  }, []);
+      // The recipient reaches this same module through its own URL, so the
+      // invitation has to carry the module's navigable address rather than a
+      // guess at one.
+      const navigationUrl = await router.getUrl({
+        moduleKey: "scg-peer-invitations",
+        target: "module",
+      });
+
+      if (!navigationUrl) {
+        setResponse({ status: "blocked" });
+        return;
+      }
+
+      const created = await invoke<CreateInvitationResponse>(
+        "createInvitation",
+        {
+          greenNavigationUrl: navigationUrl.toString(),
+          purpose: fields.purpose,
+          recipientAccountId,
+          safeLabel: fields.safeLabel || undefined,
+        },
+      ).then(unwrap, () => ({ status: "blocked" }) as const);
+
+      setResponse(created);
+    },
+    [recipientAccountId],
+  );
 
   return (
     <Stack space="space.200">
@@ -133,18 +158,25 @@ const InvitationForm = () => {
         Creates a recipient-bound invitation with a seven-day setup deadline.
       </Text>
       <Form onSubmit={handleSubmit(submit)}>
-        <FormSection>
-          <Label labelFor={getFieldId("recipientAccountId")}>
-            Recipient account ID
-            <RequiredAsterisk />
-          </Label>
-          <Textfield {...register("recipientAccountId", { required: true })} />
-          {formState.errors.recipientAccountId ? (
-            <ErrorMessage>A recipient account ID is required.</ErrorMessage>
+        {/* A Stack rather than a FormSection: the section's own top margin put
+            a gap under the heading that read as a break in the page. */}
+        <Stack space="space.100">
+          <UserPicker
+            isRequired
+            label="Recipient"
+            name="recipientAccountId"
+            onChange={(user) => {
+              setRecipientAccountId(user?.id ?? "");
+              setRecipientMissing(false);
+            }}
+            placeholder="Search for the peer administrator"
+          />
+          {recipientMissing ? (
+            <ErrorMessage>A recipient is required.</ErrorMessage>
           ) : null}
 
           <Label labelFor={getFieldId("purpose")}>
-            Purpose
+            Purpose for audit trail
             <RequiredAsterisk />
           </Label>
           <TextArea {...register("purpose", { required: true })} />
@@ -152,9 +184,9 @@ const InvitationForm = () => {
             <ErrorMessage>A purpose is required.</ErrorMessage>
           ) : null}
 
-          <Label labelFor={getFieldId("safeLabel")}>Safe label</Label>
+          <Label labelFor={getFieldId("safeLabel")}>UI safe label</Label>
           <Textfield {...register("safeLabel")} />
-        </FormSection>
+        </Stack>
         <FormFooter>
           <Button appearance="primary" type="submit">
             Create invitation
