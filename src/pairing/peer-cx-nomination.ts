@@ -9,12 +9,12 @@ import type {
   Invitation,
   InvitationWorkflowState,
 } from "./invitation-workflow";
-import type { SiteRelationship } from "./site-relationship";
+import type { PeerCx } from "./peer-cx";
 
 /**
  * Site/installation/environment identity a site observes about itself and
  * proposes as the nominated counterpart. Nothing here is peer-supplied trust:
- * the receiver compares it against its own approved relationship state.
+ * the receiver compares it against its own approved PeerCX state.
  */
 export interface NominatedIdentity {
   readonly environmentAri: string;
@@ -42,7 +42,7 @@ export type NominationStatus =
   | "invalidated"
   | "rejected";
 
-export interface SiteRelationshipNomination {
+export interface PeerCxNomination {
   /** When this site recorded its own acceptance of the activation proposal. */
   readonly acceptedAt?: string;
   /** When bilateral confirmation completed and the local record activated. */
@@ -56,21 +56,21 @@ export interface SiteRelationshipNomination {
   readonly nominatedIdentity: NominatedIdentity;
   readonly receiverEndpointStatus: ReceiverEndpointStatus;
   /** Minted by Blue with its pending record; both sites must agree on it. */
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly role: "blue" | "green";
   readonly safeReason?: string;
   readonly status: NominationStatus;
   readonly terms: NominationTerms;
 }
 
-export interface SiteRelationshipSetupState {
-  readonly nominations: readonly SiteRelationshipNomination[];
+export interface PeerCxSetupState {
+  readonly nominations: readonly PeerCxNomination[];
   readonly processedIdempotencyKeys: readonly string[];
-  /** Local Site relationships, written only on bilateral confirmation. */
-  readonly relationships: readonly SiteRelationship[];
+  /** Local PeerCXs, written only on bilateral confirmation. */
+  readonly peerCxs: readonly PeerCx[];
 }
 
-export interface NominateSiteRelationshipCommand {
+export interface NominatePeerCxCommand {
   readonly actor: "blue-administrator";
   readonly consentedAt: string;
   readonly correlationId: string;
@@ -79,9 +79,9 @@ export interface NominateSiteRelationshipCommand {
   readonly invitationReference: string;
   readonly localIdentity: NominatedIdentity;
   readonly localReadiness: "blocked" | "ready";
-  readonly operation: "site-relationship.nominate";
+  readonly operation: "peer-cx.nominate";
   readonly receiverEndpointStatus: ReceiverEndpointStatus;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly requestId: string;
   readonly terms: NominationTerms;
 }
@@ -98,27 +98,27 @@ export interface NominationRequest {
   readonly intendedReceiverSiteAri: string;
   readonly invitationReference: string;
   readonly nominatedIdentity: NominatedIdentity;
-  readonly operation: "site-relationship.nominate";
+  readonly operation: "peer-cx.nominate";
   readonly protocolVersion: ProtocolVersion;
   readonly receiverEndpointStatus: ReceiverEndpointStatus;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly requestId: string;
   readonly terms: NominationTerms;
 }
 
 export interface NominationInitiationResult {
-  readonly nextState: SiteRelationshipSetupState;
+  readonly nextState: PeerCxSetupState;
   readonly request: NominationRequest;
 }
 
-export type NominateSiteRelationshipError = {
+export type NominatePeerCxError = {
   readonly code: "local-readiness-blocked";
 };
 
-export function nominateSiteRelationship(
-  state: SiteRelationshipSetupState,
-  command: NominateSiteRelationshipCommand,
-): Result<NominationInitiationResult, NominateSiteRelationshipError> {
+export function nominatePeerCx(
+  state: PeerCxSetupState,
+  command: NominatePeerCxCommand,
+): Result<NominationInitiationResult, NominatePeerCxError> {
   if (command.localReadiness !== "ready") {
     return err({ code: "local-readiness-blocked" });
   }
@@ -127,14 +127,14 @@ export function nominateSiteRelationship(
     (candidate) => candidate.idempotencyKey === command.idempotencyKey,
   );
 
-  const nomination: SiteRelationshipNomination = Object.freeze({
+  const nomination: PeerCxNomination = Object.freeze({
     correlationId: command.correlationId,
     counterpartSiteAri: command.intendedReceiverSiteAri,
     idempotencyKey: command.idempotencyKey,
     invitationReference: command.invitationReference,
     nominatedIdentity: command.localIdentity,
     receiverEndpointStatus: command.receiverEndpointStatus,
-    relationshipId: command.relationshipId,
+    peerCxId: command.peerCxId,
     role: "blue" as const,
     status: "awaiting-green-approval" as const,
     terms: command.terms,
@@ -162,7 +162,7 @@ export function nominateSiteRelationship(
       operation: command.operation,
       protocolVersion: "v1" as const,
       receiverEndpointStatus: command.receiverEndpointStatus,
-      relationshipId: command.relationshipId,
+      peerCxId: command.peerCxId,
       requestId: command.requestId,
       terms: command.terms,
     }),
@@ -181,7 +181,7 @@ export interface NominationReceipt {
 }
 
 export interface NominationReceiptResult {
-  readonly nextState: SiteRelationshipSetupState;
+  readonly nextState: PeerCxSetupState;
   readonly receipt: NominationReceipt;
 }
 
@@ -212,8 +212,8 @@ function termsMatch(terms: NominationTerms, invitation: Invitation): boolean {
  * verified the request signature; this compares every peer-supplied field with
  * Green's own invitation state before recording anything.
  */
-export function receiveSiteRelationshipNomination(
-  state: SiteRelationshipSetupState,
+export function receivePeerCxNomination(
+  state: PeerCxSetupState,
   request: NominationRequest,
   context: NominationReceiptContext,
 ): Result<NominationReceiptResult, ReceiveNominationError> {
@@ -245,14 +245,14 @@ export function receiveSiteRelationshipNomination(
     return err({ code: "nomination-terms-mismatch" });
   }
 
-  const nomination: SiteRelationshipNomination = Object.freeze({
+  const nomination: PeerCxNomination = Object.freeze({
     correlationId: request.correlationId,
     counterpartSiteAri: request.nominatedIdentity.siteAri,
     idempotencyKey: request.idempotencyKey,
     invitationReference: request.invitationReference,
     nominatedIdentity: request.nominatedIdentity,
     receiverEndpointStatus: request.receiverEndpointStatus,
-    relationshipId: request.relationshipId,
+    peerCxId: request.peerCxId,
     role: "green" as const,
     status: "awaiting-green-approval" as const,
     terms: request.terms,
@@ -295,14 +295,14 @@ export interface DecideNominationCommand {
 }
 
 export interface NominationDecisionResult {
-  readonly nextState: SiteRelationshipSetupState;
+  readonly nextState: PeerCxSetupState;
   readonly outcome: NominationStatus;
 }
 
 export type DecideNominationError =
   | {
       readonly code: "nomination-changed";
-      readonly nextState: SiteRelationshipSetupState;
+      readonly nextState: PeerCxSetupState;
     }
   | { readonly code: "pending-nomination-not-found" }
   | { readonly code: "safe-reason-required" };
@@ -337,8 +337,8 @@ function reviewedTermsMatch(
  * Applies the Green administrator's decision. The Forge admin page module is
  * the administrator gate; this records what was actually reviewed.
  */
-export function decideSiteRelationshipNomination(
-  state: SiteRelationshipSetupState,
+export function decidePeerCxNomination(
+  state: PeerCxSetupState,
   command: DecideNominationCommand,
 ): Result<NominationDecisionResult, DecideNominationError> {
   const nomination = state.nominations.find(
@@ -391,7 +391,7 @@ export function decideSiteRelationshipNomination(
     });
   }
 
-  const decided: SiteRelationshipNomination =
+  const decided: PeerCxNomination =
     command.decision === "reject"
       ? {
           ...nomination,

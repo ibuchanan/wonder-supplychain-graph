@@ -9,7 +9,7 @@ import type {
   ActivationPollRequest,
   ConfirmationReceipt,
   ConfirmationRequest,
-} from "./site-relationship-activation";
+} from "./peer-cx-activation";
 
 export interface ActivationTransportDependencies {
   readonly fetch: (
@@ -101,18 +101,18 @@ function readReceipt(body: string): ConfirmationReceipt | undefined {
       return undefined;
     }
 
-    const { correlationId, outcome, relationshipId } = value as {
+    const { correlationId, outcome, peerCxId } = value as {
       correlationId?: unknown;
       outcome?: unknown;
-      relationshipId?: unknown;
+      peerCxId?: unknown;
     };
 
     return outcome === "active" &&
       typeof correlationId === "string" &&
       correlationId.trim() &&
-      typeof relationshipId === "string" &&
-      relationshipId.trim()
-      ? { correlationId, outcome, relationshipId }
+      typeof peerCxId === "string" &&
+      peerCxId.trim()
+      ? { correlationId, outcome, peerCxId }
       : undefined;
   } catch {
     return undefined;

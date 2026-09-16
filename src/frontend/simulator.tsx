@@ -87,7 +87,7 @@ const Simulator = () => {
           Show malformed candidate
         </Button>
         <Button onClick={() => selectScenario("unavailable")} type="button">
-          Show unavailable relationship
+          Show unavailable PeerCX
         </Button>
       </Stack>
 

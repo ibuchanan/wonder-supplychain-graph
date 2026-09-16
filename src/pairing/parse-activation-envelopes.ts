@@ -8,7 +8,7 @@ import type {
   ActivationPollRequest,
   ActivationProposal,
   ConfirmationRequest,
-} from "./site-relationship-activation";
+} from "./peer-cx-activation";
 
 /**
  * Parses Blue's bounded poll envelope on Green's bootstrap route. Callers must
@@ -30,14 +30,14 @@ export function parseActivationPollRequest(
       intendedReceiverSiteAri,
       operation,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       requestId,
       termsVersion,
     } = value;
     const nominatedIdentity = readIdentity(value["nominatedIdentity"]);
 
     if (
-      operation !== "site-relationship.poll" ||
+      operation !== "peer-cx.poll" ||
       protocolVersion !== "v1" ||
       direction !== "blue-to-green" ||
       !isNonEmptyString(termsVersion) ||
@@ -45,7 +45,7 @@ export function parseActivationPollRequest(
       !isNonEmptyString(correlationId) ||
       !isIsoTimestamp(createdAt) ||
       !isNonEmptyString(intendedReceiverSiteAri) ||
-      !isNonEmptyString(relationshipId) ||
+      !isNonEmptyString(peerCxId) ||
       !isNonEmptyString(requestId)
     ) {
       return undefined;
@@ -59,7 +59,7 @@ export function parseActivationPollRequest(
       nominatedIdentity,
       operation,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       requestId,
       termsVersion,
     };
@@ -90,14 +90,14 @@ export function parseConfirmationRequest(
       leaseEndsAt,
       operation,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       requestId,
       termsVersion,
     } = value;
     const confirmedIdentity = readIdentity(value["confirmedIdentity"]);
 
     if (
-      operation !== "site-relationship.confirm" ||
+      operation !== "peer-cx.confirm" ||
       protocolVersion !== "v1" ||
       direction !== "blue-to-green" ||
       !confirmedIdentity ||
@@ -106,7 +106,7 @@ export function parseConfirmationRequest(
       !isNonEmptyString(idempotencyKey) ||
       !isNonEmptyString(intendedReceiverSiteAri) ||
       !isIsoTimestamp(leaseEndsAt) ||
-      !isNonEmptyString(relationshipId) ||
+      !isNonEmptyString(peerCxId) ||
       !isNonEmptyString(requestId) ||
       !isNonEmptyString(termsVersion)
     ) {
@@ -123,7 +123,7 @@ export function parseConfirmationRequest(
       leaseEndsAt,
       operation,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       requestId,
       termsVersion,
     };
@@ -153,20 +153,20 @@ export function parseActivationProposal(
       leaseEndsAt,
       operation,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       termsVersion,
     } = value;
     const approvedIdentity = readIdentity(value["approvedIdentity"]);
 
     if (
-      operation !== "site-relationship.activation-proposal" ||
+      operation !== "peer-cx.activation-proposal" ||
       protocolVersion !== "v1" ||
       direction !== "green-to-blue" ||
       !approvedIdentity ||
       !isNonEmptyString(correlationId) ||
       !isNonEmptyString(counterpartSiteAri) ||
       !isIsoTimestamp(leaseEndsAt) ||
-      !isNonEmptyString(relationshipId) ||
+      !isNonEmptyString(peerCxId) ||
       !isNonEmptyString(termsVersion)
     ) {
       return undefined;
@@ -180,7 +180,7 @@ export function parseActivationProposal(
       leaseEndsAt,
       operation,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       termsVersion,
     };
   } catch {

@@ -227,7 +227,7 @@ describe("log sink configuration resolvers", () => {
     });
   });
 
-  it("stores one sink per tenant installation, under a key naming no connection or relationship", async () => {
+  it("stores one sink per tenant installation, under a key naming no connection or PeerCX", async () => {
     await invoke("saveLogSink", {
       authMethod: "bearer-token",
       secret: "sink-bearer-token",
@@ -246,7 +246,7 @@ describe("log sink configuration resolvers", () => {
     expect(sinkKeys).toEqual(["log-sink-configuration"]);
     expect([...secretStorage.keys()]).toEqual(["log-sink-secret"]);
     for (const key of [...sinkKeys, ...secretStorage.keys()]) {
-      expect(key).not.toMatch(/connection|relationship|pairing/);
+      expect(key).not.toMatch(/connection|peerCx|pairing/);
     }
   });
 

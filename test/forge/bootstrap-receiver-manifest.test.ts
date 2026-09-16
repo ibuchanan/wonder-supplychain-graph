@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { loadManifest } from "./manifest-helpers";
 
-describe("site relationship bootstrap Forge wiring", () => {
+describe("site PeerCX bootstrap Forge wiring", () => {
   it("declares a dedicated dynamic bootstrap route separate from the operational receiver", () => {
     const modules = loadManifest().modules as {
       readonly function?: readonly {

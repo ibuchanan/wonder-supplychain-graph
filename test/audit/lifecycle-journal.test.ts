@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   emptyLifecycleJournal,
-  lifecycleJournalCapacity,
   type LifecycleAuditEvent,
+  lifecycleJournalCapacity,
   recordLifecycleEvent,
 } from "../../src/audit/lifecycle-journal";
 
@@ -13,11 +13,11 @@ describe("recordLifecycleEvent", () => {
       actorAccountId: "account-001",
       correlationId: "correlation-001",
       eventId: "audit:correlation-001:revoked",
-      eventType: "relationship.revoked",
+      eventType: "peer-cx.revoked",
       occurredAt: "2026-09-15T12:00:00.000Z",
       outcome: "recorded",
       reason: "administrator-revoked",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
     });
 
     expect(journal.events).toEqual([
@@ -25,11 +25,11 @@ describe("recordLifecycleEvent", () => {
         actorAccountId: "account-001",
         correlationId: "correlation-001",
         eventId: "audit:correlation-001:revoked",
-        eventType: "relationship.revoked",
+        eventType: "peer-cx.revoked",
         occurredAt: "2026-09-15T12:00:00.000Z",
         outcome: "recorded",
         reason: "administrator-revoked",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
       },
     ]);
   });
@@ -67,14 +67,14 @@ describe("recordLifecycleEvent", () => {
     const first = recordLifecycleEvent(emptyLifecycleJournal, {
       correlationId: "correlation-001",
       eventId: "audit:correlation-001:approved",
-      eventType: "relationship.nomination-approved",
+      eventType: "peer-cx.nomination-approved",
       occurredAt: "2026-09-15T12:00:00.000Z",
       outcome: "recorded",
     });
     const replayed = recordLifecycleEvent(first, {
       correlationId: "correlation-001",
       eventId: "audit:correlation-001:approved",
-      eventType: "relationship.nomination-rejected",
+      eventType: "peer-cx.nomination-rejected",
       occurredAt: "2026-09-15T13:00:00.000Z",
       outcome: "recorded",
       reason: "changed-my-mind",

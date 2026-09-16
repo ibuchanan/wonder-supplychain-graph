@@ -25,7 +25,7 @@ const emittedEventTypes = [
   "scg.peer.request.denied",
   "scg.peer.event.flow",
   "scg.rovo.comment.completed",
-  "scg.audit.relationship.revoked",
+  "scg.audit.peer-cx.revoked",
 ] as const;
 
 async function ship(
@@ -52,26 +52,26 @@ async function ship(
 }
 
 describe("log-shipping scenarios", () => {
-  it("serves the audit reader: ships a revoked relationship's actor, subject, time, outcome, reason, and correlation", async () => {
+  it("serves the audit reader: ships a revoked PeerCX's actor, subject, time, outcome, reason, and correlation", async () => {
     const deliveries = await ship({
       actorAccountId: "account-001",
-      eventType: "relationship.revoked",
+      eventType: "peer-cx.revoked",
       outcome: "recorded",
       reason: "administrator-revoked",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
     });
 
     expect(deliveries[0]?.body).toMatchObject({
       data: {
         actorAccountId: "account-001",
         correlationId: "correlation-001",
-        eventType: "relationship.revoked",
+        eventType: "peer-cx.revoked",
         outcome: "recorded",
         reason: "administrator-revoked",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
       },
       time: "2026-09-15T12:00:00.000Z",
-      type: "scg.audit.relationship.revoked",
+      type: "scg.audit.peer-cx.revoked",
     });
   });
 
@@ -98,7 +98,7 @@ describe("log-shipping scenarios", () => {
       actorAccountId: "account-001",
       event: "scg.peer.request.denied",
       outcome: "denied",
-      reason: "relationship-unauthorized",
+      reason: "peer-cx-unauthorized",
       route: "peer-event",
     });
 
@@ -108,7 +108,7 @@ describe("log-shipping scenarios", () => {
         correlationId: "correlation-001",
         event: "scg.peer.request.denied",
         outcome: "denied",
-        reason: "relationship-unauthorized",
+        reason: "peer-cx-unauthorized",
         route: "peer-event",
       },
       time: "2026-09-15T12:00:00.000Z",

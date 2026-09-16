@@ -12,25 +12,25 @@ import { consumeRequestId } from "../collaboration/peer-replay-guard";
 import { logger } from "../logging";
 import { logPeerRequestDenied } from "../observability/domain-events";
 import { kvsInvitationStore } from "./kvs-invitation-store";
-import { kvsSiteRelationshipStore } from "./kvs-site-relationship-store";
+import { kvsPeerCxStore } from "./kvs-peer-cx-store";
 import {
   parseActivationPollRequest,
   parseConfirmationRequest,
 } from "./parse-activation-envelopes";
 import { parseNominationRequest } from "./parse-nomination-request";
 import {
-  proposeSiteRelationshipActivation,
-  receiveSiteRelationshipConfirmation,
-} from "./site-relationship-activation";
+  proposePeerCxActivation,
+  receivePeerCxConfirmation,
+} from "./peer-cx-activation";
 import {
   type NominatedIdentity,
-  receiveSiteRelationshipNomination,
-} from "./site-relationship-nomination";
+  receivePeerCxNomination,
+} from "./peer-cx-nomination";
 
 /**
  * The only three answers a denied caller ever gets. Peer requests are refused
  * with an opaque body so the route cannot be used as an oracle for which check
- * failed, or for whether an invitation, relationship, or nomination exists.
+ * failed, or for whether an invitation, PeerCX, or nomination exists.
  */
 const deniedResponses = Object.freeze({
   "bad-request": 400,
@@ -50,7 +50,7 @@ const durableDenials: Readonly<Record<string, LifecycleEventType>> =
     "invalid-hmac-timestamp": "peer.authentication-failed",
     // The agreement end instant passes without any event to trigger it, so the
     // first request it refuses is where the tenant observes the expiry.
-    "lease-expired": "relationship.expired",
+    "lease-expired": "peer-cx.expired",
     "request-replayed": "peer.request-replayed",
   });
 
@@ -136,7 +136,7 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
   const consumption = await consumeRequestId(
     {
       receiverSiteAri: identity.siteAri,
-      relationshipId: envelope.relationshipId,
+      peerCxId: envelope.peerCxId,
       requestId: envelope.requestId,
     },
     now,
@@ -149,10 +149,10 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     );
   }
 
-  const state = await kvsSiteRelationshipStore.read();
+  const state = await kvsPeerCxStore.read();
 
   if (poll) {
-    const proposed = proposeSiteRelationshipActivation(state, poll, {
+    const proposed = proposePeerCxActivation(state, poll, {
       localIdentity: identity,
       now,
     });
@@ -175,7 +175,7 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
   }
 
   if (confirmation) {
-    const confirmed = receiveSiteRelationshipConfirmation(state, confirmation, {
+    const confirmed = receivePeerCxConfirmation(state, confirmation, {
       localIdentity: identity,
       now,
     });
@@ -187,24 +187,24 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
       );
     }
 
-    await kvsSiteRelationshipStore.write(confirmed.value.nextState);
+    await kvsPeerCxStore.write(confirmed.value.nextState);
     // Bilateral confirmation is what activates Green's local record, so one
     // exchange is evidence of both outcomes.
     await recordLifecycleOutcome({
       correlationId: confirmation.correlationId,
       eventId: `audit:${confirmation.idempotencyKey}:confirmed`,
-      eventType: "relationship.confirmed",
+      eventType: "peer-cx.confirmed",
       occurredAt: now,
       outcome: "recorded",
-      relationshipId: confirmation.relationshipId,
+      peerCxId: confirmation.peerCxId,
     });
     await recordLifecycleOutcome({
       correlationId: confirmation.correlationId,
       eventId: `audit:${confirmation.idempotencyKey}:activated`,
-      eventType: "relationship.activated",
+      eventType: "peer-cx.activated",
       occurredAt: now,
       outcome: "recorded",
-      relationshipId: confirmation.relationshipId,
+      peerCxId: confirmation.peerCxId,
     });
 
     return buildSuccessResponse({ ...confirmed.value.receipt });
@@ -214,7 +214,7 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     return deny("bad-request", "invalid-bootstrap-request");
   }
 
-  const received = receiveSiteRelationshipNomination(state, nomination, {
+  const received = receivePeerCxNomination(state, nomination, {
     invitations: await kvsInvitationStore.read(),
     localSiteAri: identity.siteAri,
     now,
@@ -223,14 +223,14 @@ export const receiveBootstrapRequest = defineWebTrigger(async (request) => {
     return deny("forbidden", received.error.code, nomination.correlationId);
   }
 
-  await kvsSiteRelationshipStore.write(received.value.nextState);
+  await kvsPeerCxStore.write(received.value.nextState);
   await recordLifecycleOutcome({
     correlationId: nomination.correlationId,
     eventId: `audit:${nomination.idempotencyKey}:nominated`,
-    eventType: "relationship.nominated",
+    eventType: "peer-cx.nominated",
     occurredAt: now,
     outcome: "recorded",
-    relationshipId: nomination.relationshipId,
+    peerCxId: nomination.peerCxId,
   });
 
   return buildSuccessResponse({ ...received.value.receipt });

@@ -19,9 +19,9 @@ const validPoll = {
   direction: "blue-to-green",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   nominatedIdentity: blueIdentity,
-  operation: "site-relationship.poll",
+  operation: "peer-cx.poll",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "poll-request-001",
   termsVersion: "v1",
 } as const;
@@ -37,7 +37,7 @@ describe("parseActivationPollRequest", () => {
     ["not json", "the body is not JSON"],
     ["[]", "the body is not an object"],
     [
-      JSON.stringify({ ...validPoll, operation: "site-relationship.confirm" }),
+      JSON.stringify({ ...validPoll, operation: "peer-cx.confirm" }),
       "the operation is a different setup operation",
     ],
     [
@@ -45,8 +45,8 @@ describe("parseActivationPollRequest", () => {
       "the protocol version is unsupported",
     ],
     [
-      JSON.stringify({ ...validPoll, relationshipId: "" }),
-      "the polled relationship ID is empty",
+      JSON.stringify({ ...validPoll, peerCxId: "" }),
+      "the polled PeerCX ID is empty",
     ],
     [
       JSON.stringify({ ...validPoll, requestId: undefined }),
@@ -92,9 +92,9 @@ const validConfirmation = {
   idempotencyKey: "correlation-001:confirm",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
-  operation: "site-relationship.confirm",
+  operation: "peer-cx.confirm",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "confirm-request-001",
   termsVersion: "v1",
 } as const;
@@ -112,7 +112,7 @@ describe("parseConfirmationRequest", () => {
     [
       JSON.stringify({
         ...validConfirmation,
-        operation: "site-relationship.poll",
+        operation: "peer-cx.poll",
       }),
       "the operation is a different setup operation",
     ],
@@ -166,9 +166,9 @@ const validProposal = {
   counterpartSiteAri: "ari:cloud:jira::site/green-site",
   direction: "green-to-blue",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
-  operation: "site-relationship.activation-proposal",
+  operation: "peer-cx.activation-proposal",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   termsVersion: "v1",
 } as const;
 
@@ -202,8 +202,8 @@ describe("parseActivationProposal", () => {
       "the protocol version is unsupported",
     ],
     [
-      JSON.stringify({ ...validProposal, relationshipId: undefined }),
-      "the proposed relationship ID is missing",
+      JSON.stringify({ ...validProposal, peerCxId: undefined }),
+      "the proposed PeerCX ID is missing",
     ],
     [
       JSON.stringify({ ...validProposal, counterpartSiteAri: "" }),
@@ -271,7 +271,7 @@ describe("parseActivationPollResponse", () => {
       JSON.stringify({
         ...validProposal,
         outcome: "active",
-        relationshipId: "",
+        peerCxId: "",
       }),
       "the proposal beside an active outcome is malformed",
     ],

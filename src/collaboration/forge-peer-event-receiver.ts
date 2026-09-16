@@ -11,8 +11,8 @@ import {
   logPeerEventFlow,
   logPeerRequestDenied,
 } from "../observability/domain-events";
+import { kvsPeerCxStore } from "../pairing/kvs-peer-cx-store";
 import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
-import { kvsSiteRelationshipStore } from "../pairing/kvs-site-relationship-store";
 import { enrichLeanEventForAutomation } from "./lean-event-contract";
 import { verifyPeerRequest } from "./peer-hmac-auth";
 import { parsePeerOperationEnvelope } from "./peer-operation-envelope";
@@ -81,7 +81,7 @@ function localSiteAri(): string | undefined {
  * A verified signature proves possession of the shared development secret, so
  * it is only the first of four gates: the request must also be addressed to
  * this receiver, claim a request ID this receiver has not already consumed,
- * and name an active in-lease relationship whose exact Pairing authorizes this
+ * and name an active in-lease PeerCX whose exact Pairing authorizes this
  * operation. Nothing is delivered until all four pass.
  */
 export const receivePeerEvent = defineWebTrigger(async (request) => {
@@ -123,7 +123,7 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
   const consumption = await consumeRequestId(
     {
       receiverSiteAri,
-      relationshipId: envelope.relationshipId,
+      peerCxId: envelope.peerCxId,
       requestId: envelope.requestId,
     },
     now,
@@ -137,16 +137,16 @@ export const receivePeerEvent = defineWebTrigger(async (request) => {
   }
   trace("replay-checked");
 
-  const [{ relationships }, { pairings }] = await Promise.all([
-    kvsSiteRelationshipStore.read(),
+  const [{ peerCxs }, { pairings }] = await Promise.all([
+    kvsPeerCxStore.read(),
     kvsPeerPairingStore.read(),
   ]);
-  const authorized = authorizePeerRoute(relationships, pairings, {
+  const authorized = authorizePeerRoute(peerCxs, pairings, {
     counterpartSiteAri: envelope.senderIdentity.siteAri,
     now,
     operation: envelope.operation,
     pairingId: envelope.pairingId,
-    relationshipId: envelope.relationshipId,
+    peerCxId: envelope.peerCxId,
     role: "destination",
     sourceEpicKey: envelope.event.data.issueKey,
   });

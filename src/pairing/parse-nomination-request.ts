@@ -9,7 +9,7 @@ import type {
   NominationRequest,
   NominationTerms,
   ReceiverEndpointStatus,
-} from "./site-relationship-nomination";
+} from "./peer-cx-nomination";
 
 const allowedOperations = new Set<string>(V1_PEER_OPERATIONS);
 const endpointStatuses = new Set<string>(["configured", "not-configured"]);
@@ -59,14 +59,14 @@ export function parseNominationRequest(
       operation,
       protocolVersion,
       receiverEndpointStatus,
-      relationshipId,
+      peerCxId,
       requestId,
     } = value;
     const nominatedIdentity = readIdentity(value["nominatedIdentity"]);
     const terms = readTerms(value["terms"]);
 
     if (
-      operation !== "site-relationship.nominate" ||
+      operation !== "peer-cx.nominate" ||
       protocolVersion !== "v1" ||
       direction !== "blue-to-green" ||
       !nominatedIdentity ||
@@ -76,7 +76,7 @@ export function parseNominationRequest(
       !isNonEmptyString(idempotencyKey) ||
       !isNonEmptyString(intendedReceiverSiteAri) ||
       !isNonEmptyString(invitationReference) ||
-      !isNonEmptyString(relationshipId) ||
+      !isNonEmptyString(peerCxId) ||
       !isNonEmptyString(requestId) ||
       typeof receiverEndpointStatus !== "string" ||
       !endpointStatuses.has(receiverEndpointStatus)
@@ -95,7 +95,7 @@ export function parseNominationRequest(
       operation,
       protocolVersion,
       receiverEndpointStatus: receiverEndpointStatus as ReceiverEndpointStatus,
-      relationshipId,
+      peerCxId,
       requestId,
       terms,
     };

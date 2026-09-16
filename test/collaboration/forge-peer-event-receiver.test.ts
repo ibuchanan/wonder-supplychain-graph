@@ -48,16 +48,16 @@ const validEnvelope = {
   operation: "starter.delivery",
   pairingId: "pairing-001",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "request-001",
   senderIdentity: blueIdentity,
   termsVersion: "v1",
 };
 
-const relationship = {
+const peerCx = {
   counterpartSiteAri: blueIdentity.siteAri,
   leaseEndsAt: "2027-09-14T16:00:00.000Z",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   status: "active",
   termsVersion: "v1",
 };
@@ -68,7 +68,7 @@ const pairing = {
   graphCxId: "graph-cx-001",
   pairedEpicKey: "GREEN-42",
   pairingId: "pairing-001",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "destination",
   sourceEpicKey: "BLUE-101",
   status: "active",
@@ -87,18 +87,18 @@ function signedRequest(body = JSON.stringify(validEnvelope)) {
 function mockStores(
   overrides: {
     readonly pairings?: readonly unknown[];
-    readonly relationships?: readonly unknown[];
+    readonly peerCxs?: readonly unknown[];
   } = {},
 ) {
   const claimed = new Set<string>();
   vi.mocked(kvs.get).mockImplementation(async (key: string) =>
     key === "peer-pairing-state"
       ? ({ pairings: overrides.pairings ?? [pairing] } as never)
-      : key === "site-relationship-setup-state"
+      : key === "peer-cx-setup-state"
         ? ({
             nominations: [],
             processedIdempotencyKeys: [],
-            relationships: overrides.relationships ?? [relationship],
+            peerCxs: overrides.peerCxs ?? [peerCx],
           } as never)
         : ((claimed.has(key) ? { consumedAt: timestamp } : undefined) as never),
   );
@@ -228,9 +228,9 @@ describe("receivePeerEvent", () => {
     ).resolves.toMatchObject({ statusCode: 401 });
 
     // Recording the denial is the only durable state an unauthenticated
-    // caller may touch: it reaches no relationship, pairing, or replay state.
+    // caller may touch: it reaches no PeerCX, pairing, or replay state.
     expect(kvs.get).not.toHaveBeenCalledWith("peer-pairing-state");
-    expect(kvs.get).not.toHaveBeenCalledWith("site-relationship-setup-state");
+    expect(kvs.get).not.toHaveBeenCalledWith("peer-cx-setup-state");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -257,24 +257,22 @@ describe("receivePeerEvent", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("denies a secret holder whose relationship is absent, revoked, or out of lease", async () => {
-    mockStores({ relationships: [] });
+  it("denies a secret holder whose PeerCX is absent, revoked, or out of lease", async () => {
+    mockStores({ peerCxs: [] });
     await expect(receivePeerEvent(signedRequest())).resolves.toEqual(forbidden);
 
-    mockStores({ relationships: [{ ...relationship, status: "revoked" }] });
+    mockStores({ peerCxs: [{ ...peerCx, status: "revoked" }] });
     await expect(receivePeerEvent(signedRequest())).resolves.toEqual(forbidden);
 
     mockStores({
-      relationships: [
-        { ...relationship, leaseEndsAt: "2026-09-14T15:59:59.999Z" },
-      ],
+      peerCxs: [{ ...peerCx, leaseEndsAt: "2026-09-14T15:59:59.999Z" }],
     });
     await expect(receivePeerEvent(signedRequest())).resolves.toEqual(forbidden);
 
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("denies a sender identity the local relationship does not name", async () => {
+  it("denies a sender identity the local PeerCX does not name", async () => {
     await expect(
       receivePeerEvent(
         signedRequest(

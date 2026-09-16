@@ -1,74 +1,74 @@
 import { describe, expect, it } from "vitest";
 
-import { evaluateSiteRelationshipAuthorization } from "../../src/pairing/site-relationship";
+import { evaluatePeerCxAuthorization } from "../../src/pairing/peer-cx";
 
-describe("evaluateSiteRelationshipAuthorization", () => {
-  it("authorizes a pairing only for its active relationship and current lease", () => {
+describe("evaluatePeerCxAuthorization", () => {
+  it("authorizes a pairing only for its active PeerCX and current lease", () => {
     expect(
-      evaluateSiteRelationshipAuthorization(
+      evaluatePeerCxAuthorization(
         {
           counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
           leaseEndsAt: "2026-09-15T00:00:00.000Z",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
           status: "active",
           termsVersion: "v1",
         },
         {
           counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
           now: "2026-09-14T18:00:00.000Z",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
         },
       ),
     ).toEqual({ authorized: true });
   });
 
   it.each([
-    [undefined, "no relationship exists"],
+    [undefined, "no PeerCX exists"],
     [
       {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
         leaseEndsAt: "2026-09-15T00:00:00.000Z",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         status: "pending",
         termsVersion: "v1",
       },
-      "the relationship is pending",
+      "the PeerCX is pending",
     ],
     [
       {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
         leaseEndsAt: "2026-09-15T00:00:00.000Z",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         status: "revoked",
         termsVersion: "v1",
       },
-      "the relationship is revoked",
+      "the PeerCX is revoked",
     ],
     [
       {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
         leaseEndsAt: "2026-09-15T00:00:00.000Z",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         status: "expired",
         termsVersion: "v1",
       },
-      "the relationship is expired",
+      "the PeerCX is expired",
     ],
     [
       {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
         leaseEndsAt: "2026-09-15T00:00:00.000Z",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         status: "failed",
         termsVersion: "v1",
       },
-      "the relationship setup failed",
+      "the PeerCX setup failed",
     ],
     [
       {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
         leaseEndsAt: "2026-09-14T18:00:00.000Z",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         status: "active",
         termsVersion: "v1",
       },
@@ -78,7 +78,7 @@ describe("evaluateSiteRelationshipAuthorization", () => {
       {
         counterpartSiteAri: "ari:cloud:jira::site/other-supplier-001",
         leaseEndsAt: "2026-09-15T00:00:00.000Z",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         status: "active",
         termsVersion: "v1",
       },
@@ -88,36 +88,36 @@ describe("evaluateSiteRelationshipAuthorization", () => {
       {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
         leaseEndsAt: "2026-09-15T00:00:00.000Z",
-        relationshipId: "relationship-002",
+        peerCxId: "peer-cx-002",
         status: "active",
         termsVersion: "v1",
       },
-      "the relationship differs",
+      "the PeerCX differs",
     ],
-  ] as const)("denies authorization when %s", (relationship) => {
+  ] as const)("denies authorization when %s", (peerCx) => {
     expect(
-      evaluateSiteRelationshipAuthorization(relationship, {
+      evaluatePeerCxAuthorization(peerCx, {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
         now: "2026-09-14T18:00:00.000Z",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
       }),
     ).toEqual({ authorized: false });
   });
 
   it("denies authorization when the lease timestamp is malformed", () => {
     expect(
-      evaluateSiteRelationshipAuthorization(
+      evaluatePeerCxAuthorization(
         {
           counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
           leaseEndsAt: "not-a-timestamp",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
           status: "active",
           termsVersion: "v1",
         },
         {
           counterpartSiteAri: "ari:cloud:jira::site/supplier-001",
           now: "2026-09-14T18:00:00.000Z",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
         },
       ),
     ).toEqual({ authorized: false });

@@ -5,10 +5,10 @@ import type { LeanEvent } from "../collaboration/lean-event-contract";
 import { signPeerRequest } from "../collaboration/peer-hmac-auth";
 import { buildPeerOperationEnvelope } from "../collaboration/peer-operation-envelope";
 import { authorizePeerRoute } from "../collaboration/peer-route-authorization";
+import { kvsPeerCxStore } from "../pairing/kvs-peer-cx-store";
 import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
-import { kvsSiteRelationshipStore } from "../pairing/kvs-site-relationship-store";
+import type { NominatedIdentity } from "../pairing/peer-cx-nomination";
 import type { SourcePeerPairing } from "../pairing/peer-pairing-state";
-import type { NominatedIdentity } from "../pairing/site-relationship-nomination";
 import { createActionExecutionMetadata } from "./action-execution-metadata";
 import type { PublicationState } from "./apply-command";
 import {
@@ -71,23 +71,23 @@ async function emitLeanEvent(
     throw new Error("Unable to emit lean event: local identity unavailable");
   }
 
-  const { relationships } = await kvsSiteRelationshipStore.read();
+  const { peerCxs } = await kvsPeerCxStore.read();
   const now = new Date().toISOString();
-  const relationship = relationships.find(
-    (candidate) => candidate.relationshipId === pairing.relationshipId,
+  const peerCx = peerCxs.find(
+    (candidate) => candidate.peerCxId === pairing.peerCxId,
   );
-  const authorized = authorizePeerRoute(relationships, [pairing], {
-    counterpartSiteAri: relationship?.counterpartSiteAri ?? "",
+  const authorized = authorizePeerRoute(peerCxs, [pairing], {
+    counterpartSiteAri: peerCx?.counterpartSiteAri ?? "",
     now,
     operation: "starter.delivery",
     pairingId: pairing.pairingId,
-    relationshipId: pairing.relationshipId,
+    peerCxId: pairing.peerCxId,
     role: "source",
     sourceEpicKey: event.data.issueKey,
   });
-  if (authorized.isErr() || !relationship) {
+  if (authorized.isErr() || !peerCx) {
     throw new Error(
-      `Unable to emit lean event: ${authorized.isErr() ? authorized.error.code : "relationship-unauthorized"}`,
+      `Unable to emit lean event: ${authorized.isErr() ? authorized.error.code : "peer-cx-unauthorized"}`,
     );
   }
 
@@ -96,14 +96,14 @@ async function emitLeanEvent(
       createdAt: now,
       event,
       idempotencyKey,
-      intendedReceiverSiteAri: relationship.counterpartSiteAri,
+      intendedReceiverSiteAri: peerCx.counterpartSiteAri,
       operation: "starter.delivery",
       pairingId: pairing.pairingId,
-      relationshipId: pairing.relationshipId,
+      peerCxId: pairing.peerCxId,
       // Fresh per attempt: a retry must never reuse a consumed request ID.
       requestId: globalThis.crypto.randomUUID(),
       senderIdentity,
-      termsVersion: relationship.termsVersion,
+      termsVersion: peerCx.termsVersion,
     }),
   );
   const authentication = signPeerRequest(process.env["SHARED_SECRET"], body);

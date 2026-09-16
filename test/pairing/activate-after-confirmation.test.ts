@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { activateAfterConfirmation } from "../../src/pairing/site-relationship-activation";
-import type { SiteRelationshipSetupState } from "../../src/pairing/site-relationship-nomination";
+import { activateAfterConfirmation } from "../../src/pairing/peer-cx-activation";
+import type { PeerCxSetupState } from "../../src/pairing/peer-cx-nomination";
 
 const blueIdentity = {
   environmentAri: "ari:cloud:ecosystem::environment/blue-development",
@@ -25,7 +25,7 @@ const acceptedNomination = {
   invitationReference: "reference-001",
   nominatedIdentity: blueIdentity,
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "blue",
   status: "awaiting-blue-confirmation",
   terms,
@@ -33,22 +33,22 @@ const acceptedNomination = {
 
 const blueState = (
   nomination: Record<string, unknown> = {},
-): SiteRelationshipSetupState => ({
+): PeerCxSetupState => ({
   nominations: [{ ...acceptedNomination, ...nomination }],
   processedIdempotencyKeys: ["nominate-001"],
-  relationships: [],
+  peerCxs: [],
 });
 
 const receipt = {
   correlationId: "correlation-001",
   outcome: "active",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
 } as const;
 
 const context = { now: "2026-09-14T19:10:02.000Z" };
 
 describe("activateAfterConfirmation", () => {
-  it("activates Blue's local relationship on the authenticated success receipt", () => {
+  it("activates Blue's local PeerCX on the authenticated success receipt", () => {
     const result = activateAfterConfirmation(blueState(), receipt, context);
 
     expect(result.isOk()).toBe(true);
@@ -64,11 +64,11 @@ describe("activateAfterConfirmation", () => {
         },
       ],
       processedIdempotencyKeys: ["nominate-001"],
-      relationships: [
+      peerCxs: [
         {
           counterpartSiteAri: greenSiteAri,
           leaseEndsAt: terms.expiresAt,
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
           status: "active",
           termsVersion: "v1",
         },
@@ -76,12 +76,12 @@ describe("activateAfterConfirmation", () => {
     });
   });
 
-  it("activates nothing when the receipt names another relationship", () => {
+  it("activates nothing when the receipt names another PeerCX", () => {
     const state = blueState();
 
     const result = activateAfterConfirmation(
       state,
-      { ...receipt, relationshipId: "relationship-002" },
+      { ...receipt, peerCxId: "peer-cx-002" },
       context,
     );
 
@@ -136,6 +136,6 @@ describe("activateAfterConfirmation", () => {
       expect.unreachable("Expected a duplicate receipt to replay safely");
     }
     expect(second.value.nextState).toEqual(first.value.nextState);
-    expect(second.value.relationship).toEqual(first.value.relationship);
+    expect(second.value.peerCx).toEqual(first.value.peerCx);
   });
 });

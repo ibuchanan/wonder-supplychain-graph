@@ -1,7 +1,7 @@
 /**
  * Whether this installation is provisioned to exchange work packages at all:
  * it knows who it is, its durable state answers, and it holds a usable secret.
- * This is about the installation, not about any relationship or pairing — see
+ * This is about the installation, not about any PeerCX or pairing — see
  * `local-readiness.ts` for the readiness of a role under a pairing.
  */
 export type InstallationReadinessStatus = "blocked" | "ready";

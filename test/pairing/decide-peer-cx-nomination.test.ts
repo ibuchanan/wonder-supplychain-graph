@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   type DecideNominationCommand,
-  decideSiteRelationshipNomination,
-  type SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  decidePeerCxNomination,
+  type PeerCxSetupState,
+} from "../../src/pairing/peer-cx-nomination";
 
 const blueIdentity = {
   environmentAri: "ari:cloud:ecosystem::environment/blue-development",
@@ -18,7 +18,7 @@ const terms = {
   termsVersion: "v1",
 } as const;
 
-const nominatedState = (): SiteRelationshipSetupState => ({
+const nominatedState = (): PeerCxSetupState => ({
   nominations: [
     {
       correlationId: "correlation-001",
@@ -27,14 +27,14 @@ const nominatedState = (): SiteRelationshipSetupState => ({
       invitationReference: "reference-001",
       nominatedIdentity: blueIdentity,
       receiverEndpointStatus: "configured",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       role: "green",
       status: "awaiting-green-approval",
       terms,
     },
   ],
   processedIdempotencyKeys: ["nominate-001"],
-  relationships: [],
+  peerCxs: [],
 });
 
 const approveCommand: DecideNominationCommand = {
@@ -48,12 +48,9 @@ const approveCommand: DecideNominationCommand = {
   reviewedTerms: terms,
 };
 
-describe("decideSiteRelationshipNomination", () => {
+describe("decidePeerCxNomination", () => {
   it("approves exactly the reviewed Blue identity, endpoint status, scope, and expiry", () => {
-    const result = decideSiteRelationshipNomination(
-      nominatedState(),
-      approveCommand,
-    );
+    const result = decidePeerCxNomination(nominatedState(), approveCommand);
 
     expect(result.isOk()).toBe(true);
     if (result.isErr()) {
@@ -69,12 +66,12 @@ describe("decideSiteRelationshipNomination", () => {
         },
       ],
       processedIdempotencyKeys: ["nominate-001", "decision-001"],
-      relationships: [],
+      peerCxs: [],
     });
   });
 
   it("rejects a nomination with a safe reason code and grants no authority", () => {
-    const result = decideSiteRelationshipNomination(nominatedState(), {
+    const result = decidePeerCxNomination(nominatedState(), {
       ...approveCommand,
       decision: "reject",
       safeReason: "counterpart-not-expected",
@@ -98,7 +95,7 @@ describe("decideSiteRelationshipNomination", () => {
   it("refuses a rejection that records no safe reason", () => {
     const state = nominatedState();
 
-    const result = decideSiteRelationshipNomination(state, {
+    const result = decidePeerCxNomination(state, {
       ...approveCommand,
       decision: "reject",
     });
@@ -112,7 +109,7 @@ describe("decideSiteRelationshipNomination", () => {
   });
 
   it("leaves the invitation pending without granting authority or moving the expiry", () => {
-    const result = decideSiteRelationshipNomination(nominatedState(), {
+    const result = decidePeerCxNomination(nominatedState(), {
       ...approveCommand,
       decision: "leave-pending",
     });
@@ -173,7 +170,7 @@ describe("decideSiteRelationshipNomination", () => {
   ] as const)(
     "invalidates the pending decision when %s, requiring a new invitation",
     (override) => {
-      const result = decideSiteRelationshipNomination(nominatedState(), {
+      const result = decidePeerCxNomination(nominatedState(), {
         ...approveCommand,
         ...override,
       });

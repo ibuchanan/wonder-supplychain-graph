@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   type ConfirmationRequest,
-  receiveSiteRelationshipConfirmation,
-} from "../../src/pairing/site-relationship-activation";
+  receivePeerCxConfirmation,
+} from "../../src/pairing/peer-cx-activation";
 import type {
   NominationStatus,
-  SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  PeerCxSetupState,
+} from "../../src/pairing/peer-cx-nomination";
 
 const greenIdentity = {
   environmentAri: "ari:cloud:ecosystem::environment/green-development",
@@ -35,7 +35,7 @@ const approvedNomination = {
   invitationReference: "reference-001",
   nominatedIdentity: blueIdentity,
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "green",
   status: "awaiting-blue-confirmation",
   terms,
@@ -43,10 +43,10 @@ const approvedNomination = {
 
 const greenState = (
   status: NominationStatus = "awaiting-blue-confirmation",
-): SiteRelationshipSetupState => ({
+): PeerCxSetupState => ({
   nominations: [{ ...approvedNomination, status }],
   processedIdempotencyKeys: ["nominate-001"],
-  relationships: [],
+  peerCxs: [],
 });
 
 const confirmation: ConfirmationRequest = {
@@ -56,9 +56,9 @@ const confirmation: ConfirmationRequest = {
   idempotencyKey: "correlation-001:confirm",
   intendedReceiverSiteAri: greenIdentity.siteAri,
   leaseEndsAt: terms.expiresAt,
-  operation: "site-relationship.confirm",
+  operation: "peer-cx.confirm",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "confirm-request-001",
   termsVersion: "v1",
 };
@@ -68,9 +68,9 @@ const context = {
   now: "2026-09-14T19:10:01.000Z",
 };
 
-describe("receiveSiteRelationshipConfirmation", () => {
-  it("activates Green's local relationship for a matching confirmation", () => {
-    const result = receiveSiteRelationshipConfirmation(
+describe("receivePeerCxConfirmation", () => {
+  it("activates Green's local PeerCX for a matching confirmation", () => {
+    const result = receivePeerCxConfirmation(
       greenState(),
       confirmation,
       context,
@@ -89,11 +89,11 @@ describe("receiveSiteRelationshipConfirmation", () => {
         },
       ],
       processedIdempotencyKeys: ["nominate-001", "correlation-001:confirm"],
-      relationships: [
+      peerCxs: [
         {
           counterpartSiteAri: blueIdentity.siteAri,
           leaseEndsAt: terms.expiresAt,
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
           status: "active",
           termsVersion: "v1",
         },
@@ -102,7 +102,7 @@ describe("receiveSiteRelationshipConfirmation", () => {
     expect(result.value.receipt).toEqual({
       correlationId: "correlation-001",
       outcome: "active",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
     });
   });
 
@@ -119,8 +119,8 @@ describe("receiveSiteRelationshipConfirmation", () => {
     },
     {
       code: "confirmation-mismatch",
-      override: { relationshipId: "relationship-002" },
-      reason: "the confirmed relationship ID is not the approved one",
+      override: { peerCxId: "peer-cx-002" },
+      reason: "the confirmed PeerCX ID is not the approved one",
     },
     {
       code: "confirmation-mismatch",
@@ -145,7 +145,7 @@ describe("receiveSiteRelationshipConfirmation", () => {
   ] as const)("activates nothing when $reason", ({ code, override }) => {
     const state = greenState();
 
-    const result = receiveSiteRelationshipConfirmation(
+    const result = receivePeerCxConfirmation(
       state,
       { ...confirmation, ...override },
       context,
@@ -162,7 +162,7 @@ describe("receiveSiteRelationshipConfirmation", () => {
   it.each(["awaiting-green-approval", "invalidated", "rejected"] as const)(
     "refuses to activate a %s nomination, so a partial confirmation fails closed",
     (status) => {
-      const result = receiveSiteRelationshipConfirmation(
+      const result = receivePeerCxConfirmation(
         greenState(status),
         confirmation,
         context,
@@ -177,11 +177,10 @@ describe("receiveSiteRelationshipConfirmation", () => {
   );
 
   it("refuses to activate after the agreed end instant", () => {
-    const result = receiveSiteRelationshipConfirmation(
-      greenState(),
-      confirmation,
-      { ...context, now: terms.expiresAt },
-    );
+    const result = receivePeerCxConfirmation(greenState(), confirmation, {
+      ...context,
+      now: terms.expiresAt,
+    });
 
     expect(result.isErr()).toBe(true);
     if (result.isOk()) {
@@ -191,7 +190,7 @@ describe("receiveSiteRelationshipConfirmation", () => {
   });
 
   it("replays the recorded activation when the confirmation is delivered twice", () => {
-    const first = receiveSiteRelationshipConfirmation(
+    const first = receivePeerCxConfirmation(
       greenState(),
       confirmation,
       context,
@@ -200,7 +199,7 @@ describe("receiveSiteRelationshipConfirmation", () => {
       expect.unreachable("Expected the first confirmation to activate");
     }
 
-    const second = receiveSiteRelationshipConfirmation(
+    const second = receivePeerCxConfirmation(
       first.value.nextState,
       { ...confirmation, requestId: "confirm-request-002" },
       { ...context, now: "2026-09-14T19:11:00.000Z" },

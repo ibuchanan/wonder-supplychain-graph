@@ -4,7 +4,7 @@
  * receiver accepts, or it is nothing.
  */
 
-import type { NominatedIdentity } from "./site-relationship-nomination";
+import type { NominatedIdentity } from "./peer-cx-nomination";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

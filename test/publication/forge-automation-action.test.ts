@@ -25,7 +25,7 @@ const sourcePairing = {
   pairedEpicKey: "GREEN-42",
   pairingId: "pairing-001",
   peerEventUrl: "https://green.example/forge/webtrigger/receive-peer-event",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "source",
   sourceEpicKey: "MFG-17",
   sourceSiteAri: "ari:cloud:jira::site/blue-cloud-id",
@@ -33,10 +33,10 @@ const sourcePairing = {
   status: "active",
 };
 
-const relationship = {
+const peerCx = {
   counterpartSiteAri: "ari:cloud:jira::site/green-site",
   leaseEndsAt: "2027-08-05T14:30:00.000Z",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   status: "active",
   termsVersion: "v1",
 };
@@ -44,17 +44,17 @@ const relationship = {
 function mockStores(
   overrides: {
     readonly pairings?: readonly unknown[];
-    readonly relationships?: readonly unknown[];
+    readonly peerCxs?: readonly unknown[];
   } = {},
 ) {
   vi.mocked(kvs.get).mockImplementation(async (key) =>
     key === "peer-pairing-state"
       ? ({ pairings: overrides.pairings ?? [sourcePairing] } as never)
-      : key === "site-relationship-setup-state"
+      : key === "peer-cx-setup-state"
         ? ({
             nominations: [],
             processedIdempotencyKeys: [],
-            relationships: overrides.relationships ?? [relationship],
+            peerCxs: overrides.peerCxs ?? [peerCx],
           } as never)
         : undefined,
   );
@@ -148,7 +148,7 @@ describe("publishWorkPackage", () => {
           operation: "starter.delivery",
           pairingId: "pairing-001",
           protocolVersion: "v1",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
           requestId: "execution-003",
           senderIdentity: {
             environmentAri: "ari:cloud:ecosystem::environment/blue-development",
@@ -170,17 +170,17 @@ describe("publishWorkPackage", () => {
     );
   });
 
-  it("refuses to send once the local relationship is revoked or out of lease", async () => {
+  it("refuses to send once the local PeerCX is revoked or out of lease", async () => {
     // Revocation blocks this tenant's send authorization immediately; it does
     // not wait for the peer to reject the delivery.
-    mockStores({ relationships: [{ ...relationship, status: "revoked" }] });
+    mockStores({ peerCxs: [{ ...peerCx, status: "revoked" }] });
 
     await expect(
       publishWorkPackage({
         publisherId: "account:automation-001",
         sourceEpicId: "MFG-17",
       }),
-    ).rejects.toThrow("Unable to emit lean event: relationship-unauthorized");
+    ).rejects.toThrow("Unable to emit lean event: peer-cx-unauthorized");
     expect(fetch).not.toHaveBeenCalled();
   });
 

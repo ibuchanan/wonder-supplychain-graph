@@ -1,10 +1,6 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
-
+import { evaluatePeerCxAuthorization, type PeerCx } from "../pairing/peer-cx";
 import type { PeerPairing } from "../pairing/peer-pairing-state";
-import {
-  evaluateSiteRelationshipAuthorization,
-  type SiteRelationship,
-} from "../pairing/site-relationship";
 import type { PeerOperation } from "./protocol";
 
 /**
@@ -17,7 +13,7 @@ export interface PeerRouteRequest {
   readonly now: string;
   readonly operation: PeerOperation;
   readonly pairingId: string;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly role: "destination" | "source";
   /** The Source Epic this request claims to carry. */
   readonly sourceEpicKey: string;
@@ -28,7 +24,7 @@ export type PeerRouteDenial = {
     | "epic-not-bound"
     | "operation-not-allowed"
     | "pairing-unauthorized"
-    | "relationship-unauthorized";
+    | "peer-cx-unauthorized";
 };
 
 export interface PeerRouteAuthorization {
@@ -39,33 +35,33 @@ export interface PeerRouteAuthorization {
  * The single gate every enabled peer route passes through. The four checks are
  * deliberately independent: site trust, then the exact Pairing, then that
  * Pairing's own operation allowlist, then the one Source Epic it binds.
- * Satisfying one never implies another, so a reusable relationship cannot
- * widen a Pairing, an authorized Pairing cannot outlive its relationship's
+ * Satisfying one never implies another, so a reusable PeerCX cannot
+ * widen a Pairing, an authorized Pairing cannot outlive its PeerCX's
  * lease or revocation, and an allowed operation cannot substitute an Epic.
  */
 export function authorizePeerRoute(
-  relationships: readonly SiteRelationship[],
+  peerCxs: readonly PeerCx[],
   pairings: readonly PeerPairing[],
   request: PeerRouteRequest,
 ): Result<PeerRouteAuthorization, PeerRouteDenial> {
-  const relationship = relationships.find(
-    (candidate) => candidate.relationshipId === request.relationshipId,
+  const peerCx = peerCxs.find(
+    (candidate) => candidate.peerCxId === request.peerCxId,
   );
   if (
-    !evaluateSiteRelationshipAuthorization(relationship, {
+    !evaluatePeerCxAuthorization(peerCx, {
       counterpartSiteAri: request.counterpartSiteAri,
       now: request.now,
-      relationshipId: request.relationshipId,
+      peerCxId: request.peerCxId,
     }).authorized
   ) {
-    return err({ code: "relationship-unauthorized" });
+    return err({ code: "peer-cx-unauthorized" });
   }
 
   const pairing = pairings.find(
     (candidate) =>
       candidate.pairingId === request.pairingId &&
       candidate.role === request.role &&
-      candidate.relationshipId === request.relationshipId &&
+      candidate.peerCxId === request.peerCxId &&
       candidate.status === "active",
   );
   if (!pairing) {
@@ -76,7 +72,7 @@ export function authorizePeerRoute(
     return err({ code: "operation-not-allowed" });
   }
 
-  // A Pairing binds exactly one Source Epic. Neither the relationship nor the
+  // A Pairing binds exactly one Source Epic. Neither the PeerCX nor the
   // operation allowlist says anything about which Epic may be exchanged.
   return pairing.sourceEpicKey === request.sourceEpicKey
     ? ok({ pairing })

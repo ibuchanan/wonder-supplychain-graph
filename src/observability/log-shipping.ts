@@ -77,7 +77,7 @@ const permittedDataFields = new Set([
   "installationId",
   "outcome",
   "reason",
-  "relationshipId",
+  "peerCxId",
   "route",
   "status",
   "sourceEpicId",

@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   type ActivationPollRequest,
-  proposeSiteRelationshipActivation,
-} from "../../src/pairing/site-relationship-activation";
+  proposePeerCxActivation,
+} from "../../src/pairing/peer-cx-activation";
 import type {
   NominationStatus,
-  SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  PeerCxSetupState,
+} from "../../src/pairing/peer-cx-nomination";
 
 const greenIdentity = {
   environmentAri: "ari:cloud:ecosystem::environment/green-development",
@@ -27,7 +27,7 @@ const terms = {
   termsVersion: "v1",
 } as const;
 
-const greenState = (status: NominationStatus): SiteRelationshipSetupState => ({
+const greenState = (status: NominationStatus): PeerCxSetupState => ({
   nominations: [
     {
       correlationId: "correlation-001",
@@ -36,14 +36,14 @@ const greenState = (status: NominationStatus): SiteRelationshipSetupState => ({
       invitationReference: "reference-001",
       nominatedIdentity: blueIdentity,
       receiverEndpointStatus: "configured",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       role: "green",
       status,
       terms,
     },
   ],
   processedIdempotencyKeys: ["nominate-001"],
-  relationships: [],
+  peerCxs: [],
 });
 
 const pollRequest: ActivationPollRequest = {
@@ -51,10 +51,10 @@ const pollRequest: ActivationPollRequest = {
   createdAt: "2026-09-14T19:05:00.000Z",
   intendedReceiverSiteAri: greenIdentity.siteAri,
   nominatedIdentity: blueIdentity,
-  operation: "site-relationship.poll",
+  operation: "peer-cx.poll",
   direction: "blue-to-green",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "poll-request-001",
   termsVersion: "v1",
 };
@@ -64,9 +64,9 @@ const context = {
   now: "2026-09-14T19:05:01.000Z",
 };
 
-describe("proposeSiteRelationshipActivation", () => {
+describe("proposePeerCxActivation", () => {
   it("returns no activation proposal while Green approval is still outstanding", () => {
-    const result = proposeSiteRelationshipActivation(
+    const result = proposePeerCxActivation(
       greenState("awaiting-green-approval"),
       pollRequest,
       context,
@@ -80,7 +80,7 @@ describe("proposeSiteRelationshipActivation", () => {
   });
 
   it("returns the approved activation proposal, naming Green as the counterpart", () => {
-    const result = proposeSiteRelationshipActivation(
+    const result = proposePeerCxActivation(
       greenState("awaiting-blue-confirmation"),
       pollRequest,
       context,
@@ -97,10 +97,10 @@ describe("proposeSiteRelationshipActivation", () => {
         correlationId: "correlation-001",
         counterpartSiteAri: greenIdentity.siteAri,
         leaseEndsAt: terms.expiresAt,
-        operation: "site-relationship.activation-proposal",
+        operation: "peer-cx.activation-proposal",
         direction: "green-to-blue",
         protocolVersion: "v1",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         termsVersion: "v1",
       },
     });
@@ -118,9 +118,9 @@ describe("proposeSiteRelationshipActivation", () => {
       reason: "no nomination carries the polled correlation",
     },
     {
-      code: "relationship-id-mismatch",
-      override: { relationshipId: "relationship-002" },
-      reason: "the polled relationship ID is not the approved one",
+      code: "peer-cx-id-mismatch",
+      override: { peerCxId: "peer-cx-002" },
+      reason: "the polled PeerCX ID is not the approved one",
     },
     {
       code: "nomination-identity-mismatch",
@@ -140,7 +140,7 @@ describe("proposeSiteRelationshipActivation", () => {
   ] as const)(
     "denies a poll and proposes nothing when $reason",
     ({ code, override }) => {
-      const result = proposeSiteRelationshipActivation(
+      const result = proposePeerCxActivation(
         greenState("awaiting-blue-confirmation"),
         { ...pollRequest, ...override },
         context,
@@ -157,7 +157,7 @@ describe("proposeSiteRelationshipActivation", () => {
   it.each(["invalidated", "rejected"] as const)(
     "reveals a %s nomination as its recorded outcome with no proposal",
     (status) => {
-      const result = proposeSiteRelationshipActivation(
+      const result = proposePeerCxActivation(
         greenState(status),
         pollRequest,
         context,
@@ -172,7 +172,7 @@ describe("proposeSiteRelationshipActivation", () => {
   );
 
   it("still returns the proposal once Green is active, so a lost confirmation response can be recovered", () => {
-    const result = proposeSiteRelationshipActivation(
+    const result = proposePeerCxActivation(
       greenState("active"),
       pollRequest,
       context,
@@ -180,7 +180,7 @@ describe("proposeSiteRelationshipActivation", () => {
 
     expect(result.isOk()).toBe(true);
     if (result.isErr()) {
-      expect.unreachable("Expected an active relationship to replay safely");
+      expect.unreachable("Expected an active PeerCX to replay safely");
     }
     expect(result.value).toEqual({
       outcome: "active",
@@ -189,17 +189,17 @@ describe("proposeSiteRelationshipActivation", () => {
         correlationId: "correlation-001",
         counterpartSiteAri: greenIdentity.siteAri,
         leaseEndsAt: terms.expiresAt,
-        operation: "site-relationship.activation-proposal",
+        operation: "peer-cx.activation-proposal",
         direction: "green-to-blue",
         protocolVersion: "v1",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         termsVersion: "v1",
       },
     });
   });
 
   it("proposes nothing once the agreed end instant has passed", () => {
-    const result = proposeSiteRelationshipActivation(
+    const result = proposePeerCxActivation(
       greenState("awaiting-blue-confirmation"),
       pollRequest,
       { ...context, now: terms.expiresAt },

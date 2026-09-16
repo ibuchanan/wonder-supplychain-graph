@@ -4,12 +4,12 @@ import type {
   ProtocolVersion,
   SetupDirection,
 } from "../collaboration/protocol";
-import type { SiteRelationship } from "./site-relationship";
+import type { PeerCx } from "./peer-cx";
 import {
   identitiesMatch,
   type NominatedIdentity,
-  type SiteRelationshipSetupState,
-} from "./site-relationship-nomination";
+  type PeerCxSetupState,
+} from "./peer-cx-nomination";
 
 /**
  * Blue's bounded protected poll. It carries no secret and no endpoint: Green
@@ -22,9 +22,9 @@ export interface ActivationPollRequest {
   readonly direction: SetupDirection;
   readonly intendedReceiverSiteAri: string;
   readonly nominatedIdentity: NominatedIdentity;
-  readonly operation: "site-relationship.poll";
+  readonly operation: "peer-cx.poll";
   readonly protocolVersion: ProtocolVersion;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly requestId: string;
   readonly termsVersion: string;
 }
@@ -40,9 +40,9 @@ export interface ActivationProposal {
   readonly counterpartSiteAri: string;
   readonly direction: SetupDirection;
   readonly leaseEndsAt: string;
-  readonly operation: "site-relationship.activation-proposal";
+  readonly operation: "peer-cx.activation-proposal";
   readonly protocolVersion: ProtocolVersion;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly termsVersion: string;
 }
 
@@ -63,7 +63,7 @@ export type ProposeActivationError = {
     | "nomination-identity-mismatch"
     | "nomination-not-found"
     | "nomination-terms-mismatch"
-    | "relationship-id-mismatch";
+    | "peer-cx-id-mismatch";
 };
 
 export interface ActivationPollContext {
@@ -75,8 +75,8 @@ export interface ActivationPollContext {
  * Answers one authenticated poll on Green. The caller must already have
  * verified the request signature.
  */
-export function proposeSiteRelationshipActivation(
-  state: SiteRelationshipSetupState,
+export function proposePeerCxActivation(
+  state: PeerCxSetupState,
   request: ActivationPollRequest,
   context: ActivationPollContext,
 ): Result<ActivationPollOutcome, ProposeActivationError> {
@@ -93,8 +93,8 @@ export function proposeSiteRelationshipActivation(
     return err({ code: "nomination-not-found" });
   }
 
-  if (nomination.relationshipId !== request.relationshipId) {
-    return err({ code: "relationship-id-mismatch" });
+  if (nomination.peerCxId !== request.peerCxId) {
+    return err({ code: "peer-cx-id-mismatch" });
   }
 
   // The polling site's claimed identity is peer-supplied; it grants nothing
@@ -133,9 +133,9 @@ export function proposeSiteRelationshipActivation(
       counterpartSiteAri: context.localIdentity.siteAri,
       direction: "green-to-blue" as const,
       leaseEndsAt: nomination.terms.expiresAt,
-      operation: "site-relationship.activation-proposal" as const,
+      operation: "peer-cx.activation-proposal" as const,
       protocolVersion: "v1" as const,
-      relationshipId: nomination.relationshipId,
+      peerCxId: nomination.peerCxId,
       termsVersion: nomination.terms.termsVersion,
     }),
   });
@@ -154,9 +154,9 @@ export interface ConfirmationRequest {
   readonly idempotencyKey: string;
   readonly intendedReceiverSiteAri: string;
   readonly leaseEndsAt: string;
-  readonly operation: "site-relationship.confirm";
+  readonly operation: "peer-cx.confirm";
   readonly protocolVersion: ProtocolVersion;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly requestId: string;
   readonly termsVersion: string;
 }
@@ -171,7 +171,7 @@ export type AcceptActivationError = {
 
 export interface ActivationAcceptanceResult {
   readonly confirmation: ConfirmationRequest;
-  readonly nextState: SiteRelationshipSetupState;
+  readonly nextState: PeerCxSetupState;
 }
 
 export interface ActivationAcceptanceContext {
@@ -186,7 +186,7 @@ export interface ActivationAcceptanceContext {
  * proposal matches Blue's own pending record field for field.
  */
 export function acceptActivationProposal(
-  state: SiteRelationshipSetupState,
+  state: PeerCxSetupState,
   proposal: ActivationProposal,
   context: ActivationAcceptanceContext,
 ): Result<ActivationAcceptanceResult, AcceptActivationError> {
@@ -200,9 +200,9 @@ export function acceptActivationProposal(
   }
 
   // Blue grants nothing on Green's word: the proposal must repeat the
-  // relationship, counterpart, identity, and immutable terms it nominated.
+  // PeerCX, counterpart, identity, and immutable terms it nominated.
   if (
-    proposal.relationshipId !== nomination.relationshipId ||
+    proposal.peerCxId !== nomination.peerCxId ||
     proposal.counterpartSiteAri !== nomination.counterpartSiteAri ||
     !identitiesMatch(proposal.approvedIdentity, nomination.nominatedIdentity) ||
     proposal.termsVersion !== nomination.terms.termsVersion ||
@@ -234,9 +234,9 @@ export function acceptActivationProposal(
       idempotencyKey: context.idempotencyKey,
       intendedReceiverSiteAri: nomination.counterpartSiteAri,
       leaseEndsAt: nomination.terms.expiresAt,
-      operation: "site-relationship.confirm" as const,
+      operation: "peer-cx.confirm" as const,
       protocolVersion: "v1" as const,
-      relationshipId: nomination.relationshipId,
+      peerCxId: nomination.peerCxId,
       requestId: context.requestId,
       termsVersion: nomination.terms.termsVersion,
     }),
@@ -252,11 +252,11 @@ export function acceptActivationProposal(
 export interface ConfirmationReceipt {
   readonly correlationId: string;
   readonly outcome: "active";
-  readonly relationshipId: string;
+  readonly peerCxId: string;
 }
 
 export interface ConfirmationResult {
-  readonly nextState: SiteRelationshipSetupState;
+  readonly nextState: PeerCxSetupState;
   readonly receipt: ConfirmationReceipt;
 }
 
@@ -277,10 +277,10 @@ export type ReceiveConfirmationError = {
 
 /**
  * Applies one authenticated confirmation on Green, activating its local Site
- * relationship. The caller must already have verified the request signature.
+ * PeerCX. The caller must already have verified the request signature.
  */
-export function receiveSiteRelationshipConfirmation(
-  state: SiteRelationshipSetupState,
+export function receivePeerCxConfirmation(
+  state: PeerCxSetupState,
   request: ConfirmationRequest,
   context: ConfirmationContext,
 ): Result<ConfirmationResult, ReceiveConfirmationError> {
@@ -299,7 +299,7 @@ export function receiveSiteRelationshipConfirmation(
 
   // Green activates only what its own administrator approved, field for field.
   if (
-    request.relationshipId !== nomination.relationshipId ||
+    request.peerCxId !== nomination.peerCxId ||
     !identitiesMatch(request.confirmedIdentity, nomination.nominatedIdentity) ||
     request.termsVersion !== nomination.terms.termsVersion ||
     request.leaseEndsAt !== nomination.terms.expiresAt
@@ -326,7 +326,7 @@ export function receiveSiteRelationshipConfirmation(
       receipt: {
         correlationId: nomination.correlationId,
         outcome: "active" as const,
-        relationshipId: nomination.relationshipId,
+        peerCxId: nomination.peerCxId,
       },
     });
   }
@@ -336,10 +336,10 @@ export function receiveSiteRelationshipConfirmation(
     confirmedAt: context.now,
     status: "active" as const,
   };
-  const relationship: SiteRelationship = {
+  const peerCx: PeerCx = {
     counterpartSiteAri: nomination.counterpartSiteAri,
     leaseEndsAt: nomination.terms.expiresAt,
-    relationshipId: nomination.relationshipId,
+    peerCxId: nomination.peerCxId,
     status: "active" as const,
     termsVersion: nomination.terms.termsVersion,
   };
@@ -353,19 +353,19 @@ export function receiveSiteRelationshipConfirmation(
         ...state.processedIdempotencyKeys,
         request.idempotencyKey,
       ],
-      relationships: [...state.relationships, relationship],
+      peerCxs: [...state.peerCxs, peerCx],
     },
     receipt: {
       correlationId: nomination.correlationId,
       outcome: "active" as const,
-      relationshipId: nomination.relationshipId,
+      peerCxId: nomination.peerCxId,
     },
   });
 }
 
 export interface BlueActivationResult {
-  readonly nextState: SiteRelationshipSetupState;
-  readonly relationship: SiteRelationship;
+  readonly nextState: PeerCxSetupState;
+  readonly peerCx: PeerCx;
 }
 
 /** Every refused local activation path on Blue. */
@@ -381,7 +381,7 @@ export type ActivateAfterConfirmationError = {
  * Blue never activates on its own acceptance alone.
  */
 export function activateAfterConfirmation(
-  state: SiteRelationshipSetupState,
+  state: PeerCxSetupState,
   receipt: ConfirmationReceipt,
   context: { readonly now: string },
 ): Result<BlueActivationResult, ActivateAfterConfirmationError> {
@@ -394,7 +394,7 @@ export function activateAfterConfirmation(
     return err({ code: "pending-nomination-not-found" });
   }
 
-  if (receipt.relationshipId !== nomination.relationshipId) {
+  if (receipt.peerCxId !== nomination.peerCxId) {
     return err({ code: "confirmation-mismatch" });
   }
 
@@ -403,11 +403,11 @@ export function activateAfterConfirmation(
     return err({ code: "acceptance-not-recorded" });
   }
 
-  const recorded = state.relationships.find(
-    (candidate) => candidate.relationshipId === nomination.relationshipId,
+  const recorded = state.peerCxs.find(
+    (candidate) => candidate.peerCxId === nomination.peerCxId,
   );
   if (recorded) {
-    return ok({ nextState: state, relationship: recorded });
+    return ok({ nextState: state, peerCx: recorded });
   }
 
   const activated = {
@@ -415,10 +415,10 @@ export function activateAfterConfirmation(
     confirmedAt: context.now,
     status: "active" as const,
   };
-  const relationship: SiteRelationship = {
+  const peerCx: PeerCx = {
     counterpartSiteAri: nomination.counterpartSiteAri,
     leaseEndsAt: nomination.terms.expiresAt,
-    relationshipId: nomination.relationshipId,
+    peerCxId: nomination.peerCxId,
     status: "active" as const,
     termsVersion: nomination.terms.termsVersion,
   };
@@ -429,8 +429,8 @@ export function activateAfterConfirmation(
       nominations: state.nominations.map((candidate) =>
         candidate === nomination ? activated : candidate,
       ),
-      relationships: [...state.relationships, relationship],
+      peerCxs: [...state.peerCxs, peerCx],
     },
-    relationship,
+    peerCx,
   });
 }

@@ -134,7 +134,7 @@ describe("authorized supplier simulator scenario", () => {
     {
       scenario: "unavailable",
       status:
-        "The supplier relationship is unavailable; no current authorized package is available.",
+        "The supplier PeerCX is unavailable; no current authorized package is available.",
     },
   ] as const)(
     "keeps source package content hidden for the $scenario scenario",

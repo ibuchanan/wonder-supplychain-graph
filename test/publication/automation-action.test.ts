@@ -142,7 +142,7 @@ describe("createDemoPublishWorkPackageAction", () => {
     const emitLeanEvent = vi.fn().mockResolvedValue(undefined);
     const sourcePairing: SourcePeerPairing = {
       allowedOperations: ["starter.delivery"],
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       pairedEpicKey: "GREEN-42",
       pairingId: "pairing-001",
       peerEventUrl: "https://green.example/forge/webtrigger/receive-peer-event",

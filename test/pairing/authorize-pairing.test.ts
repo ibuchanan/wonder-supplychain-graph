@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { authorizePairing } from "../../src/pairing/authorize-pairing";
-import type { DestinationPeerPairing } from "../../src/pairing/peer-pairing-state";
 import type {
-  SiteRelationshipNomination,
-  SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  PeerCxNomination,
+  PeerCxSetupState,
+} from "../../src/pairing/peer-cx-nomination";
+import type { DestinationPeerPairing } from "../../src/pairing/peer-pairing-state";
 
 const terms = {
   allowedOperations: ["starter.delivery", "snapshot.candidate.receive"],
@@ -13,7 +13,7 @@ const terms = {
   termsVersion: "v1",
 } as const;
 
-const nomination: SiteRelationshipNomination = {
+const nomination: PeerCxNomination = {
   correlationId: "correlation-001",
   counterpartSiteAri: "ari:cloud:jira::site/blue-site",
   idempotencyKey: "correlation-001:nominate",
@@ -24,20 +24,20 @@ const nomination: SiteRelationshipNomination = {
     siteAri: "ari:cloud:jira::site/blue-site",
   },
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "green",
   status: "active",
   terms,
 };
 
-const state: SiteRelationshipSetupState = {
+const state: PeerCxSetupState = {
   nominations: [nomination],
   processedIdempotencyKeys: [],
-  relationships: [
+  peerCxs: [
     {
       counterpartSiteAri: "ari:cloud:jira::site/blue-site",
       leaseEndsAt: terms.expiresAt,
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       status: "active",
       termsVersion: "v1",
     },
@@ -50,7 +50,7 @@ const pairing: DestinationPeerPairing = {
   graphCxId: "graph-cx-001",
   pairedEpicKey: "GREEN-1",
   pairingId: "pairing-001",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "destination",
   sourceEpicKey: "BLUE-1",
   status: "inactive",
@@ -77,15 +77,15 @@ describe("authorizePairing", () => {
     ]);
   });
 
-  it("refuses a pairing unless its relationship is active and in lease", () => {
+  it("refuses a pairing unless its PeerCX is active and in lease", () => {
     for (const status of ["revoked", "expired", "pending", "failed"] as const) {
       expect(
         authorizePairing(
-          { ...state, relationships: [{ ...state.relationships[0]!, status }] },
+          { ...state, peerCxs: [{ ...state.peerCxs[0]!, status }] },
           { pairings: [] },
           command,
         ),
-      ).toMatchObject({ error: { code: "relationship-unauthorized" } });
+      ).toMatchObject({ error: { code: "peer-cx-unauthorized" } });
     }
 
     expect(
@@ -97,18 +97,14 @@ describe("authorizePairing", () => {
           authorizedAt: terms.expiresAt,
         },
       ),
-    ).toMatchObject({ error: { code: "relationship-unauthorized" } });
+    ).toMatchObject({ error: { code: "peer-cx-unauthorized" } });
     expect(
-      authorizePairing(
-        { ...state, relationships: [] },
-        { pairings: [] },
-        command,
-      ),
-    ).toMatchObject({ error: { code: "relationship-unauthorized" } });
+      authorizePairing({ ...state, peerCxs: [] }, { pairings: [] }, command),
+    ).toMatchObject({ error: { code: "peer-cx-unauthorized" } });
   });
 
   it("refuses an allowlist reaching past the agreed scope, and an empty one", () => {
-    // An active relationship is a precondition, not a grant: it cannot widen
+    // An active PeerCX is a precondition, not a grant: it cannot widen
     // a Pairing beyond the scope the two sites actually consented to, and an
     // absent allowlist is a refusal rather than a permissive default.
     expect(
@@ -134,7 +130,7 @@ describe("authorizePairing", () => {
   });
 
   it("refuses a pairing that does not bind both Epics", () => {
-    // A Pairing is the bilateral relationship between exactly one Source Epic
+    // A Pairing is the bilateral PeerCX between exactly one Source Epic
     // and one Paired Epic. A half-bound Pairing would otherwise be activated
     // and then resolve its missing side from whatever arrived.
     for (const incomplete of [

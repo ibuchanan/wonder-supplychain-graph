@@ -1,9 +1,9 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
 
 import type { PeerOperation } from "../collaboration/protocol";
+import { evaluatePeerCxAuthorization } from "./peer-cx";
+import type { PeerCxSetupState } from "./peer-cx-nomination";
 import type { PeerPairing, PeerPairingState } from "./peer-pairing-state";
-import { evaluateSiteRelationshipAuthorization } from "./site-relationship";
-import type { SiteRelationshipSetupState } from "./site-relationship-nomination";
 
 /**
  * One local administrator's authorization of a single Pairing. The prospective
@@ -26,34 +26,34 @@ export type AuthorizePairingError = {
   readonly code:
     | "epic-binding-required"
     | "operation-not-agreed"
-    | "relationship-unauthorized";
+    | "peer-cx-unauthorized";
 };
 
 /**
- * Creates or activates one Pairing beneath an active Site relationship.
+ * Creates or activates one Pairing beneath an active PeerCX.
  *
- * An active relationship is a precondition, never a grant: it authorizes
+ * An active PeerCX is a precondition, never a grant: it authorizes
  * nothing on its own, and this command still has to bind exactly one Source
  * Epic, one Paired Epic, and an explicit operation allowlist drawn from the
  * scope the two sites actually agreed.
  */
 export function authorizePairing(
-  state: SiteRelationshipSetupState,
+  state: PeerCxSetupState,
   pairingState: PeerPairingState,
   command: AuthorizePairingCommand,
 ): Result<PairingAuthorizationResult, AuthorizePairingError> {
   const { pairing } = command;
-  const relationship = state.relationships.find(
-    (candidate) => candidate.relationshipId === pairing.relationshipId,
+  const peerCx = state.peerCxs.find(
+    (candidate) => candidate.peerCxId === pairing.peerCxId,
   );
   if (
-    !evaluateSiteRelationshipAuthorization(relationship, {
-      counterpartSiteAri: relationship?.counterpartSiteAri ?? "",
+    !evaluatePeerCxAuthorization(peerCx, {
+      counterpartSiteAri: peerCx?.counterpartSiteAri ?? "",
       now: command.authorizedAt,
-      relationshipId: pairing.relationshipId,
+      peerCxId: pairing.peerCxId,
     }).authorized
   ) {
-    return err({ code: "relationship-unauthorized" });
+    return err({ code: "peer-cx-unauthorized" });
   }
 
   // A Pairing is exactly one Source Epic and one Paired Epic. A half-bound
@@ -62,11 +62,11 @@ export function authorizePairing(
     return err({ code: "epic-binding-required" });
   }
 
-  // The agreed scope bounds every Pairing beneath the relationship, so an
+  // The agreed scope bounds every Pairing beneath the PeerCX, so an
   // allowlist cannot reach past what the two sites consented to. An empty
   // allowlist authorizes nothing, which makes it a refusal, not a default.
   const agreed = state.nominations.find(
-    (candidate) => candidate.relationshipId === pairing.relationshipId,
+    (candidate) => candidate.peerCxId === pairing.peerCxId,
   )?.terms.allowedOperations;
   if (
     command.allowedOperations.length === 0 ||

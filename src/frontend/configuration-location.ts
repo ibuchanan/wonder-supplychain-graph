@@ -2,7 +2,7 @@
  * Which concern sent the administrator to the configuration page. The readiness
  * page has two dead ends, and each one has its own next step.
  */
-export type ConfigurationConcern = "log-sink" | "site-relationship";
+export type ConfigurationConcern = "log-sink" | "peer-cx";
 
 export interface ConfigurationLocation {
   readonly moduleKey: string;

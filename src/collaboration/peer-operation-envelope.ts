@@ -4,14 +4,14 @@ import {
   isRecord,
   readIdentity,
 } from "../pairing/envelope-fields";
-import type { NominatedIdentity } from "../pairing/site-relationship-nomination";
+import type { NominatedIdentity } from "../pairing/peer-cx-nomination";
 import { type LeanEvent, parseLeanEvent } from "./lean-event-contract";
 import { type PeerOperation, V1_PEER_OPERATIONS } from "./protocol";
 
 /**
  * The versioned envelope every enabled operational request is signed over.
  * The HMAC makes the body authentic and tamper-evident; this envelope is what
- * makes it *checkable*, by naming the relationship, Pairing, operation, and
+ * makes it *checkable*, by naming the PeerCX, Pairing, operation, and
  * one-time request ID the receiver compares against its own state.
  *
  * It carries no secret, no endpoint URL, and no Jira content beyond the lean
@@ -27,7 +27,7 @@ export interface PeerOperationEnvelope {
   readonly operation: PeerOperation;
   readonly pairingId: string;
   readonly protocolVersion: "v1";
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   /** Unpredictable and single-use: fresh on every retry. */
   readonly requestId: string;
   readonly senderIdentity: NominatedIdentity;
@@ -48,7 +48,7 @@ export interface PeerOperationRequest {
   readonly intendedReceiverSiteAri: string;
   readonly operation: PeerOperation;
   readonly pairingId: string;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly requestId: string;
   readonly senderIdentity: NominatedIdentity;
   readonly termsVersion: string;
@@ -67,7 +67,7 @@ export function buildPeerOperationEnvelope(
     operation: request.operation,
     pairingId: request.pairingId,
     protocolVersion: "v1" as const,
-    relationshipId: request.relationshipId,
+    peerCxId: request.peerCxId,
     requestId: request.requestId,
     senderIdentity: request.senderIdentity,
     termsVersion: request.termsVersion,
@@ -103,7 +103,7 @@ export function parsePeerOperationEnvelope(
       operation,
       pairingId,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       requestId,
       termsVersion,
     } = value;
@@ -125,7 +125,7 @@ export function parsePeerOperationEnvelope(
       !isNonEmptyString(idempotencyKey) ||
       !isNonEmptyString(intendedReceiverSiteAri) ||
       !isNonEmptyString(pairingId) ||
-      !isNonEmptyString(relationshipId) ||
+      !isNonEmptyString(peerCxId) ||
       !isNonEmptyString(requestId) ||
       !isNonEmptyString(termsVersion) ||
       // The route authorizes one Pairing. An event naming another would
@@ -144,7 +144,7 @@ export function parsePeerOperationEnvelope(
       operation: operation as PeerOperation,
       pairingId,
       protocolVersion,
-      relationshipId,
+      peerCxId,
       requestId,
       senderIdentity,
       termsVersion,

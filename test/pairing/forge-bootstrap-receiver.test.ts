@@ -48,10 +48,10 @@ const nominationRequest = {
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-cloud-id",
   invitationReference: "reference-001",
   nominatedIdentity: blueIdentity,
-  operation: "site-relationship.nominate",
+  operation: "peer-cx.nominate",
   protocolVersion: "v1",
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "request-001",
   terms: {
     allowedOperations: ["starter.delivery"],
@@ -67,7 +67,7 @@ const nominationRequest = {
 function stateWrites(): unknown[][] {
   return vi
     .mocked(kvs.set)
-    .mock.calls.filter(([key]) => key === "site-relationship-setup-state");
+    .mock.calls.filter(([key]) => key === "peer-cx-setup-state");
 }
 
 function recordedEvidence(): unknown[] {
@@ -96,11 +96,11 @@ describe("receiveBootstrapRequest", () => {
     vi.mocked(kvs.get).mockImplementation(async (key: string) =>
       key === "invitation-workflow-state"
         ? ({ invitations: [invitation] } as never)
-        : key === "site-relationship-setup-state"
+        : key === "peer-cx-setup-state"
           ? ({
               nominations: [],
               processedIdempotencyKeys: [],
-              relationships: [],
+              peerCxs: [],
             } as never)
           : (undefined as never),
     );
@@ -127,9 +127,9 @@ describe("receiveBootstrapRequest", () => {
     ).resolves.toMatchObject({ statusCode: 401 });
 
     // Recording the denial is the only durable state an unauthenticated
-    // caller may touch: it reaches no invitation or relationship state.
+    // caller may touch: it reaches no invitation or PeerCX state.
     expect(kvs.get).not.toHaveBeenCalledWith("invitation-workflow-state");
-    expect(kvs.get).not.toHaveBeenCalledWith("site-relationship-setup-state");
+    expect(kvs.get).not.toHaveBeenCalledWith("peer-cx-setup-state");
     expect(stateWrites()).toHaveLength(0);
   });
 
@@ -148,9 +148,9 @@ describe("receiveBootstrapRequest", () => {
       },
       {
         correlationId: "correlation-001",
-        eventType: "relationship.nominated",
+        eventType: "peer-cx.nominated",
         outcome: "recorded",
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
       },
     ]);
     expect(JSON.stringify(recordedEvidence())).not.toContain(secret);
@@ -212,7 +212,7 @@ describe("receiveBootstrapRequest", () => {
     expect(String(response.body)).not.toContain("webtrigger");
     expect(stateWrites()).toEqual([
       [
-        "site-relationship-setup-state",
+        "peer-cx-setup-state",
         {
           nominations: [
             {
@@ -222,14 +222,14 @@ describe("receiveBootstrapRequest", () => {
               invitationReference: "reference-001",
               nominatedIdentity: blueIdentity,
               receiverEndpointStatus: "configured",
-              relationshipId: "relationship-001",
+              peerCxId: "peer-cx-001",
               role: "green",
               status: "awaiting-green-approval",
               terms: nominationRequest.terms,
             },
           ],
           processedIdempotencyKeys: ["nominate-001"],
-          relationships: [],
+          peerCxs: [],
         },
       ],
     ]);
@@ -267,7 +267,7 @@ const approvedNomination = {
   invitationReference: "reference-001",
   nominatedIdentity: blueIdentity,
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "green",
   status: "awaiting-blue-confirmation",
   terms: nominationRequest.terms,
@@ -279,9 +279,9 @@ const pollRequest = {
   direction: "blue-to-green",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-cloud-id",
   nominatedIdentity: blueIdentity,
-  operation: "site-relationship.poll",
+  operation: "peer-cx.poll",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "poll-request-001",
   termsVersion: "v1",
 } as const;
@@ -294,9 +294,9 @@ const confirmationRequest = {
   idempotencyKey: "correlation-001:confirm",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-cloud-id",
   leaseEndsAt: nominationRequest.terms.expiresAt,
-  operation: "site-relationship.confirm",
+  operation: "peer-cx.confirm",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "confirm-request-001",
   termsVersion: "v1",
 } as const;
@@ -313,7 +313,7 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
         : ({
             nominations: [approvedNomination],
             processedIdempotencyKeys: ["nominate-001"],
-            relationships: [],
+            peerCxs: [],
           } as never),
     );
   });
@@ -334,16 +334,16 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
       correlationId: "correlation-001",
       counterpartSiteAri: "ari:cloud:jira::site/green-cloud-id",
       leaseEndsAt: nominationRequest.terms.expiresAt,
-      operation: "site-relationship.activation-proposal",
+      operation: "peer-cx.activation-proposal",
       outcome: "awaiting-blue-confirmation",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       termsVersion: "v1",
     });
     expect(String(response.body)).not.toContain("webtrigger");
     expect(stateWrites()).toHaveLength(0);
   });
 
-  it("activates the local relationship on an authenticated confirmation", async () => {
+  it("activates the local PeerCX on an authenticated confirmation", async () => {
     const response = await receiveBootstrapRequest(
       signedRequest(JSON.stringify(confirmationRequest)),
     );
@@ -352,11 +352,11 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
     expect(JSON.parse(String(response.body))).toMatchObject({
       correlationId: "correlation-001",
       outcome: "active",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
     });
     expect(stateWrites()).toEqual([
       [
-        "site-relationship-setup-state",
+        "peer-cx-setup-state",
         {
           nominations: [
             {
@@ -366,11 +366,11 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
             },
           ],
           processedIdempotencyKeys: ["nominate-001", "correlation-001:confirm"],
-          relationships: [
+          peerCxs: [
             {
               counterpartSiteAri: blueIdentity.siteAri,
               leaseEndsAt: nominationRequest.terms.expiresAt,
-              relationshipId: "relationship-001",
+              peerCxId: "peer-cx-001",
               status: "active",
               termsVersion: "v1",
             },
@@ -417,7 +417,7 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
     expect(
       vi
         .mocked(kvs.set)
-        .mock.calls.filter(([key]) => key === "site-relationship-setup-state"),
+        .mock.calls.filter(([key]) => key === "peer-cx-setup-state"),
     ).toHaveLength(1);
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({ reason: "request-replayed" }),
@@ -432,13 +432,13 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
     let stored: unknown = {
       nominations: [approvedNomination],
       processedIdempotencyKeys: ["nominate-001"],
-      relationships: [],
+      peerCxs: [],
     };
     const claimed = new Set<string>();
     vi.mocked(kvs.get).mockImplementation(async (key: string) =>
       key === "invitation-workflow-state"
         ? ({ invitations: [invitation] } as never)
-        : key === "site-relationship-setup-state"
+        : key === "peer-cx-setup-state"
           ? (stored as never)
           : ((claimed.has(key)
               ? { consumedAt: timestamp }
@@ -453,7 +453,7 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
           claimed.add(key);
           return;
         }
-        if (key === "site-relationship-setup-state") {
+        if (key === "peer-cx-setup-state") {
           stored = value;
         }
       },
@@ -474,9 +474,7 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
 
     expect(JSON.parse(String(first.body))).toMatchObject({ outcome: "active" });
     expect(JSON.parse(String(retry.body))).toMatchObject({ outcome: "active" });
-    expect(
-      (stored as { relationships: readonly unknown[] }).relationships,
-    ).toHaveLength(1);
+    expect((stored as { peerCxs: readonly unknown[] }).peerCxs).toHaveLength(1);
     expect(
       (stored as { processedIdempotencyKeys: readonly string[] })
         .processedIdempotencyKeys,
@@ -495,7 +493,7 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
     expect(
       vi
         .mocked(kvs.set)
-        .mock.calls.filter(([key]) => key === "site-relationship-setup-state"),
+        .mock.calls.filter(([key]) => key === "peer-cx-setup-state"),
     ).toHaveLength(0);
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({ reason: "replay-state-unavailable" }),
@@ -503,12 +501,12 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
     );
   });
 
-  it("denies a confirmation for an unknown relationship without activating", async () => {
+  it("denies a confirmation for an unknown PeerCX without activating", async () => {
     const response = await receiveBootstrapRequest(
       signedRequest(
         JSON.stringify({
           ...confirmationRequest,
-          relationshipId: "relationship-002",
+          peerCxId: "peer-cx-002",
         }),
       ),
     );

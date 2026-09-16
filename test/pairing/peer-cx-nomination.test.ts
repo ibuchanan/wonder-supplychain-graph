@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  type NominateSiteRelationshipCommand,
-  nominateSiteRelationship,
-  type SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  type NominatePeerCxCommand,
+  nominatePeerCx,
+  type PeerCxSetupState,
+} from "../../src/pairing/peer-cx-nomination";
 
-const emptyState = (): SiteRelationshipSetupState => ({
+const emptyState = (): PeerCxSetupState => ({
   nominations: [],
   processedIdempotencyKeys: [],
-  relationships: [],
+  peerCxs: [],
 });
 
 const blueIdentity = {
@@ -24,7 +24,7 @@ const terms = {
   termsVersion: "v1",
 } as const;
 
-const nominateCommand: NominateSiteRelationshipCommand = {
+const nominateCommand: NominatePeerCxCommand = {
   actor: "blue-administrator",
   consentedAt: "2026-09-14T18:00:00.000Z",
   correlationId: "correlation-001",
@@ -33,17 +33,17 @@ const nominateCommand: NominateSiteRelationshipCommand = {
   invitationReference: "reference-001",
   localIdentity: blueIdentity,
   localReadiness: "ready",
-  operation: "site-relationship.nominate",
+  operation: "peer-cx.nominate",
   direction: "blue-to-green",
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "request-001",
   terms,
 };
 
-describe("nominateSiteRelationship", () => {
+describe("nominatePeerCx", () => {
   it("records Blue local consent as pending and builds an endpoint-free nomination request", () => {
-    const result = nominateSiteRelationship(emptyState(), nominateCommand);
+    const result = nominatePeerCx(emptyState(), nominateCommand);
 
     expect(result.isOk()).toBe(true);
     if (result.isErr()) {
@@ -58,14 +58,14 @@ describe("nominateSiteRelationship", () => {
           invitationReference: "reference-001",
           nominatedIdentity: blueIdentity,
           receiverEndpointStatus: "configured",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
           role: "blue",
           status: "awaiting-green-approval",
           terms,
         },
       ],
       processedIdempotencyKeys: ["nominate-001"],
-      relationships: [],
+      peerCxs: [],
     });
     expect(result.value.request).toEqual({
       correlationId: "correlation-001",
@@ -74,11 +74,11 @@ describe("nominateSiteRelationship", () => {
       intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
       invitationReference: "reference-001",
       nominatedIdentity: blueIdentity,
-      operation: "site-relationship.nominate",
+      operation: "peer-cx.nominate",
       direction: "blue-to-green",
       protocolVersion: "v1",
       receiverEndpointStatus: "configured",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       requestId: "request-001",
       terms,
     });
@@ -87,7 +87,7 @@ describe("nominateSiteRelationship", () => {
   it("refuses to nominate, and sends nothing, while local readiness is blocked", () => {
     const state = emptyState();
 
-    const result = nominateSiteRelationship(state, {
+    const result = nominatePeerCx(state, {
       ...nominateCommand,
       localReadiness: "blocked",
     });
@@ -101,15 +101,12 @@ describe("nominateSiteRelationship", () => {
   });
 
   it("replays the recorded nomination when Blue resubmits the same consent", () => {
-    const first = nominateSiteRelationship(emptyState(), nominateCommand);
+    const first = nominatePeerCx(emptyState(), nominateCommand);
     if (first.isErr()) {
       expect.unreachable("Expected the first nomination to be recorded");
     }
 
-    const second = nominateSiteRelationship(
-      first.value.nextState,
-      nominateCommand,
-    );
+    const second = nominatePeerCx(first.value.nextState, nominateCommand);
 
     expect(second.isOk()).toBe(true);
     if (second.isErr()) {

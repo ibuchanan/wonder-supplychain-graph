@@ -31,7 +31,7 @@ const envelope = {
   operation: "starter.delivery",
   pairingId: "pairing-001",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "request-001",
   senderIdentity,
   termsVersion: "v1",
@@ -44,7 +44,7 @@ describe("buildPeerOperationEnvelope", () => {
     intendedReceiverSiteAri: "ari:cloud:jira::site/blue-site",
     operation: "starter.delivery",
     pairingId: "pairing-001",
-    relationshipId: "relationship-001",
+    peerCxId: "peer-cx-001",
     senderIdentity,
     termsVersion: "v1",
   } as const;
@@ -117,7 +117,7 @@ describe("parsePeerOperationEnvelope", () => {
     ).toBe(undefined);
     expect(
       parsePeerOperationEnvelope(
-        JSON.stringify({ ...envelope, operation: "site-relationship.confirm" }),
+        JSON.stringify({ ...envelope, operation: "peer-cx.confirm" }),
       ),
     ).toBe(undefined);
     expect(

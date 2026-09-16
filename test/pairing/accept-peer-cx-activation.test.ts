@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   type ActivationProposal,
   acceptActivationProposal,
-} from "../../src/pairing/site-relationship-activation";
+} from "../../src/pairing/peer-cx-activation";
 import type {
   NominationStatus,
-  SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  PeerCxSetupState,
+} from "../../src/pairing/peer-cx-nomination";
 
 const blueIdentity = {
   environmentAri: "ari:cloud:ecosystem::environment/blue-development",
@@ -30,7 +30,7 @@ const pendingBlueNomination = {
   invitationReference: "reference-001",
   nominatedIdentity: blueIdentity,
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "blue",
   status: "awaiting-green-approval",
   terms,
@@ -38,10 +38,10 @@ const pendingBlueNomination = {
 
 const blueState = (
   status: NominationStatus = "awaiting-green-approval",
-): SiteRelationshipSetupState => ({
+): PeerCxSetupState => ({
   nominations: [{ ...pendingBlueNomination, status }],
   processedIdempotencyKeys: ["nominate-001"],
-  relationships: [],
+  peerCxs: [],
 });
 
 const proposal: ActivationProposal = {
@@ -49,10 +49,10 @@ const proposal: ActivationProposal = {
   correlationId: "correlation-001",
   counterpartSiteAri: greenSiteAri,
   leaseEndsAt: terms.expiresAt,
-  operation: "site-relationship.activation-proposal",
+  operation: "peer-cx.activation-proposal",
   direction: "green-to-blue",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   termsVersion: "v1",
 };
 
@@ -80,7 +80,7 @@ describe("acceptActivationProposal", () => {
         },
       ],
       processedIdempotencyKeys: ["nominate-001"],
-      relationships: [],
+      peerCxs: [],
     });
     expect(result.value.confirmation).toEqual({
       confirmedIdentity: blueIdentity,
@@ -89,10 +89,10 @@ describe("acceptActivationProposal", () => {
       idempotencyKey: "correlation-001:confirm",
       intendedReceiverSiteAri: greenSiteAri,
       leaseEndsAt: terms.expiresAt,
-      operation: "site-relationship.confirm",
+      operation: "peer-cx.confirm",
       direction: "blue-to-green",
       protocolVersion: "v1",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       requestId: "confirm-request-001",
       termsVersion: "v1",
     });
@@ -100,8 +100,8 @@ describe("acceptActivationProposal", () => {
 
   it.each([
     {
-      override: { relationshipId: "relationship-002" },
-      reason: "the proposed relationship ID is not the one Blue nominated",
+      override: { peerCxId: "peer-cx-002" },
+      reason: "the proposed PeerCX ID is not the one Blue nominated",
     },
     {
       override: { counterpartSiteAri: "ari:cloud:jira::site/other" },

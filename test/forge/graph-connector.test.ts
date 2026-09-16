@@ -29,7 +29,7 @@ describe("Teamwork Graph connector wiring", () => {
       "atlassian:document",
     ]);
     // The datasource block is mandatory, and onConnectionChange within it is
-    // required so suppression runs when the relationship becomes unavailable.
+    // required so suppression runs when the PeerCX becomes unavailable.
     expect(connector.datasource?.onConnectionChange?.function).toBeTruthy();
 
     const scopes = new Set(getManifestScopes(manifest));

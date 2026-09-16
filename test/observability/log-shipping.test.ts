@@ -81,10 +81,10 @@ describe("log shipping port", () => {
       event: {
         correlationId: "corr-002",
         fields: {
-          eventType: "relationship.revoked",
+          eventType: "peer-cx.revoked",
           outcome: "recorded",
           reason: "administrator-revoked",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
         },
         id: "audit-001",
         occurredAt: "2026-09-15T12:08:00.000Z",
@@ -97,7 +97,7 @@ describe("log shipping port", () => {
       expect.objectContaining({
         body: expect.objectContaining({
           data: expect.objectContaining({ correlationId: "corr-002" }),
-          type: "scg.audit.relationship.revoked",
+          type: "scg.audit.peer-cx.revoked",
         }),
       }),
     ]);

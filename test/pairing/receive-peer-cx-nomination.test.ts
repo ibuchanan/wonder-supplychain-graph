@@ -6,14 +6,14 @@ import {
 } from "../../src/pairing/invitation-workflow";
 import {
   type NominationRequest,
-  receiveSiteRelationshipNomination,
-  type SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  type PeerCxSetupState,
+  receivePeerCxNomination,
+} from "../../src/pairing/peer-cx-nomination";
 
-const emptyState = (): SiteRelationshipSetupState => ({
+const emptyState = (): PeerCxSetupState => ({
   nominations: [],
   processedIdempotencyKeys: [],
-  relationships: [],
+  peerCxs: [],
 });
 
 const greenSiteAri = "ari:cloud:jira::site/green-site";
@@ -50,10 +50,10 @@ function invited(): {
       intendedReceiverSiteAri: greenSiteAri,
       invitationReference: invitation.reference,
       nominatedIdentity: blueIdentity,
-      operation: "site-relationship.nominate",
+      operation: "peer-cx.nominate",
       protocolVersion: "v1",
       receiverEndpointStatus: "configured",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       requestId: "request-001",
       terms: {
         allowedOperations: invitation.allowedOperations,
@@ -64,11 +64,11 @@ function invited(): {
   };
 }
 
-describe("receiveSiteRelationshipNomination", () => {
+describe("receivePeerCxNomination", () => {
   it("stores the nomination awaiting Green approval and returns no endpoint", () => {
     const { invitations, request } = invited();
 
-    const result = receiveSiteRelationshipNomination(emptyState(), request, {
+    const result = receivePeerCxNomination(emptyState(), request, {
       invitations,
       localSiteAri: greenSiteAri,
       now: "2026-09-14T18:00:01.000Z",
@@ -87,14 +87,14 @@ describe("receiveSiteRelationshipNomination", () => {
           invitationReference: request.invitationReference,
           nominatedIdentity: blueIdentity,
           receiverEndpointStatus: "configured",
-          relationshipId: "relationship-001",
+          peerCxId: "peer-cx-001",
           role: "green",
           status: "awaiting-green-approval",
           terms: request.terms,
         },
       ],
       processedIdempotencyKeys: ["nominate-001"],
-      relationships: [],
+      peerCxs: [],
     });
     expect(result.value.receipt).toEqual({
       correlationId: request.correlationId,
@@ -106,7 +106,7 @@ describe("receiveSiteRelationshipNomination", () => {
     const { invitations, request } = invited();
     const state = emptyState();
 
-    const result = receiveSiteRelationshipNomination(
+    const result = receivePeerCxNomination(
       state,
       { ...request, intendedReceiverSiteAri: "ari:cloud:jira::site/other" },
       {
@@ -127,7 +127,7 @@ describe("receiveSiteRelationshipNomination", () => {
   it("denies a nomination whose invitation Green never issued", () => {
     const { request } = invited();
 
-    const result = receiveSiteRelationshipNomination(emptyState(), request, {
+    const result = receivePeerCxNomination(emptyState(), request, {
       invitations: { invitations: [] },
       localSiteAri: greenSiteAri,
       now: "2026-09-14T18:00:01.000Z",
@@ -143,7 +143,7 @@ describe("receiveSiteRelationshipNomination", () => {
   it("denies a nomination that did not come through the recipient-bound hand-off", () => {
     const { invitations, request } = invited();
 
-    const result = receiveSiteRelationshipNomination(
+    const result = receivePeerCxNomination(
       emptyState(),
       { ...request, correlationId: "guessed-correlation" },
       {
@@ -165,7 +165,7 @@ describe("receiveSiteRelationshipNomination", () => {
   it("denies a nomination that arrives after the fixed setup deadline", () => {
     const { invitations, request } = invited();
 
-    const result = receiveSiteRelationshipNomination(emptyState(), request, {
+    const result = receivePeerCxNomination(emptyState(), request, {
       invitations,
       localSiteAri: greenSiteAri,
       now: "2026-09-21T12:00:00.000Z",
@@ -188,7 +188,7 @@ describe("receiveSiteRelationshipNomination", () => {
   ] as const)("denies a nomination when %s", (termsOverride) => {
     const { invitations, request } = invited();
 
-    const result = receiveSiteRelationshipNomination(
+    const result = receivePeerCxNomination(
       emptyState(),
       { ...request, terms: { ...request.terms, ...termsOverride } },
       {
@@ -212,16 +212,12 @@ describe("receiveSiteRelationshipNomination", () => {
       localSiteAri: greenSiteAri,
       now: "2026-09-14T18:00:01.000Z",
     };
-    const first = receiveSiteRelationshipNomination(
-      emptyState(),
-      request,
-      context,
-    );
+    const first = receivePeerCxNomination(emptyState(), request, context);
     if (first.isErr()) {
       expect.unreachable("Expected the first delivery to be recorded");
     }
 
-    const second = receiveSiteRelationshipNomination(
+    const second = receivePeerCxNomination(
       first.value.nextState,
       { ...request, requestId: "request-002" },
       context,

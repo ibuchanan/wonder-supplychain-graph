@@ -15,27 +15,27 @@ type Element = {
 
 type Node = Element | string;
 
-const noRelationships: AdministratorOverview = {
+const noPeerCxs: AdministratorOverview = {
   auditOutcomes: [],
-  relationships: [],
+  peerCxs: [],
 };
 
 const populated: AdministratorOverview = {
   auditOutcomes: [
     {
       eventId: "event-1",
-      eventType: "site-relationship-activated",
+      eventType: "peer-cx-activated",
       occurredAt: "2026-01-02T03:04:05.000Z",
       outcome: "recorded",
     },
   ],
-  relationships: [
+  peerCxs: [
     {
       agreedOperations: ["publish-work-package"],
       agreementEndsAt: "2026-04-01T00:00:00.000Z",
       counterpartSiteAri: "ari:cloud:platform::site/counterpart",
       pairingCount: 1,
-      relationshipId: "relationship-1",
+      peerCxId: "peer-cx-1",
       status: "active",
     },
   ],
@@ -103,13 +103,13 @@ function manifestPageTitle(): string {
   return page.title;
 }
 
-describe("Peer POC readiness page", () => {
+describe("Status page", () => {
   it("leaves the only page heading to the title declared in the manifest", () => {
     const page = render(
       <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
-        overview={noRelationships}
+        overview={noPeerCxs}
         readiness={{ status: "ready" }}
       />,
     );
@@ -124,18 +124,18 @@ describe("Peer POC readiness page", () => {
     expect(duplicated).toEqual([]);
   });
 
-  it("separates site relationships from audit outcomes into two tabs", () => {
+  it("separates PeerCXs from audit outcomes into two tabs", () => {
     const page = render(
       <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
-        overview={noRelationships}
+        overview={noPeerCxs}
         readiness={{ status: "ready" }}
       />,
     );
 
     expect(elementsOfType(page, "Tab").map(textOf)).toEqual([
-      "Site relationships",
+      "PeerCXs",
       "Recent audit outcomes",
     ]);
   });
@@ -145,7 +145,7 @@ describe("Peer POC readiness page", () => {
       <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
-        overview={noRelationships}
+        overview={noPeerCxs}
         readiness={{ status: "blocked" }}
       />,
     );
@@ -172,18 +172,18 @@ describe("Peer POC readiness page", () => {
       <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
-        overview={noRelationships}
+        overview={noPeerCxs}
         readiness={{ status: "ready" }}
       />,
     );
 
-    const [relationships, audit] = elementsOfType(page, "TabPanel");
+    const [peerCxs, audit] = elementsOfType(page, "TabPanel");
 
-    expect(textOf(relationships as Element)).toContain(
+    expect(textOf(peerCxs as Element)).toContain(
       "This tenant's own records only.",
     );
-    expect(emptyStatesIn(relationships as Element)).toEqual([
-      "No Site relationship is recorded on this site.",
+    expect(emptyStatesIn(peerCxs as Element)).toEqual([
+      "No PeerCX is recorded on this site.",
     ]);
     expect(textOf(audit as Element)).toContain(
       "Non-content evidence retained by this site.",
@@ -193,21 +193,21 @@ describe("Peer POC readiness page", () => {
     ]);
   });
 
-  it("sends an admin with no Site relationship to relationship setup by name", () => {
+  it("sends an admin with no Site PeerCX to PeerCX setup by name", () => {
     const page = render(
       <StatusPage
-        configurationUrls={{ "site-relationship": "/relationship-setup" }}
+        configurationUrls={{ "peer-cx": "/peer-cx-setup" }}
         onRevoke={() => undefined}
-        overview={noRelationships}
+        overview={noPeerCxs}
         readiness={{ status: "ready" }}
       />,
     );
 
-    const [relationships] = elementsOfType(page, "TabPanel");
-    const [emptyState] = emptyViewsIn(relationships as Element);
+    const [peerCxs] = elementsOfType(page, "TabPanel");
+    const [emptyState] = emptyViewsIn(peerCxs as Element);
 
     expect(linksIn(emptyState as Element)).toEqual([
-      { href: "/relationship-setup", text: "Create a site relationship" },
+      { href: "/peer-cx-setup", text: "Create a PeerCX" },
     ]);
   });
 
@@ -216,7 +216,7 @@ describe("Peer POC readiness page", () => {
       <StatusPage
         configurationUrls={{ "log-sink": "/log-sink-setup" }}
         onRevoke={() => undefined}
-        overview={noRelationships}
+        overview={noPeerCxs}
         readiness={{ status: "ready" }}
       />,
     );
@@ -234,7 +234,7 @@ describe("Peer POC readiness page", () => {
       <StatusPage
         configurationUrls={{
           "log-sink": "/log-sink-setup",
-          "site-relationship": "/relationship-setup",
+          "peer-cx": "/peer-cx-setup",
         }}
         onRevoke={() => undefined}
         overview={populated}
@@ -253,7 +253,7 @@ describe("Peer POC readiness page", () => {
       <StatusPage
         configurationUrls={{}}
         onRevoke={() => undefined}
-        overview={noRelationships}
+        overview={noPeerCxs}
         readiness={{ status: "ready" }}
       />,
     );

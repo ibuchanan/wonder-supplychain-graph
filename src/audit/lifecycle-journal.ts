@@ -1,8 +1,8 @@
 /**
  * The tenant-local lifecycle audit journal: non-secret, non-content evidence
- * of relationship and Pairing lifecycle and security outcomes. It is the only
+ * of PeerCX and Pairing lifecycle and security outcomes. It is the only
  * place an administrator can tell a forged signature from an unauthorized
- * relationship, so it must never become a place a secret can leak to.
+ * PeerCX, so it must never become a place a secret can leak to.
  */
 
 /** Every lifecycle and security outcome this tenant keeps evidence of. */
@@ -11,16 +11,16 @@ export type LifecycleEventType =
   | "logging.sink-configured"
   | "peer.authentication-failed"
   | "peer.request-replayed"
-  | "relationship.activated"
-  | "relationship.confirmed"
-  | "relationship.expired"
-  | "relationship.invitation-created"
-  | "relationship.invitation-recipient-mismatch"
-  | "relationship.invitation-viewed"
-  | "relationship.nominated"
-  | "relationship.nomination-approved"
-  | "relationship.nomination-rejected"
-  | "relationship.revoked";
+  | "peer-cx.activated"
+  | "peer-cx.confirmed"
+  | "peer-cx.expired"
+  | "peer-cx.invitation-created"
+  | "peer-cx.invitation-recipient-mismatch"
+  | "peer-cx.invitation-viewed"
+  | "peer-cx.nominated"
+  | "peer-cx.nomination-approved"
+  | "peer-cx.nomination-rejected"
+  | "peer-cx.revoked";
 
 export type LifecycleOutcome = "denied" | "recorded";
 
@@ -38,7 +38,7 @@ export interface LifecycleAuditEvent {
   readonly outcome: LifecycleOutcome;
   /** A safe reason code, never a signature, secret, endpoint, or content. */
   readonly reason?: string;
-  readonly relationshipId?: string;
+  readonly peerCxId?: string;
 }
 
 export interface LifecycleAuditJournal {
@@ -70,7 +70,7 @@ function safeEvent(event: LifecycleAuditEvent): LifecycleAuditEvent {
     occurredAt: event.occurredAt,
     outcome: event.outcome,
     ...(event.reason ? { reason: event.reason } : {}),
-    ...(event.relationshipId ? { relationshipId: event.relationshipId } : {}),
+    ...(event.peerCxId ? { peerCxId: event.peerCxId } : {}),
   });
 }
 

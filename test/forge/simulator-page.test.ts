@@ -41,6 +41,6 @@ describe("Supplychain Graph simulator page", () => {
     expect(pageSource).toContain("Show pending candidate");
     expect(pageSource).toContain("Show authorization denied");
     expect(pageSource).toContain("Show malformed candidate");
-    expect(pageSource).toContain("Show unavailable relationship");
+    expect(pageSource).toContain("Show unavailable PeerCX");
   });
 });

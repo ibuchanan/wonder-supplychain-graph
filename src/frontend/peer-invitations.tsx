@@ -320,7 +320,7 @@ const LogSinkForm = () => {
       <Heading size="medium">Event log sink</Heading>
       <Text>
         Where this app ships every event it emits, audit and technical alike.
-        One sink serves the whole site; it is not per-relationship. Nothing is
+        One sink serves the whole site; it is not per-peerCx. Nothing is
         delivered yet.
       </Text>
       <Lozenge appearance={status.isConfigured ? "success" : "default"}>
@@ -387,7 +387,7 @@ const App = () => {
     <Stack space="space.300">
       <Heading size="large">Peer invitations</Heading>
       <Text>
-        Peer invitations establish the Site relationship this app exchanges work
+        Peer invitations establish the Site peerCx this app exchanges work
         packages under. Each Pairing still needs its own authorization.
       </Text>
       <InvitationForm />

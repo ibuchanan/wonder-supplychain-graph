@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { verifyPeerRequest } from "../../src/collaboration/peer-hmac-auth";
+import type {
+  ActivationPollRequest,
+  ConfirmationRequest,
+} from "../../src/pairing/peer-cx-activation";
 import {
   pollGreenForActivation,
   sendConfirmation,
 } from "../../src/pairing/request-activation";
-import type {
-  ActivationPollRequest,
-  ConfirmationRequest,
-} from "../../src/pairing/site-relationship-activation";
 
 const secret = Buffer.from("0123456789abcdef0123456789abcdef").toString(
   "base64",
@@ -26,10 +26,10 @@ const pollRequest: ActivationPollRequest = {
   createdAt: "2026-09-14T19:05:00.000Z",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   nominatedIdentity: blueIdentity,
-  operation: "site-relationship.poll",
+  operation: "peer-cx.poll",
   direction: "blue-to-green",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "poll-request-001",
   termsVersion: "v1",
 };
@@ -39,10 +39,10 @@ const proposal = {
   correlationId: "correlation-001",
   counterpartSiteAri: "ari:cloud:jira::site/green-site",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
-  operation: "site-relationship.activation-proposal",
+  operation: "peer-cx.activation-proposal",
   direction: "green-to-blue",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   termsVersion: "v1",
 } as const;
 
@@ -53,10 +53,10 @@ const confirmationRequest: ConfirmationRequest = {
   idempotencyKey: "correlation-001:confirm",
   intendedReceiverSiteAri: "ari:cloud:jira::site/green-site",
   leaseEndsAt: "2026-09-21T12:00:00.000Z",
-  operation: "site-relationship.confirm",
+  operation: "peer-cx.confirm",
   direction: "blue-to-green",
   protocolVersion: "v1",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "confirm-request-001",
   termsVersion: "v1",
 };
@@ -167,7 +167,7 @@ describe("sendConfirmation", () => {
     const receipt = {
       correlationId: "correlation-001",
       outcome: "active",
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
     };
     const fetch = respondWith(receipt);
 

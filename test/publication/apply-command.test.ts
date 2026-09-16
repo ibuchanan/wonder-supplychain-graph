@@ -95,7 +95,7 @@ describe("applyPublicationCommand", () => {
     ]);
   });
 
-  it("reports a preflight failure for an inconsistent source and target relationship", () => {
+  it("reports a preflight failure for an inconsistent source and target PeerCX", () => {
     const state: PublicationState = {
       candidates: [],
       pairings: [],

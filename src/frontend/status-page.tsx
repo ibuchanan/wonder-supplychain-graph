@@ -25,7 +25,7 @@ export interface InstallationReadiness {
   readonly status: InstallationReadinessStatus;
 }
 
-export type RelationshipStatus =
+export type PeerCxAgreementStatus =
   | "active"
   | "expired"
   | "failed"
@@ -37,13 +37,13 @@ export type RelationshipStatus =
  * secret, a signature, a peer delivery endpoint, or Jira content: a screen is
  * permanent disclosure, so those must not be able to reach it.
  */
-export interface RelationshipOverview {
+export interface PeerCxOverview {
   readonly agreedOperations: readonly string[];
   readonly agreementEndsAt: string;
   readonly counterpartSiteAri: string;
   readonly pairingCount: number;
-  readonly relationshipId: string;
-  readonly status: RelationshipStatus;
+  readonly peerCxId: string;
+  readonly status: PeerCxAgreementStatus;
   readonly termsVersion: string;
 }
 
@@ -58,7 +58,7 @@ export interface AuditOutcome {
 
 export interface AdministratorOverview {
   readonly auditOutcomes: readonly AuditOutcome[];
-  readonly relationships: readonly RelationshipOverview[];
+  readonly peerCxs: readonly PeerCxOverview[];
 }
 
 /**
@@ -72,13 +72,13 @@ export type ConfigurationUrls = {
 
 export interface StatusPageProps {
   readonly configurationUrls: ConfigurationUrls;
-  readonly onRevoke: (relationship: RelationshipOverview) => void;
+  readonly onRevoke: (peerCx: PeerCxOverview) => void;
   readonly overview: AdministratorOverview | undefined;
   readonly readiness: InstallationReadiness | undefined;
 }
 
-const relationshipAppearance: Record<
-  RelationshipStatus,
+const peerCxAppearance: Record<
+  PeerCxAgreementStatus,
   "default" | "removed" | "success"
 > = {
   active: "success",
@@ -107,7 +107,7 @@ const content: Record<
 
 /**
  * The administrator's read-only view of this site: whether the installation is
- * ready, which Site relationships exist, and what evidence has been recorded.
+ * ready, which PeerCXs exist, and what evidence has been recorded.
  * It takes everything it shows as props so that the page's structure can be
  * exercised without an Atlassian host.
  */
@@ -131,22 +131,22 @@ export const StatusPage = ({
 
     <Tabs id="status-sections">
       <TabList>
-        <Tab>Site relationships</Tab>
+        <Tab>PeerCXs</Tab>
         <Tab>Recent audit outcomes</Tab>
       </TabList>
       <TabPanel>
         <Stack space="space.200">
           <Text>
             This tenant's own records only. Revoking is local and immediate, and
-            blocks every Pairing under that relationship.
+            blocks every Pairing under that peerCx.
           </Text>
           <DynamicTable
             emptyView={
               <Stack space="space.100">
-                <Text>No Site relationship is recorded on this site.</Text>
-                {configurationUrls["site-relationship"] ? (
-                  <Link href={configurationUrls["site-relationship"]}>
-                    Create a site relationship
+                <Text>No PeerCX is recorded on this site.</Text>
+                {configurationUrls["peer-cx"] ? (
+                  <Link href={configurationUrls["peer-cx"]}>
+                    Create a PeerCX
                   </Link>
                 ) : null}
               </Stack>
@@ -161,34 +161,32 @@ export const StatusPage = ({
                 { content: "", key: "action" },
               ],
             }}
-            rows={(overview?.relationships ?? []).map((relationship) => ({
+            rows={(overview?.peerCxs ?? []).map((peerCx) => ({
               cells: [
-                { content: relationship.counterpartSiteAri },
+                { content: peerCx.counterpartSiteAri },
                 {
                   content: (
-                    <Lozenge
-                      appearance={relationshipAppearance[relationship.status]}
-                    >
-                      {relationship.status}
+                    <Lozenge appearance={peerCxAppearance[peerCx.status]}>
+                      {peerCx.status}
                     </Lozenge>
                   ),
                 },
-                { content: relationship.agreedOperations.join(", ") },
-                { content: relationship.agreementEndsAt },
-                { content: String(relationship.pairingCount) },
+                { content: peerCx.agreedOperations.join(", ") },
+                { content: peerCx.agreementEndsAt },
+                { content: String(peerCx.pairingCount) },
                 {
                   content:
-                    relationship.status === "active" ? (
+                    peerCx.status === "active" ? (
                       <Button
                         appearance="danger"
-                        onClick={() => onRevoke(relationship)}
+                        onClick={() => onRevoke(peerCx)}
                       >
                         Revoke locally
                       </Button>
                     ) : null,
                 },
               ],
-              key: relationship.relationshipId,
+              key: peerCx.peerCxId,
             }))}
           />
         </Stack>

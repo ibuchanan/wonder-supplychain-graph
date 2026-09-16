@@ -19,29 +19,29 @@ import {
   readInvitation,
 } from "../pairing/invitation-workflow";
 import { kvsInvitationStore } from "../pairing/kvs-invitation-store";
+import { kvsPeerCxStore } from "../pairing/kvs-peer-cx-store";
 import { kvsPeerPairingStore } from "../pairing/kvs-peer-pairing-store";
-import { kvsSiteRelationshipStore } from "../pairing/kvs-site-relationship-store";
 import {
   determineLocalReadiness,
   type LocalRole,
 } from "../pairing/local-readiness";
+import {
+  acceptActivationProposal,
+  activateAfterConfirmation,
+} from "../pairing/peer-cx-activation";
+import {
+  type DecideNominationCommand,
+  decidePeerCxNomination,
+  nominatePeerCx,
+} from "../pairing/peer-cx-nomination";
+import { summarizeForAdministrator } from "../pairing/peer-cx-overview";
 import { readInstallationReadiness } from "../pairing/read-installation-readiness";
-import { summarizeForAdministrator } from "../pairing/relationship-overview";
 import {
   pollGreenForActivation,
   sendConfirmation,
 } from "../pairing/request-activation";
-import { revokeSiteRelationship } from "../pairing/revoke-site-relationship";
+import { revokePeerCx } from "../pairing/revoke-peer-cx";
 import { sendNomination } from "../pairing/send-nomination";
-import {
-  acceptActivationProposal,
-  activateAfterConfirmation,
-} from "../pairing/site-relationship-activation";
-import {
-  type DecideNominationCommand,
-  decideSiteRelationshipNomination,
-  nominateSiteRelationship,
-} from "../pairing/site-relationship-nomination";
 import { kvsGraphCxStore } from "../projection/kvs-graph-cx-store";
 
 const resolver = new Resolver();
@@ -115,7 +115,7 @@ resolver.define("createInvitation", async ({ context, payload }) => {
         : {}),
       correlationId: created.invitation.correlationId,
       eventId: `audit:${created.invitation.invitationId}:invitation-created`,
-      eventType: "relationship.invitation-created",
+      eventType: "peer-cx.invitation-created",
       occurredAt: created.invitation.createdAt,
       outcome: "recorded",
     });
@@ -156,7 +156,7 @@ resolver.define<{ readonly reference: string }, unknown>(
         await recordLifecycleOutcome({
           actorAccountId: accountId,
           eventId: `audit:invitation-recipient-mismatch:${globalThis.crypto.randomUUID()}`,
-          eventType: "relationship.invitation-recipient-mismatch",
+          eventType: "peer-cx.invitation-recipient-mismatch",
           occurredAt,
           outcome: "denied",
           reason: result.error.code,
@@ -170,7 +170,7 @@ resolver.define<{ readonly reference: string }, unknown>(
       actorAccountId: accountId,
       correlationId: result.value.correlationId,
       eventId: `audit:${result.value.correlationId}:invitation-viewed`,
-      eventType: "relationship.invitation-viewed",
+      eventType: "peer-cx.invitation-viewed",
       occurredAt,
       outcome: "recorded",
     });
@@ -267,7 +267,7 @@ resolver.define<NominatePayload, unknown>(
         };
       },
       getSecret: () => process.env["SHARED_SECRET"],
-      readDurableState: () => kvsSiteRelationshipStore.read(),
+      readDurableState: () => kvsPeerCxStore.read(),
     });
 
     if (!identity) {
@@ -279,16 +279,16 @@ resolver.define<NominatePayload, unknown>(
       .getUrl("scg-receive-peer-event")
       .catch(() => undefined);
 
-    const state = await kvsSiteRelationshipStore.read();
+    const state = await kvsPeerCxStore.read();
     const idempotencyKey = `${payload.correlationId}:nominate`;
-    // A resubmitted consent must keep proposing the same relationship ID, so
-    // Blue and Green never disagree about which relationship this is.
+    // A resubmitted consent must keep proposing the same PeerCX ID, so
+    // Blue and Green never disagree about which PeerCX this is.
     const recorded = state.nominations.find(
       (candidate) =>
         candidate.role === "blue" &&
         candidate.idempotencyKey === idempotencyKey,
     );
-    const nominated = nominateSiteRelationship(state, {
+    const nominated = nominatePeerCx(state, {
       actor: "blue-administrator",
       consentedAt: new Date().toISOString(),
       correlationId: payload.correlationId,
@@ -297,12 +297,11 @@ resolver.define<NominatePayload, unknown>(
       invitationReference: payload.invitationReference,
       localIdentity: identity,
       localReadiness: readiness.status,
-      operation: "site-relationship.nominate",
+      operation: "peer-cx.nominate",
       receiverEndpointStatus: receiverEndpoint
         ? "configured"
         : "not-configured",
-      relationshipId:
-        recorded?.relationshipId ?? globalThis.crypto.randomUUID(),
+      peerCxId: recorded?.peerCxId ?? globalThis.crypto.randomUUID(),
       requestId: globalThis.crypto.randomUUID(),
       terms: payload.terms as never,
     });
@@ -310,7 +309,7 @@ resolver.define<NominatePayload, unknown>(
       return { reason: nominated.error.code, status: "blocked" };
     }
 
-    await kvsSiteRelationshipStore.write(nominated.value.nextState);
+    await kvsPeerCxStore.write(nominated.value.nextState);
     // Local consent is recorded before the request is sent, so the evidence
     // exists whether or not the delivery succeeds.
     await recordLifecycleOutcome({
@@ -319,10 +318,10 @@ resolver.define<NominatePayload, unknown>(
         : {}),
       correlationId: payload.correlationId,
       eventId: `audit:${idempotencyKey}:nominated`,
-      eventType: "relationship.nominated",
+      eventType: "peer-cx.nominated",
       occurredAt: nominated.value.request.createdAt,
       outcome: "recorded",
-      relationshipId: nominated.value.request.relationshipId,
+      peerCxId: nominated.value.request.peerCxId,
     });
 
     const sent = await sendNomination(
@@ -359,7 +358,7 @@ resolver.define<ConfirmActivationPayload, unknown>(
       fetch: forgeFetch,
       secret: process.env["SHARED_SECRET"],
     };
-    const state = await kvsSiteRelationshipStore.read();
+    const state = await kvsPeerCxStore.read();
     const pending = state.nominations.find(
       (candidate) =>
         candidate.role === "blue" &&
@@ -377,9 +376,9 @@ resolver.define<ConfirmActivationPayload, unknown>(
         direction: "blue-to-green",
         intendedReceiverSiteAri: pending.counterpartSiteAri,
         nominatedIdentity: identity,
-        operation: "site-relationship.poll",
+        operation: "peer-cx.poll",
         protocolVersion: "v1",
-        relationshipId: pending.relationshipId,
+        peerCxId: pending.peerCxId,
         requestId: globalThis.crypto.randomUUID(),
         termsVersion: pending.terms.termsVersion,
       },
@@ -402,7 +401,7 @@ resolver.define<ConfirmActivationPayload, unknown>(
       return { reason: accepted.error.code, status: "blocked" };
     }
 
-    await kvsSiteRelationshipStore.write(accepted.value.nextState);
+    await kvsPeerCxStore.write(accepted.value.nextState);
 
     const sent = await sendConfirmation(
       payload.greenBootstrapUrl,
@@ -422,13 +421,13 @@ resolver.define<ConfirmActivationPayload, unknown>(
       return { reason: activated.error.code, status: "blocked" };
     }
 
-    await kvsSiteRelationshipStore.write(activated.value.nextState);
+    await kvsPeerCxStore.write(activated.value.nextState);
     // Blue activates only after Green's authenticated success receipt, so one
     // exchange is evidence of both the confirmation and the activation.
     const occurredAt = new Date().toISOString();
     for (const eventType of [
-      "relationship.confirmed",
-      "relationship.activated",
+      "peer-cx.confirmed",
+      "peer-cx.activated",
     ] as const) {
       await recordLifecycleOutcome({
         correlationId: pending.correlationId,
@@ -436,12 +435,12 @@ resolver.define<ConfirmActivationPayload, unknown>(
         eventType,
         occurredAt,
         outcome: "recorded",
-        relationshipId: activated.value.relationship.relationshipId,
+        peerCxId: activated.value.peerCx.peerCxId,
       });
     }
 
     return {
-      relationshipId: activated.value.relationship.relationshipId,
+      peerCxId: activated.value.peerCx.peerCxId,
       status: "active",
     };
   },
@@ -449,7 +448,7 @@ resolver.define<ConfirmActivationPayload, unknown>(
 
 /** Green's review list. Safe, non-secret review fields only. */
 resolver.define("listNominations", async () => {
-  const { nominations } = await kvsSiteRelationshipStore.read();
+  const { nominations } = await kvsPeerCxStore.read();
 
   return {
     nominations: nominations
@@ -469,8 +468,8 @@ resolver.define("listNominations", async () => {
 resolver.define<Omit<DecideNominationCommand, "actor" | "decidedAt">, unknown>(
   "decideNomination",
   async ({ context, payload }) => {
-    const state = await kvsSiteRelationshipStore.read();
-    const decided = decideSiteRelationshipNomination(state, {
+    const state = await kvsPeerCxStore.read();
+    const decided = decidePeerCxNomination(state, {
       ...payload,
       actor: "green-administrator",
       decidedAt: new Date().toISOString(),
@@ -478,13 +477,13 @@ resolver.define<Omit<DecideNominationCommand, "actor" | "decidedAt">, unknown>(
 
     if (decided.isErr()) {
       if (decided.error.code === "nomination-changed") {
-        await kvsSiteRelationshipStore.write(decided.error.nextState);
+        await kvsPeerCxStore.write(decided.error.nextState);
       }
 
       return { reason: decided.error.code, status: "blocked" };
     }
 
-    await kvsSiteRelationshipStore.write(decided.value.nextState);
+    await kvsPeerCxStore.write(decided.value.nextState);
 
     if (decided.value.outcome !== "awaiting-green-approval") {
       await recordLifecycleOutcome({
@@ -495,8 +494,8 @@ resolver.define<Omit<DecideNominationCommand, "actor" | "decidedAt">, unknown>(
         eventId: `audit:${payload.idempotencyKey}:${decided.value.outcome}`,
         eventType:
           decided.value.outcome === "rejected"
-            ? "relationship.nomination-rejected"
-            : "relationship.nomination-approved",
+            ? "peer-cx.nomination-rejected"
+            : "peer-cx.nomination-approved",
         occurredAt: new Date().toISOString(),
         outcome: "recorded",
         ...(payload.safeReason ? { reason: payload.safeReason } : {}),
@@ -508,14 +507,14 @@ resolver.define<Omit<DecideNominationCommand, "actor" | "decidedAt">, unknown>(
 );
 
 /**
- * The administrator's own view of this tenant's relationships. It is built
+ * The administrator's own view of this tenant's PeerCXs. It is built
  * from local state alone and carries no secret, signature, peer delivery
  * endpoint, or Jira content, because an administrator screen is a place any of
  * those would leak from permanently.
  */
-resolver.define("getRelationshipOverview", async () => {
+resolver.define("getPeerCxOverview", async () => {
   const [state, { pairings }, journal] = await Promise.all([
-    kvsSiteRelationshipStore.read(),
+    kvsPeerCxStore.read(),
     kvsPeerPairingStore.read(),
     kvsLifecycleJournalStore.read(),
   ]);
@@ -535,7 +534,7 @@ interface AuthorizePairingPayload {
 }
 
 /**
- * An administrator's authorization of one Pairing. An active relationship is
+ * An administrator's authorization of one Pairing. An active PeerCX is
  * the precondition; this call still has to bind the two Epics and the explicit
  * operation allowlist the Pairing may operate under.
  */
@@ -543,7 +542,7 @@ resolver.define<AuthorizePairingPayload, unknown>(
   "authorizePairing",
   async ({ payload }) => {
     const [state, pairingState] = await Promise.all([
-      kvsSiteRelationshipStore.read(),
+      kvsPeerCxStore.read(),
       kvsPeerPairingStore.read(),
     ]);
     const authorizedAt = new Date().toISOString();
@@ -564,9 +563,9 @@ resolver.define<AuthorizePairingPayload, unknown>(
   },
 );
 
-interface RevokeRelationshipPayload {
+interface RevokePeerCxPayload {
   readonly correlationId: string;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly safeReason: string;
 }
 
@@ -575,15 +574,15 @@ interface RevokeRelationshipPayload {
  * tenant's own state, so it needs no counterpart consent and no successful
  * notification: the counterpart learns of it when its next request is refused.
  */
-resolver.define<RevokeRelationshipPayload, unknown>(
-  "revokeRelationship",
+resolver.define<RevokePeerCxPayload, unknown>(
+  "revokePeerCx",
   async ({ context, payload }) => {
-    const state = await kvsSiteRelationshipStore.read();
+    const state = await kvsPeerCxStore.read();
     const revokedAt = new Date().toISOString();
-    const revoked = revokeSiteRelationship(state, {
+    const revoked = revokePeerCx(state, {
       actor: "local-administrator",
       correlationId: payload.correlationId,
-      relationshipId: payload.relationshipId,
+      peerCxId: payload.peerCxId,
       revokedAt,
       safeReason: payload.safeReason,
     });
@@ -591,7 +590,7 @@ resolver.define<RevokeRelationshipPayload, unknown>(
       return { reason: revoked.error.code, status: "blocked" };
     }
 
-    await kvsSiteRelationshipStore.write(revoked.value.nextState);
+    await kvsPeerCxStore.write(revoked.value.nextState);
     await recordLifecycleOutcome({
       ...revoked.value.auditEvent,
       ...(typeof context["accountId"] === "string"

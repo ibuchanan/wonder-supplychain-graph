@@ -21,12 +21,12 @@ const retention = Object.freeze({ unit: "MINUTES" as const, value: 10 });
 export interface ReplayScope {
   /** Scoped to the receiver so one peer's request IDs cannot block another's. */
   readonly receiverSiteAri: string;
-  readonly relationshipId: string;
+  readonly peerCxId: string;
   readonly requestId: string;
 }
 
 function replayKey(scope: ReplayScope): string {
-  return `peer-replay:${scope.receiverSiteAri}:${scope.relationshipId}:${scope.requestId}`;
+  return `peer-replay:${scope.receiverSiteAri}:${scope.peerCxId}:${scope.requestId}`;
 }
 
 /**

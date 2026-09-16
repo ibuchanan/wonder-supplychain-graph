@@ -14,10 +14,10 @@ const validRequest = {
     installationAri: "ari:cloud:ecosystem::installation/blue-installation",
     siteAri: "ari:cloud:jira::site/blue-site",
   },
-  operation: "site-relationship.nominate",
+  operation: "peer-cx.nominate",
   protocolVersion: "v1",
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   requestId: "request-001",
   terms: {
     allowedOperations: ["starter.delivery"],
@@ -49,8 +49,8 @@ describe("parseNominationRequest", () => {
       "the one-time request ID is empty",
     ],
     [
-      JSON.stringify({ ...validRequest, relationshipId: undefined }),
-      "the proposed relationship ID is missing",
+      JSON.stringify({ ...validRequest, peerCxId: undefined }),
+      "the proposed PeerCX ID is missing",
     ],
     [
       JSON.stringify({ ...validRequest, idempotencyKey: undefined }),

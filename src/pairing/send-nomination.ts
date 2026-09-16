@@ -1,7 +1,7 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
 
 import { signPeerRequest } from "../collaboration/peer-hmac-auth";
-import type { NominationRequest } from "./site-relationship-nomination";
+import type { NominationRequest } from "./peer-cx-nomination";
 
 export interface NominationTransportDependencies {
   readonly fetch: (

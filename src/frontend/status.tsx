@@ -10,14 +10,11 @@ import {
   type AdministratorOverview,
   type ConfigurationUrls,
   type InstallationReadiness,
-  type RelationshipOverview,
+  type PeerCxOverview,
   StatusPage,
 } from "./status-page";
 
-const CONCERNS: readonly ConfigurationConcern[] = [
-  "log-sink",
-  "site-relationship",
-];
+const CONCERNS: readonly ConfigurationConcern[] = ["log-sink", "peer-cx"];
 
 function unwrap<Value>(value: Value | { readonly body: Value }): Value {
   return value && typeof value === "object" && "body" in value
@@ -33,9 +30,9 @@ const App = () => {
   );
 
   const loadOverview = useCallback(() => {
-    void invoke<AdministratorOverview>("getRelationshipOverview").then(
+    void invoke<AdministratorOverview>("getPeerCxOverview").then(
       (value) => setOverview(unwrap(value)),
-      () => setOverview({ auditOutcomes: [], relationships: [] }),
+      () => setOverview({ auditOutcomes: [], peerCxs: [] }),
     );
   }, []);
 
@@ -65,10 +62,10 @@ const App = () => {
   }, [loadOverview]);
 
   const revoke = useCallback(
-    (relationship: RelationshipOverview) => {
-      void invoke("revokeRelationship", {
-        correlationId: relationship.relationshipId,
-        relationshipId: relationship.relationshipId,
+    (peerCx: PeerCxOverview) => {
+      void invoke("revokePeerCx", {
+        correlationId: peerCx.peerCxId,
+        peerCxId: peerCx.peerCxId,
         safeReason: "administrator-revoked",
       }).then(loadOverview, loadOverview);
     },

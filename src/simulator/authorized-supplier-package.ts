@@ -23,7 +23,7 @@ export type NoCurrentAuthorizedPackageStatus =
   | "A candidate is pending; no current authorized package is available."
   | "Peer authorization was denied; no current authorized package is available."
   | "The received candidate is malformed; no current authorized package is available."
-  | "The supplier relationship is unavailable; no current authorized package is available.";
+  | "The supplier PeerCX is unavailable; no current authorized package is available.";
 
 export interface AuthorizedSupplierScenario {
   readonly noCurrentAuthorizedPackageStatus?: NoCurrentAuthorizedPackageStatus;
@@ -181,7 +181,7 @@ const noCurrentAuthorizedPackageStatuses = {
   malformed:
     "The received candidate is malformed; no current authorized package is available.",
   unavailable:
-    "The supplier relationship is unavailable; no current authorized package is available.",
+    "The supplier PeerCX is unavailable; no current authorized package is available.",
 } as const satisfies Record<
   Exclude<SupplierPackageScenario, "authorized">,
   NoCurrentAuthorizedPackageStatus

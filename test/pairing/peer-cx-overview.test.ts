@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { emptyLifecycleJournal } from "../../src/audit/lifecycle-journal";
-import type { SourcePeerPairing } from "../../src/pairing/peer-pairing-state";
-import { summarizeForAdministrator } from "../../src/pairing/relationship-overview";
 import type {
-  SiteRelationshipNomination,
-  SiteRelationshipSetupState,
-} from "../../src/pairing/site-relationship-nomination";
+  PeerCxNomination,
+  PeerCxSetupState,
+} from "../../src/pairing/peer-cx-nomination";
+import { summarizeForAdministrator } from "../../src/pairing/peer-cx-overview";
+import type { SourcePeerPairing } from "../../src/pairing/peer-pairing-state";
 
 const now = "2026-09-15T12:00:00.000Z";
 
@@ -16,7 +16,7 @@ const terms = {
   termsVersion: "v1",
 } as const;
 
-const nomination: SiteRelationshipNomination = {
+const nomination: PeerCxNomination = {
   correlationId: "correlation-001",
   counterpartSiteAri: "ari:cloud:jira::site/green-site",
   idempotencyKey: "correlation-001:nominate",
@@ -27,20 +27,20 @@ const nomination: SiteRelationshipNomination = {
     siteAri: "ari:cloud:jira::site/blue-site",
   },
   receiverEndpointStatus: "configured",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "blue",
   status: "active",
   terms,
 };
 
-const state: SiteRelationshipSetupState = {
+const state: PeerCxSetupState = {
   nominations: [nomination],
   processedIdempotencyKeys: [],
-  relationships: [
+  peerCxs: [
     {
       counterpartSiteAri: "ari:cloud:jira::site/green-site",
       leaseEndsAt: terms.expiresAt,
-      relationshipId: "relationship-001",
+      peerCxId: "peer-cx-001",
       status: "active",
       termsVersion: "v1",
     },
@@ -52,7 +52,7 @@ const pairing: SourcePeerPairing = {
   pairedEpicKey: "GREEN-1",
   pairingId: "pairing-001",
   peerEventUrl: "https://green.example/x1/abc123",
-  relationshipId: "relationship-001",
+  peerCxId: "peer-cx-001",
   role: "source",
   sourceEpicKey: "BLUE-1",
   sourceSiteAri: "ari:cloud:jira::site/blue-site",
@@ -69,13 +69,13 @@ describe("summarizeForAdministrator", () => {
       state,
     });
 
-    expect(overview.relationships).toEqual([
+    expect(overview.peerCxs).toEqual([
       {
         agreedOperations: ["starter.delivery"],
         agreementEndsAt: terms.expiresAt,
         counterpartSiteAri: "ari:cloud:jira::site/green-site",
         pairingCount: 1,
-        relationshipId: "relationship-001",
+        peerCxId: "peer-cx-001",
         status: "active",
         termsVersion: "v1",
       },
@@ -83,7 +83,7 @@ describe("summarizeForAdministrator", () => {
   });
 
   it("shows a lapsed agreement as expired rather than active", () => {
-    // The gate refuses a relationship past its agreement end instant whatever
+    // The gate refuses a PeerCX past its agreement end instant whatever
     // the stored status says. A screen that still called it active would tell
     // the administrator the opposite of what the tenant will actually do.
     const overview = summarizeForAdministrator({
@@ -93,22 +93,22 @@ describe("summarizeForAdministrator", () => {
       state,
     });
 
-    expect(overview.relationships[0]).toMatchObject({ status: "expired" });
+    expect(overview.peerCxs[0]).toMatchObject({ status: "expired" });
   });
 
-  it("counts only the pairings authorized under that relationship", () => {
+  it("counts only the pairings authorized under that PeerCX", () => {
     const overview = summarizeForAdministrator({
       journal: emptyLifecycleJournal,
       now,
       pairings: [
         pairing,
         { ...pairing, pairingId: "pairing-002", status: "inactive" },
-        { ...pairing, pairingId: "pairing-003", relationshipId: "other" },
+        { ...pairing, pairingId: "pairing-003", peerCxId: "other" },
       ],
       state,
     });
 
-    expect(overview.relationships[0]).toMatchObject({ pairingCount: 1 });
+    expect(overview.peerCxs[0]).toMatchObject({ pairingCount: 1 });
   });
 
   it("renders no secret, signature, endpoint, or Jira content", () => {

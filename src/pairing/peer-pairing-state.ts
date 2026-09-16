@@ -1,13 +1,13 @@
 import type { PeerOperation } from "../collaboration/protocol";
 
 /**
- * Operations this Pairing authorizes, and the Site relationship it was
+ * Operations this Pairing authorizes, and the PeerCX it was
  * authorized under. A Pairing never inherits authority from an active
- * relationship: an empty or absent allowlist authorizes nothing.
+ * PeerCX: an empty or absent allowlist authorizes nothing.
  */
 interface PairingAuthorization {
   readonly allowedOperations: readonly PeerOperation[];
-  readonly relationshipId: string;
+  readonly peerCxId: string;
 }
 
 export interface SourcePeerPairing extends PairingAuthorization {

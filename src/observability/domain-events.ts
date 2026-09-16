@@ -12,7 +12,7 @@ export interface PeerRequestDeniedEvent {
 /**
  * Records why a peer request was refused. The caller receives only an opaque
  * error, so this local, non-content evidence is the sole place an
- * administrator can tell a forged signature from an unauthorized relationship.
+ * administrator can tell a forged signature from an unauthorized PeerCX.
  */
 export function logPeerRequestDenied(
   logger: DomainEventLogger,

@@ -4,7 +4,7 @@ import type { LogSinkConfiguration } from "./log-sink-configuration";
 
 /**
  * One sink per tenant installation. Neither key carries a connection,
- * relationship, or Pairing identifier, because one sink serves every event the
+ * PeerCX, or Pairing identifier, because one sink serves every event the
  * app emits rather than one collaboration.
  */
 const configurationKey = "log-sink-configuration";
