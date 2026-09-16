@@ -11,13 +11,13 @@ A supplier user who can access the supplier's paired Epic can confidently see th
 ### Posture and placement
 - **Posture:** Auxiliary.
 - **Primary placement:** One Forge Jira Epic panel, shown only on Epics.
-- **Discovery:** Authorized current snapshot objects are also discoverable in Teamwork Graph-powered Search/Rovo during an active connection.
+- **Discovery:** Authorized current snapshot objects are also discoverable in Teamwork Graph-powered Search/Rovo while a PeerCX is active.
 - **Administration:** Site/app administrators configure pairings through an app configuration flow; this is not a second end-user panel.
 
 ### In scope
 - Manufacturer-initiated, supplier-accepted bilateral pairing.
 - One Forge app installed independently in both Jira tenants.
-- A first-class peer relationship represented by **paired existing Jira Epics**.
+- A first-class Pairing represented by **paired existing Jira Epics**.
 - Read-only, versioned snapshots from a manufacturer source Epic to a supplier paired Epic.
 - Source Epic plus direct children only.
 - Fixed, minimal Jira field schema.
@@ -32,7 +32,7 @@ A supplier user who can access the supplier's paired Epic can confidently see th
 - Supplier structured responses, delivery commitments, risk declarations, or returned progress.
 - Cross-tenant comments, attachments, issue history, user/watchers, assignee/reporter information, arbitrary custom fields, estimates, sprint data, components, labels, or issue-link payloads.
 - Subtasks, arbitrary descendants, initiatives, or linked/dependent issue content.
-- Named connection membership, explicit cross-company teams, delegated connection-owner roles, or app-managed pause/resume/disconnect states.
+- Named PeerCX membership, explicit cross-company teams, delegated PeerCX-owner roles, or app-managed pause/resume/disconnect states.
 - A global dashboard, modal detail view, separate snapshot page, child-issue panels, or progressive-disclosure UX.
 - A central Forge Remote coordinator, shared customer-data store, or custom authentication system.
 - Cross-site hard-delete propagation.
@@ -41,29 +41,66 @@ A supplier user who can access the supplier's paired Epic can confidently see th
 
 ## 2. Domain Model and Ubiquitous Language
 
+Two different things are called a connection, at two different levels, and they
+must never be confused: a **PeerCX** crosses a tenant boundary and carries peer
+authority, while a **GraphCX** is local product configuration and carries none.
+Both keep the word connection; neither may be shortened to a bare "connection"
+or "CX" in prose or in code.
+
 | Term | Meaning |
 | --- | --- |
+| **PeerCX** | Peer Connection. The site-to-site agreement under which two installations exchange work packages. Records the counterpart site, the agreed terms version, the agreed operations, and the lease end. Every Pairing is authorized under exactly one PeerCX. |
+| **PeerCX status** | Derived, never stored: `invited` → `proposed` → `confirming` → `active`, ending in `expired`, `declined`, `invalidated`, or `revoked`. Computed from whichever setup or agreement record exists for a counterpart. See *PeerCX lifecycle* below. |
+| **Invitation** | The first stage of a PeerCX's life, not a separate entity: a recipient-bound offer to a named peer administrator on another site, carrying a setup deadline. A PeerCX in its `invited` state. |
+| **Invitation reference** | A non-secret, single-use setup correlation link/code that addresses one Invitation, and so establishes a PeerCX. It is not an authentication or authorization credential. |
+| **UI safe label** | An optional human-readable label for a PeerCX, safe to show a peer administrator before authorization. It names the connection, never either site. |
+| **GraphCX** | Graph Connection. A Teamwork Graph datasource connection, configured in the product and reported to the app through the `graph:connector` connection-change callback. It conveys no peer authority and crosses no tenant boundary. A destination Pairing records the GraphCX its projection is ingested into. |
 | **Source Epic** | The manufacturer-owned Jira Epic whose approved subset is published. |
 | **Paired Epic** | The supplier-owned, pre-existing Jira Epic bound to the Source Epic. It represents the supplier's internal delivery work. |
-| **Pairing** | The bilateral relationship between exactly one Source Epic and one Paired Epic. |
+| **Pairing** | The bilateral relationship between exactly one Source Epic and one Paired Epic, authorized under one PeerCX. A Pairing never inherits authority from an active PeerCX: an empty or absent operation allowlist authorizes nothing. |
+| **Pairing request** | The Epic-level handshake that creates a Pairing, reached through a Pairing reference and accepted by the counterpart's administrator. Distinct from an Invitation, which is site-level and establishes the PeerCX the Pairing is authorized under. The v1 peer capabilities `pairing.request.receive` and `pairing.request.accept` are this kind. |
+| **Pairing reference** | A non-secret, single-use setup correlation link/code that addresses one Pairing request, and so establishes a Pairing. Distinct from an Invitation reference, which is site-level. It is not an authentication or authorization credential. |
 | **Snapshot** | An immutable candidate or published representation of the fixed-schema Source Epic and its direct children. |
 | **Current snapshot** | The latest successfully published snapshot. It is the only snapshot indexed for graph/search discovery. |
 | **Candidate snapshot** | A queued or in-flight new version that is not yet visible to supplier users or Search/Rovo. |
-| **Pairing reference** | A non-secret, single-use setup correlation link/code. It is not an authentication or authorization credential. |
-| **Connection health** | The operational health of authorization, peer delivery, ingestion, indexing, and current publication. |
-| **Delivery status** | The source work's progress, derived from Jira `statusCategory`; it is distinct from connection health. |
+| **CX health** | The operational health of the whole path: PeerCX authorization, peer delivery, GraphCX ingestion, indexing, and current publication. |
+| **Delivery status** | The source work's progress, derived from Jira `statusCategory`; it is distinct from CX health. |
+
+### PeerCX lifecycle
+
+A PeerCX status is presentation, derived on read from the records that exist for
+a counterpart. No record stores it, which is why the same PeerCX can be reported
+as `expired` without anything having been written when its lease passed.
+
+| Status | Derived from |
+| --- | --- |
+| `invited` | An Invitation exists and has not been acted on. |
+| `proposed` | The counterpart has been nominated and awaits their approval. |
+| `confirming` | The counterpart approved; bilateral confirmation is outstanding. |
+| `active` | The agreement is recorded and its lease has not passed. |
+| `expired` | The agreement is recorded and its lease has passed. |
+| `declined` | The counterpart rejected the nomination. |
+| `invalidated` | The nomination was invalidated before confirmation. |
+| `revoked` | An administrator revoked the agreement locally. |
+
+### Naming in code
+
+`PeerCX` and `GraphCX` in type and identifier names; `peerCx` and `graphCx` in
+camelCase positions; `peer-cx` and `graph-cx` in file names and storage keys.
+The qualifier is always spelled out, so no identifier is ever a bare `cx`,
+`pcx`, or `gcx`.
 
 ## 3. Roles and Authority
 
 ### Site/app administrator
-Each tenant's Jira site/app administrator is the V1 connection administrator. Only this role may:
+Each tenant's Jira site/app administrator is the V1 PeerCX administrator. Only this role may:
 - initiate or accept a pairing;
 - select/confirm its local Epic;
 - complete native 3LO authorization for peer API routes;
 - inspect pairing configuration and API authorization health; and
 - stop participation by uninstalling the app.
 
-### Manufacturer Automation connection user
+### Manufacturer Automation publisher
 The named user configured for the Jira Automation action is the publishing authority. At publish time the app verifies that the user still has access to the Source Epic and remains permitted to publish for that pairing.
 
 ### Epic viewer
@@ -72,7 +109,7 @@ Any user who can access the relevant local Epic may see the panel and its curren
 ## 4. Bilateral Pairing Flow
 
 1. A manufacturer site administrator opens the Source Epic and initiates a pairing.
-2. The app creates a non-secret pairing reference containing only opaque correlation and minimal setup context.
+2. The app creates a non-secret Pairing reference containing only opaque correlation and minimal setup context.
 3. The manufacturer shares that reference through an existing business channel. V1 does not send email and does not provide a central broker.
 4. A supplier site administrator opens the reference, installs/configures the same app if necessary, and sees only minimal pre-authorization context: manufacturer/site display name, app/environment identity, neutral reference identifier, and the high-level purpose of the pairing.
 5. The supplier administrator selects an existing supplier Jira Epic as the Paired Epic.
@@ -94,10 +131,10 @@ Any user who can access the relevant local Epic may see the panel and its curren
 The manufacturer configures a Jira Automation rule to invoke the Supplychain Graph **Publish Epic snapshot** action when a chosen Source-Epic workflow transition occurs. The transition is configurable per pairing; V1 does not require a standardized Jira status name.
 
 ### Publication authority
-The Automation connection user is the accountable publisher. The app performs a synchronous preflight to verify:
+The Automation publisher is the accountable publisher. The app performs a synchronous preflight to verify:
 - active pairing and valid mutual API grants;
-- source/target relationship consistency;
-- current Source-Epic access for the Automation connection user;
+- source/target Pairing consistency;
+- current Source-Epic access for the Automation publisher;
 - fixed-schema eligibility and policy compliance; and
 - source data can be read.
 
@@ -177,13 +214,13 @@ Comments, attachments, issue history, watchers, assignee/reporter data, sprint d
 ## 8. Single Epic Panel Specification
 
 ### Panel behavior
-The one Epic panel uses the same app/module in both tenants and determines its local role from the paired-Epic relationship.
+The one Epic panel uses the same app/module in both tenants and determines its local role from the Pairing.
 
 #### Manufacturer view
 The panel displays:
 - supplier pairing identity and state;
 - configured Automation publication transition;
-- connection health;
+- CX health;
 - current snapshot version, publication time, and publisher;
 - candidate state and failures/cancellation when applicable;
 - derived source delivery status;
@@ -195,7 +232,7 @@ The panel does not add a separate general-purpose publish button; publishing is 
 #### Supplier view
 The panel displays:
 - manufacturer/source provenance;
-- connection health;
+- CX health;
 - current snapshot version and publication time;
 - derived source delivery status;
 - the full current fixed-schema list of direct child items; and
@@ -217,30 +254,30 @@ Delivery status is derived at publication time from Jira `statusCategory` only:
 - In Progress
 - Done
 
-The panel may show category counts and a completion percentage. It must label the result as **source snapshot progress** and must not portray it as supplier progress, connection health, risk, forecast, or a joint commitment.
+The panel may show category counts and a completion percentage. It must label the result as **source snapshot progress** and must not portray it as supplier progress, CX health, risk, forecast, or a joint commitment.
 
 ## 9. State Matrix
 
 | State | Manufacturer Epic panel | Supplier Epic panel | Search/Rovo behavior |
 | --- | --- | --- | --- |
 | **Ideal** | Active pairing, healthy grants, latest Published snapshot, full fixed-schema content, provenance, derived source progress, and audit events. | Same current snapshot/provenance/content under the supplier Paired Epic. | Current authorized snapshot discoverable. |
-| **Empty** | Unpaired Epic: site admin sees an initiate-pairing path; ordinary users see that the Epic is not shared. | Unpaired Epic: show no inbound package and direct a site admin to use a pairing reference. | Nothing indexed. |
+| **Empty** | Unpaired Epic: site admin sees an initiate-pairing path; ordinary users see that the Epic is not shared. | Unpaired Epic: show no inbound package and direct a site admin to use a Pairing reference. | Nothing indexed. |
 | **Loading** | Show a compact loading/skeleton state while local pairing, latest snapshot, and audit summary are fetched. | Same. | Not applicable in panel; no candidate should become searchable. |
 | **Publishing** | Show candidate version/state and last Published version. Explain that the new package is not yet visible to supplier users. | Continue showing last Published version; do not expose candidate content. | Last Published version only. |
-| **Error** | Clearly distinguish preflight error, API-grant/authentication error, peer delivery error, graph-ingestion error, and terminal failure. Show correlation ID and owner-oriented recovery guidance. | Show inbound-unavailable/connection-health message without leaking manufacturer internals. | Current Published version remains if it exists; otherwise nothing indexed. |
+| **Error** | Clearly distinguish preflight error, API-grant/authentication error, peer delivery error, graph-ingestion error, and terminal failure. Show correlation ID and owner-oriented recovery guidance. | Show inbound-unavailable/CX-health message without leaking manufacturer internals. | Current Published version remains if it exists; otherwise nothing indexed. |
 | **Cancelled** | Show candidate cancellation and retained prior current version, if any. | Continue showing prior current version, if any. | Prior current version only. |
-| **Uninstalled / peer unavailable** | Suppress partner references and tell local users the partner connection is unavailable. | Equivalent behavior. | Suppress cross-site discovery. |
+| **Uninstalled / peer unavailable** | Suppress partner references and tell local users the partner PeerCX is unavailable. | Equivalent behavior. | Suppress cross-site discovery. |
 
 ## 10. Peer API and Authorization Design
 
 ### Peer-to-peer boundary
 - There is no Forge Remote control plane and no shared central customer-data store.
 - Each tenant independently runs the same Forge app and retains local app state, local audit history, and local tenant-specific graph objects.
-- The peer relationship is realized through direct calls to the partner installation's Forge `apiRoute` endpoints.
+- A PeerCX is realized through direct calls to the partner installation's Forge `apiRoute` endpoints.
 
 ### Intended peer endpoints
 Versioned API routes should be deliberately small, for example:
-- invitation receipt/acceptance;
+- pairing-request receipt/acceptance;
 - snapshot candidate receipt;
 - candidate cancellation;
 - lifecycle/unavailability signal; and
@@ -259,7 +296,7 @@ Every peer endpoint must validate:
 - idempotency key; and
 - fixed-schema payload validation.
 
-No peer endpoint may rely on the pairing reference as an authenticator.
+No peer endpoint may rely on an Invitation reference or a Pairing reference as an authenticator.
 
 ## 11. Lifecycle, Retention, and Deactivation
 
@@ -281,9 +318,9 @@ Do not promise that a soft-deleted/disconnected record is hard-deleted after a f
 Each tenant retains its own administrator-visible, non-content audit journal. Every event includes a shared correlation ID; peer requests also include an idempotency key.
 
 Record, without secrets or Jira-content payloads:
-- invitation created/redeemed;
+- Invitation created/redeemed;
 - authorization grant established/rejected/invalid;
-- pairing accepted;
+- pairing request accepted;
 - publication preflight/queue/delivery/indexing outcome;
 - cancellation;
 - graph discoverability suppression;
@@ -316,8 +353,8 @@ The proof of value should not proceed past architecture validation until it demo
 
 ## 15. Future-Phase Candidates
 
-- Explicit named connection membership and cross-company teams.
-- Delegated connection owners and project-level pairing administration.
+- Explicit named PeerCX membership and cross-company teams.
+- Delegated PeerCX owners and project-level pairing administration.
 - Bilateral pause/resume consent flags, with Active effective only when both tenants consent.
 - Supplier structured responses: accepted, needs clarification, blocked, proposal submitted, target date, and child-item dispositions.
 - Supplier progress and joint delivery health.
@@ -335,6 +372,6 @@ The proof of value should not proceed past architecture validation until it demo
 - A supplier user with access to the Paired Epic can see the exact current authorized package, provenance, and source `statusCategory` progress in one Epic panel.
 - A newer candidate does not replace the current snapshot until all delivery/indexing work succeeds.
 - Candidate failure or cancellation preserves the last current snapshot.
-- Search/Rovo returns only the current authorized snapshot while the connection is active.
+- Search/Rovo returns only the current authorized snapshot while the PeerCX is active.
 - App uninstall suppresses local cross-site references/search visibility and does not promise cross-site hard-delete propagation.
 - Local administrators can trace the complete lifecycle using local journals joined by correlation ID.
