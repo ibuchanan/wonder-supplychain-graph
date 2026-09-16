@@ -33,6 +33,20 @@ const nomination: PeerCxNomination = {
   terms,
 };
 
+const invitation = {
+  allowedOperations: ["starter.delivery"],
+  correlationId: "correlation-002",
+  createdAt: now,
+  expiresAt: "2026-09-22T12:00:00.000Z",
+  invitationId: "invitation-002",
+  purpose: "Bind the release package for Q4 tooling",
+  recipientAccountId: "account-002",
+  reference: "reference-002",
+  safeLabel: "swift-connection",
+  status: "invited",
+  termsVersion: "v1",
+} as const;
+
 const state: PeerCxSetupState = {
   nominations: [nomination],
   processedIdempotencyKeys: [],
@@ -63,6 +77,7 @@ const pairing: SourcePeerPairing = {
 describe("summarizeForAdministrator", () => {
   it("summarizes local status, counterpart, agreed scope, end instant, and pairing count", () => {
     const overview = summarizeForAdministrator({
+      invitations: [],
       journal: emptyLifecycleJournal,
       now,
       pairings: [pairing],
@@ -82,11 +97,36 @@ describe("summarizeForAdministrator", () => {
     ]);
   });
 
+  it("includes an invitation as an invited PeerCX, before a counterpart is known", () => {
+    // An Invitation is a PeerCX in its first state, so it belongs in the same
+    // list. It names a recipient rather than a site, so there is no
+    // counterpart site to show and no agreement end instant yet.
+    const overview = summarizeForAdministrator({
+      invitations: [invitation],
+      journal: emptyLifecycleJournal,
+      now,
+      pairings: [],
+      state: { nominations: [], processedIdempotencyKeys: [], peerCxs: [] },
+    });
+
+    expect(overview.peerCxs).toEqual([
+      {
+        agreedOperations: ["starter.delivery"],
+        pairingCount: 0,
+        peerCxId: "invitation-002",
+        safeLabel: "swift-connection",
+        status: "invited",
+        termsVersion: "v1",
+      },
+    ]);
+  });
+
   it("shows a lapsed agreement as expired rather than active", () => {
     // The gate refuses a PeerCX past its agreement end instant whatever
     // the stored status says. A screen that still called it active would tell
     // the administrator the opposite of what the tenant will actually do.
     const overview = summarizeForAdministrator({
+      invitations: [],
       journal: emptyLifecycleJournal,
       now: "2027-09-15T12:00:00.000Z",
       pairings: [pairing],
@@ -98,6 +138,7 @@ describe("summarizeForAdministrator", () => {
 
   it("counts only the pairings authorized under that PeerCX", () => {
     const overview = summarizeForAdministrator({
+      invitations: [],
       journal: emptyLifecycleJournal,
       now,
       pairings: [
@@ -117,6 +158,7 @@ describe("summarizeForAdministrator", () => {
     // beside a Pairing that holds the peer delivery endpoint, so this pins
     // down that the endpoint stays out of the view.
     const overview = summarizeForAdministrator({
+      invitations: [],
       journal: {
         events: [
           {

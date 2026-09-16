@@ -513,13 +513,17 @@ resolver.define<Omit<DecideNominationCommand, "actor" | "decidedAt">, unknown>(
  * those would leak from permanently.
  */
 resolver.define("getPeerCxOverview", async () => {
-  const [state, { pairings }, journal] = await Promise.all([
+  const [state, { pairings }, journal, { invitations }] = await Promise.all([
     kvsPeerCxStore.read(),
     kvsPeerPairingStore.read(),
     kvsLifecycleJournalStore.read(),
+    // An Invitation is a PeerCX in its first state, so the overview reads the
+    // invitation store too rather than showing only what has been agreed.
+    kvsInvitationStore.read(),
   ]);
 
   return summarizeForAdministrator({
+    invitations,
     journal,
     now: new Date().toISOString(),
     pairings,

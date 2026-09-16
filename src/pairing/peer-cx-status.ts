@@ -41,6 +41,26 @@ export interface PeerCxStatusInput {
   readonly now: string;
 }
 
+/**
+ * A caller that already holds one of the records always gets a status back, so
+ * only a caller with nothing on file has to handle the absent case.
+ */
+export function derivePeerCxStatus(
+  input: PeerCxStatusInput & { readonly agreement: PeerCx },
+): PeerCxStatus;
+export function derivePeerCxStatus(
+  input: PeerCxStatusInput & {
+    readonly nomination: Pick<PeerCxNomination, "status">;
+  },
+): PeerCxStatus;
+export function derivePeerCxStatus(
+  input: PeerCxStatusInput & {
+    readonly invitation: Pick<Invitation, "expiresAt">;
+  },
+): PeerCxStatus;
+export function derivePeerCxStatus(
+  input: PeerCxStatusInput,
+): PeerCxStatus | undefined;
 export function derivePeerCxStatus(
   input: PeerCxStatusInput,
 ): PeerCxStatus | undefined {
@@ -54,7 +74,9 @@ export function derivePeerCxStatus(
     // A lapsed lease is refused by the authorization gate whatever the record
     // says, so the administrator has to be told what the tenant will actually
     // do rather than what was last written.
-    return input.now > agreement.leaseEndsAt ? "expired" : "active";
+    // The gate authorizes only while leaseEndsAt is strictly after now, so the
+    // instant the lease ends already reads as expired.
+    return input.now >= agreement.leaseEndsAt ? "expired" : "active";
   }
 
   if (input.nomination) {

@@ -29,6 +29,15 @@ describe("derivePeerCxStatus", () => {
     ).toBe("expired");
   });
 
+  it("reports expired at the exact lease end, matching the authorization gate", () => {
+    // evaluatePeerCxAuthorization authorizes only while leaseEndsAt is
+    // strictly after now, so a screen calling this instant active would
+    // promise an exchange the gate refuses.
+    expect(derivePeerCxStatus({ agreement, now: agreement.leaseEndsAt })).toBe(
+      "expired",
+    );
+  });
+
   it("reports revoked ahead of the lease, because revocation is the decision", () => {
     expect(
       derivePeerCxStatus({

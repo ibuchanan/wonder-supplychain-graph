@@ -3,8 +3,9 @@ import type {
   LifecycleAuditJournal,
 } from "../audit/lifecycle-journal";
 import type { PeerOperation } from "../collaboration/protocol";
-import type { PeerCx } from "./peer-cx";
+import type { Invitation } from "./invitation-workflow";
 import type { PeerCxSetupState } from "./peer-cx-nomination";
+import { derivePeerCxStatus, type PeerCxStatus } from "./peer-cx-status";
 import type { PeerPairing } from "./peer-pairing-state";
 
 /**
@@ -15,11 +16,15 @@ import type { PeerPairing } from "./peer-pairing-state";
  */
 export interface PeerCxOverview {
   readonly agreedOperations: readonly PeerOperation[];
-  readonly agreementEndsAt: string;
-  readonly counterpartSiteAri: string;
+  /** Absent until an agreement is recorded: an invitation has no lease. */
+  readonly agreementEndsAt?: string;
+  /** Absent while invited: an Invitation names a recipient, not a site. */
+  readonly counterpartSiteAri?: string;
   readonly pairingCount: number;
   readonly peerCxId: string;
-  readonly status: PeerCx["status"];
+  /** The only label a peer administrator sees before authorizing. */
+  readonly safeLabel?: string;
+  readonly status: PeerCxStatus;
   readonly termsVersion: string;
 }
 
@@ -29,10 +34,38 @@ export interface AdministratorOverview {
 }
 
 export interface AdministratorOverviewInput {
+  readonly invitations: readonly Invitation[];
   readonly journal: LifecycleAuditJournal;
   readonly now: string;
   readonly pairings: readonly PeerPairing[];
   readonly state: PeerCxSetupState;
+}
+
+function countPairings(
+  input: AdministratorOverviewInput,
+  peerCxId: string,
+): number {
+  return input.pairings.filter(
+    (pairing) => pairing.peerCxId === peerCxId && pairing.status === "active",
+  ).length;
+}
+
+/**
+ * An Invitation is a PeerCX in its first state, so it belongs in the same list
+ * rather than a separate one. It carries no counterpart site and no lease,
+ * because neither has been agreed with anyone yet.
+ */
+function invitedPeerCxs(
+  input: AdministratorOverviewInput,
+): readonly PeerCxOverview[] {
+  return input.invitations.map((invitation) => ({
+    agreedOperations: invitation.allowedOperations,
+    pairingCount: 0,
+    peerCxId: invitation.invitationId,
+    ...(invitation.safeLabel ? { safeLabel: invitation.safeLabel } : {}),
+    status: derivePeerCxStatus({ invitation, now: input.now }),
+    termsVersion: invitation.termsVersion,
+  }));
 }
 
 /**
@@ -44,28 +77,23 @@ export function summarizeForAdministrator(
 ): AdministratorOverview {
   return {
     auditOutcomes: input.journal.events,
-    peerCxs: input.state.peerCxs.map((peerCx) => {
-      const nomination = input.state.nominations.find(
-        (candidate) => candidate.peerCxId === peerCx.peerCxId,
-      );
+    peerCxs: [
+      ...invitedPeerCxs(input),
+      ...input.state.peerCxs.map((peerCx) => {
+        const nomination = input.state.nominations.find(
+          (candidate) => candidate.peerCxId === peerCx.peerCxId,
+        );
 
-      return {
-        agreedOperations: nomination?.terms.allowedOperations ?? [],
-        agreementEndsAt: peerCx.leaseEndsAt,
-        counterpartSiteAri: peerCx.counterpartSiteAri,
-        pairingCount: input.pairings.filter(
-          (pairing) =>
-            pairing.peerCxId === peerCx.peerCxId && pairing.status === "active",
-        ).length,
-        peerCxId: peerCx.peerCxId,
-        // A lapsed lease is already refused by the gate; the screen has to
-        // agree with what the tenant will actually do, not with its own state.
-        status:
-          peerCx.status === "active" && input.now >= peerCx.leaseEndsAt
-            ? ("expired" as const)
-            : peerCx.status,
-        termsVersion: peerCx.termsVersion,
-      };
-    }),
+        return {
+          agreedOperations: nomination?.terms.allowedOperations ?? [],
+          agreementEndsAt: peerCx.leaseEndsAt,
+          counterpartSiteAri: peerCx.counterpartSiteAri,
+          pairingCount: countPairings(input, peerCx.peerCxId),
+          peerCxId: peerCx.peerCxId,
+          status: derivePeerCxStatus({ agreement: peerCx, now: input.now }),
+          termsVersion: peerCx.termsVersion,
+        };
+      }),
+    ],
   };
 }
