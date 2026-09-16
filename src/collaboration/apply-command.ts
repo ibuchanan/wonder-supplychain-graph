@@ -2,27 +2,27 @@ import { err, ok, type Result } from "@forge-ahead/errors";
 
 import type { ProtocolVersion } from "./protocol";
 
-export type InvitationStatus = "pending" | "accepted";
+export type PairingRequestStatus = "pending" | "accepted";
 
-export interface Invitation {
+export interface PairingRequest {
   readonly correlationId: string;
-  readonly invitationId: string;
+  readonly pairingRequestId: string;
   readonly pairingId: string;
-  readonly status: InvitationStatus;
+  readonly status: PairingRequestStatus;
 }
 
 export interface CollaborationState {
-  readonly invitations: readonly Invitation[];
+  readonly pairingRequests: readonly PairingRequest[];
   readonly processedIdempotencyKeys: readonly string[];
 }
 
-export interface InvitationAcceptanceCommand {
+export interface PairingRequestAcceptanceCommand {
   readonly acceptedAt: string;
   readonly actor: "supplier-administrator";
   readonly correlationId: string;
   readonly idempotencyKey: string;
-  readonly invitationId: string;
-  readonly operation: "invitation.accept";
+  readonly pairingRequestId: string;
+  readonly operation: "pairing.request.accept";
   readonly pairingId: string;
   readonly protocolVersion: ProtocolVersion;
 }
@@ -48,18 +48,18 @@ export interface CollaborationCommandResult {
   readonly nextState: CollaborationState;
 }
 
-export interface PendingInvitationNotFoundError {
-  readonly code: "pending-invitation-not-found";
+export interface PendingPairingRequestNotFoundError {
+  readonly code: "pending-pairing-request-not-found";
   readonly correlationId: string;
-  readonly invitationId: string;
+  readonly pairingRequestId: string;
   readonly pairingId: string;
 }
 
-export type CollaborationCommandError = PendingInvitationNotFoundError;
+export type CollaborationCommandError = PendingPairingRequestNotFoundError;
 
 export function applyCollaborationCommand(
   state: CollaborationState,
-  command: InvitationAcceptanceCommand,
+  command: PairingRequestAcceptanceCommand,
 ): Result<CollaborationCommandResult, CollaborationCommandError> {
   if (state.processedIdempotencyKeys.includes(command.idempotencyKey)) {
     return ok({
@@ -73,18 +73,18 @@ export function applyCollaborationCommand(
     });
   }
 
-  const invitation = state.invitations.find(
+  const pairingRequest = state.pairingRequests.find(
     (candidate) =>
-      candidate.invitationId === command.invitationId &&
+      candidate.pairingRequestId === command.pairingRequestId &&
       candidate.pairingId === command.pairingId &&
       candidate.correlationId === command.correlationId,
   );
 
-  if (invitation?.status !== "pending") {
+  if (pairingRequest?.status !== "pending") {
     return err({
-      code: "pending-invitation-not-found",
+      code: "pending-pairing-request-not-found",
       correlationId: command.correlationId,
-      invitationId: command.invitationId,
+      pairingRequestId: command.pairingRequestId,
       pairingId: command.pairingId,
     });
   }
@@ -108,8 +108,8 @@ export function applyCollaborationCommand(
       status: "active",
     },
     nextState: {
-      invitations: state.invitations.map((candidate) =>
-        candidate.invitationId === invitation.invitationId
+      pairingRequests: state.pairingRequests.map((candidate) =>
+        candidate.pairingRequestId === pairingRequest.pairingRequestId
           ? { ...candidate, status: "accepted" }
           : candidate,
       ),

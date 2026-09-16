@@ -1,10 +1,10 @@
 import { V1_PEER_OPERATIONS } from "../../src/collaboration/protocol";
 
 describe("V1 peer protocol", () => {
-  it("defines invitation, acceptance, starter delivery, candidate, cancellation, and lifecycle operations", () => {
+  it("defines pairingRequest, acceptance, starter delivery, candidate, cancellation, and lifecycle operations", () => {
     expect(V1_PEER_OPERATIONS).toEqual([
-      "invitation.receive",
-      "invitation.accept",
+      "pairing.request.receive",
+      "pairing.request.accept",
       "starter.delivery",
       "snapshot.candidate.receive",
       "candidate.cancel",

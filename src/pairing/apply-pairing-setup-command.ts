@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
 
-import type { InvitationAcceptanceCommand } from "../collaboration/apply-command";
+import type { PairingRequestAcceptanceCommand } from "../collaboration/apply-command";
 import type { ProtocolVersion } from "../collaboration/protocol";
 
 export interface LocalPairing {
@@ -40,7 +40,7 @@ export interface PairingAcceptanceCommand {
   readonly actor: "supplier-administrator";
   readonly correlationId: string;
   readonly idempotencyKey: string;
-  readonly invitationId: string;
+  readonly pairingRequestId: string;
   readonly operation: "pairing.accept";
   readonly pairedEpicLocalId: string;
   readonly pairingId: string;
@@ -108,7 +108,7 @@ export interface PairingInitiationResult {
 export interface PairingAcceptanceResult {
   readonly auditEvents: readonly PairingAcceptedLocallyAuditEvent[];
   readonly nextState: PairingSetupState;
-  readonly outboundAcceptance: InvitationAcceptanceCommand;
+  readonly outboundAcceptance: PairingRequestAcceptanceCommand;
 }
 
 export interface PairingActivationResult {
@@ -243,8 +243,8 @@ export function applyPairingSetupCommand(
         actor: command.actor,
         correlationId: command.correlationId,
         idempotencyKey: command.idempotencyKey,
-        invitationId: command.invitationId,
-        operation: "invitation.accept",
+        pairingRequestId: command.pairingRequestId,
+        operation: "pairing.request.accept",
         pairingId: command.pairingId,
         protocolVersion: command.protocolVersion,
       },

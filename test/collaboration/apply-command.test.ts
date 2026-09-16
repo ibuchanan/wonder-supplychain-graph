@@ -18,10 +18,10 @@ function expectOk<T, E>(result: Result<T, E>): T {
 }
 
 const pendingInvitationState = (): CollaborationState => ({
-  invitations: [
+  pairingRequests: [
     {
       correlationId: "corr-001",
-      invitationId: "invite-001",
+      pairingRequestId: "invite-001",
       pairingId: "pairing-001",
       status: "pending",
     },
@@ -34,14 +34,14 @@ const acceptanceCommand = {
   actor: "supplier-administrator",
   correlationId: "corr-001",
   idempotencyKey: "accept-pairing-001",
-  invitationId: "invite-001",
-  operation: "invitation.accept",
+  pairingRequestId: "invite-001",
+  operation: "pairing.request.accept",
   pairingId: "pairing-001",
   protocolVersion: "v1",
 } as const;
 
 describe("applyCollaborationCommand", () => {
-  it("accepts a pending invitation and records an immutable non-content audit event", () => {
+  it("accepts a pending pairingRequest and records an immutable non-content audit event", () => {
     const result = expectOk(
       applyCollaborationCommand(pendingInvitationState(), acceptanceCommand),
     );
@@ -64,17 +64,17 @@ describe("applyCollaborationCommand", () => {
       },
     ]);
     expect(Object.isFrozen(result.auditEvents[0])).toBe(true);
-    expect(result.nextState.invitations).toEqual([
+    expect(result.nextState.pairingRequests).toEqual([
       {
         correlationId: "corr-001",
-        invitationId: "invite-001",
+        pairingRequestId: "invite-001",
         pairingId: "pairing-001",
         status: "accepted",
       },
     ]);
   });
 
-  it("replays an accepted invitation without appending another audit event", () => {
+  it("replays an accepted pairingRequest without appending another audit event", () => {
     const firstResult = expectOk(
       applyCollaborationCommand(pendingInvitationState(), acceptanceCommand),
     );
@@ -92,20 +92,20 @@ describe("applyCollaborationCommand", () => {
     expect(replayResult.nextState).toEqual(firstResult.nextState);
   });
 
-  it("returns a typed error when the command has no matching pending invitation", () => {
+  it("returns a typed error when the command has no matching pending pairingRequest", () => {
     const result = applyCollaborationCommand(
-      { invitations: [], processedIdempotencyKeys: [] },
+      { pairingRequests: [], processedIdempotencyKeys: [] },
       acceptanceCommand,
     );
 
     expect(result.isErr()).toBe(true);
     if (result.isOk()) {
-      expect.unreachable("Expected a missing invitation to fail");
+      expect.unreachable("Expected a missing pairingRequest to fail");
     }
     expect(result.error).toEqual({
-      code: "pending-invitation-not-found",
+      code: "pending-pairing-request-not-found",
       correlationId: "corr-001",
-      invitationId: "invite-001",
+      pairingRequestId: "invite-001",
       pairingId: "pairing-001",
     });
   });

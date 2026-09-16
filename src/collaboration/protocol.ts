@@ -1,6 +1,6 @@
 export const V1_PEER_OPERATIONS = Object.freeze([
-  "invitation.receive",
-  "invitation.accept",
+  "pairing.request.receive",
+  "pairing.request.accept",
   "starter.delivery",
   "snapshot.candidate.receive",
   "candidate.cancel",
