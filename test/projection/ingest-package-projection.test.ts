@@ -75,7 +75,7 @@ describe("ingestPackageProjection", () => {
     const graph = recordingGraph();
 
     const outcome = await ingestPackageProjection(graph, {
-      connectionId: "connection-001",
+      graphCxId: "graph-cx-001",
       state: activeSupplierState(),
     });
 
@@ -84,6 +84,7 @@ describe("ingestPackageProjection", () => {
     expect(graph.set).toHaveLength(1);
 
     const request = graph.set[0] as {
+      // The recorded call is the Forge Graph API request, which names it connectionId.
       connectionId: string;
       objects: {
         description: string;
@@ -95,7 +96,7 @@ describe("ingestPackageProjection", () => {
       properties?: Record<string, string>;
     };
 
-    expect(request.connectionId).toBe("connection-001");
+    expect(request.connectionId).toBe("graph-cx-001");
     expect(request.properties).toEqual({ pairingId: "pairing-001" });
     expect(request.objects.map((object) => object.id)).toEqual([
       "pairing-001:MFG-17",
@@ -127,7 +128,7 @@ describe("ingestPackageProjection", () => {
     const graph = recordingGraph();
 
     const outcome = await ingestPackageProjection(graph, {
-      connectionId: "connection-001",
+      graphCxId: "graph-cx-001",
       state: { ...activeSupplierState(), pairings: [] },
     });
 
@@ -138,7 +139,7 @@ describe("ingestPackageProjection", () => {
     expect(graph.set).toEqual([]);
     expect(graph.deleted).toEqual([
       {
-        connectionId: "connection-001",
+        connectionId: "graph-cx-001",
         objectType: "atlassian:work-item",
         properties: { pairingId: "pairing-001" },
       },

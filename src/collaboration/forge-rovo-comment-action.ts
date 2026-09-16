@@ -3,7 +3,7 @@ import { err, ok } from "@forge-ahead/errors";
 
 import { logger } from "../logging";
 import { logRovoCommentResult } from "../observability/domain-events";
-import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
+import { kvsGraphCxStore } from "../projection/kvs-graph-cx-store";
 import {
   commentOnOriginatingEpic,
   type JiraCommentPort,
@@ -67,9 +67,9 @@ const jiraCommentPort: JiraCommentPort = {
 export async function commentOnOriginatingEpicFromRovo(
   payload: RovoCommentActionPayload,
 ) {
-  const connectionId = await kvsPackageConnectionStore.getActiveConnectionId();
+  const graphCxId = await kvsGraphCxStore.getActiveGraphCxId();
 
-  if (!connectionId) {
+  if (!graphCxId) {
     logRovoCommentResult(logger, {
       reason: "no-active-connection",
       status: "failed",
@@ -79,13 +79,13 @@ export async function commentOnOriginatingEpicFromRovo(
   }
 
   const outcome = await commentOnOriginatingEpic(
-    { jira: jiraCommentPort, store: kvsPackageConnectionStore },
-    { ...payload, connectionId },
+    { jira: jiraCommentPort, store: kvsGraphCxStore },
+    { ...payload, graphCxId },
   );
 
   if (outcome.isErr()) {
     logRovoCommentResult(logger, {
-      connectionId,
+      graphCxId,
       reason: outcome.error.code,
       status: "failed",
     });
@@ -95,7 +95,7 @@ export async function commentOnOriginatingEpicFromRovo(
 
   logRovoCommentResult(logger, {
     commentId: outcome.value.commentId,
-    connectionId,
+    graphCxId,
     sourceEpicId: outcome.value.sourceEpicId,
     status: "commented",
     version: outcome.value.version,

@@ -8,9 +8,9 @@ import {
 } from "../receipt/apply-command";
 
 export interface SupplierReceiptStateStore {
-  readonly read: (connectionId: string) => Promise<SupplierReceiptState>;
+  readonly read: (graphCxId: string) => Promise<SupplierReceiptState>;
   readonly write: (
-    connectionId: string,
+    graphCxId: string,
     state: SupplierReceiptState,
   ) => Promise<void>;
 }
@@ -20,7 +20,7 @@ export interface DemoPackagePromotionDependencies {
 }
 
 export interface DemoPackagePromotionRequest {
-  readonly connectionId: string;
+  readonly graphCxId: string;
   readonly correlationId: string;
   readonly idempotencyKey: string;
   readonly publishedAt: string;
@@ -29,7 +29,7 @@ export interface DemoPackagePromotionRequest {
 }
 
 export interface DemoPackagePromotionResult {
-  readonly connectionId: string;
+  readonly graphCxId: string;
   readonly outcome: "published";
   readonly sourceEpicId: string;
   readonly version: string;
@@ -81,7 +81,7 @@ export async function promoteDemoPackage(
   { store }: DemoPackagePromotionDependencies,
   request: DemoPackagePromotionRequest,
 ): Promise<Result<DemoPackagePromotionResult, SupplierReceiptError>> {
-  const storedState = await store.read(request.connectionId);
+  const storedState = await store.read(request.graphCxId);
   const pairing = demoPairing(request);
   const state = withDemoPairing(storedState, pairing);
 
@@ -138,11 +138,11 @@ export async function promoteDemoPackage(
   }
 
   if (receipt.value.decision.idempotency === "applied") {
-    await store.write(request.connectionId, receipt.value.nextState);
+    await store.write(request.graphCxId, receipt.value.nextState);
   }
 
   return ok({
-    connectionId: request.connectionId,
+    graphCxId: request.graphCxId,
     outcome: "published",
     sourceEpicId: request.sourceEpicId,
     version: receipt.value.decision.version,

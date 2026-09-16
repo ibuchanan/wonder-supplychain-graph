@@ -65,7 +65,7 @@ const relationship = {
 const pairing = {
   allowedOperations: ["starter.delivery"],
   automationWebhookUrl: "https://automation.example/webhook",
-  connectionId: "connection-001",
+  graphCxId: "graph-cx-001",
   pairedEpicKey: "GREEN-42",
   pairingId: "pairing-001",
   relationshipId: "relationship-001",

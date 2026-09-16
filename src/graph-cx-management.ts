@@ -7,27 +7,27 @@ import type { SupplierReceiptState } from "./receipt/apply-command";
 /**
  * Tenant-local storage of the supplier receipt state a connection projects.
  */
-export interface PackageConnectionStore {
-  readonly clearActiveConnectionId: (connectionId: string) => Promise<void>;
-  readonly forget: (connectionId: string) => Promise<void>;
-  readonly getActiveConnectionId: () => Promise<string | undefined>;
-  readonly read: (connectionId: string) => Promise<SupplierReceiptState>;
-  readonly setActiveConnectionId: (connectionId: string) => Promise<void>;
+export interface GraphCxStore {
+  readonly clearActiveGraphCxId: (graphCxId: string) => Promise<void>;
+  readonly forget: (graphCxId: string) => Promise<void>;
+  readonly getActiveGraphCxId: () => Promise<string | undefined>;
+  readonly read: (graphCxId: string) => Promise<SupplierReceiptState>;
+  readonly setActiveGraphCxId: (graphCxId: string) => Promise<void>;
 }
 
-export interface ConnectionManagementDependencies {
+export interface GraphCxManagementDependencies {
   readonly graph: PackageGraphPort;
-  readonly store: PackageConnectionStore;
+  readonly store: GraphCxStore;
 }
 
-export interface OnConfigChangeRequest {
+export interface GraphCxChangeRequest {
   readonly action: "CREATED" | "DELETED" | "UPDATED";
   readonly configProperties: Record<string, unknown>;
-  readonly connectionId: string;
+  readonly graphCxId: string;
   readonly name: string;
 }
 
-export interface OnConfigChangeResponse {
+export interface GraphCxChangeResponse {
   readonly message: string;
   readonly success: boolean;
 }
@@ -38,27 +38,27 @@ export interface OnConfigChangeResponse {
  * This module owns connection selection and its projection state. Forge entry
  * points own observability; domain projection code owns package eligibility.
  */
-export async function onConfigChange(
-  dependencies: ConnectionManagementDependencies,
-  request: OnConfigChangeRequest,
-): Promise<OnConfigChangeResponse> {
+export async function applyGraphCxChange(
+  dependencies: GraphCxManagementDependencies,
+  request: GraphCxChangeRequest,
+): Promise<GraphCxChangeResponse> {
   switch (request.action) {
     case "CREATED":
     case "UPDATED":
       return activateAndProject(dependencies, request);
     case "DELETED":
-      return removeConnection(dependencies, request.connectionId);
+      return removeConnection(dependencies, request.graphCxId);
   }
 }
 
 async function activateAndProject(
-  dependencies: ConnectionManagementDependencies,
-  request: OnConfigChangeRequest,
-): Promise<OnConfigChangeResponse> {
-  await dependencies.store.setActiveConnectionId(request.connectionId);
-  const state = await dependencies.store.read(request.connectionId);
+  dependencies: GraphCxManagementDependencies,
+  request: GraphCxChangeRequest,
+): Promise<GraphCxChangeResponse> {
+  await dependencies.store.setActiveGraphCxId(request.graphCxId);
+  const state = await dependencies.store.read(request.graphCxId);
   const outcome = await ingestPackageProjection(dependencies.graph, {
-    connectionId: request.connectionId,
+    graphCxId: request.graphCxId,
     state,
   });
 
@@ -76,11 +76,11 @@ async function activateAndProject(
 }
 
 async function removeConnection(
-  dependencies: ConnectionManagementDependencies,
-  connectionId: string,
-): Promise<OnConfigChangeResponse> {
-  await dependencies.store.clearActiveConnectionId(connectionId);
-  await dependencies.store.forget(connectionId);
+  dependencies: GraphCxManagementDependencies,
+  graphCxId: string,
+): Promise<GraphCxChangeResponse> {
+  await dependencies.store.clearActiveGraphCxId(graphCxId);
+  await dependencies.store.forget(graphCxId);
 
   return { message: "Forgot the connection.", success: true };
 }

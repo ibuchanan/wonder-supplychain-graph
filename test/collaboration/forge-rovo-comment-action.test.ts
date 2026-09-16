@@ -25,8 +25,8 @@ describe("commentOnOriginatingEpicFromRovo", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     const values = new Map<string, unknown>();
-    values.set("active-graph-connection-id", "connection-001");
-    values.set("supplier-receipt-state:connection-001", {
+    values.set("active-graph-cx-id", "graph-cx-001");
+    values.set("supplier-receipt-state:graph-cx-001", {
       currentPackage: {
         content: {
           children: [],

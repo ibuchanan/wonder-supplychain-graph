@@ -58,14 +58,13 @@ export function logPeerEventFlow(
   );
 }
 
-export interface GraphConnectionChangedEvent {
+export interface GraphCxChangedEvent {
   readonly action: "CREATED" | "DELETED" | "UPDATED";
-  readonly connectionId: string;
-  readonly connectionName: string;
+  readonly graphCxId: string;
+  readonly graphCxName: string;
 }
 
-export interface GraphConnectionResultEvent
-  extends GraphConnectionChangedEvent {
+export interface GraphCxResultEvent extends GraphCxChangedEvent {
   /** Correlates a projection outcome to the package publication that produced it. */
   readonly correlationId?: string;
   /** Present for an indexed projection so the sink identifies its published subject. */
@@ -78,32 +77,32 @@ export interface GraphConnectionResultEvent
   readonly success: boolean;
 }
 
-export function logGraphConnectionChanged(
+export function logGraphCxChanged(
   logger: DomainEventLogger,
-  event: GraphConnectionChangedEvent,
+  event: GraphCxChangedEvent,
 ): void {
   logger.info(
     {
       action: event.action,
-      connectionId: event.connectionId,
-      connectionName: event.connectionName,
-      event: "scg.graph.connection.changed",
+      graphCxId: event.graphCxId,
+      graphCxName: event.graphCxName,
+      event: "scg.graph-cx.changed",
     },
-    "Supplychain Graph connection changed",
+    "Supplychain Graph Teamwork Graph connection changed",
   );
 }
 
-export function logGraphConnectionResult(
+export function logGraphCxResult(
   logger: DomainEventLogger,
-  event: GraphConnectionResultEvent,
+  event: GraphCxResultEvent,
 ): void {
   logger.info(
     {
       action: event.action,
-      connectionId: event.connectionId,
-      connectionName: event.connectionName,
+      graphCxId: event.graphCxId,
+      graphCxName: event.graphCxName,
       correlationId: event.correlationId,
-      event: "scg.graph.connection.completed",
+      event: "scg.graph-cx.completed",
       ingested: event.ingested,
       message: event.message,
       reason: event.reason,
@@ -116,7 +115,7 @@ export function logGraphConnectionResult(
 }
 
 export interface GraphPublishResultEvent {
-  readonly connectionId?: string;
+  readonly graphCxId?: string;
   readonly correlationId: string;
   readonly ingested?: number;
   readonly reason?: string;
@@ -131,7 +130,7 @@ export function logGraphPublishResult(
 ): void {
   logger.info(
     {
-      ...(event.connectionId ? { connectionId: event.connectionId } : {}),
+      ...(event.graphCxId ? { graphCxId: event.graphCxId } : {}),
       correlationId: event.correlationId,
       event: "scg.graph.publish.completed",
       ingested: event.ingested,
@@ -146,7 +145,7 @@ export function logGraphPublishResult(
 
 export interface RovoCommentResultEvent {
   readonly commentId?: string;
-  readonly connectionId?: string;
+  readonly graphCxId?: string;
   readonly reason?: string;
   readonly sourceEpicId?: string;
   readonly status: "commented" | "failed";
@@ -160,7 +159,7 @@ export function logRovoCommentResult(
   logger.info(
     {
       commentId: event.commentId,
-      ...(event.connectionId ? { connectionId: event.connectionId } : {}),
+      ...(event.graphCxId ? { graphCxId: event.graphCxId } : {}),
       event: "scg.rovo.comment.completed",
       reason: event.reason,
       sourceEpicId: event.sourceEpicId,

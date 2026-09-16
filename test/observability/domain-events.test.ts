@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   logAppInstalled,
   logAppUpgraded,
-  logGraphConnectionChanged,
-  logGraphConnectionResult,
+  logGraphCxChanged,
+  logGraphCxResult,
   logGraphPublishResult,
   logRovoCommentResult,
 } from "../../src/observability/domain-events";
@@ -18,15 +18,15 @@ describe("Supplychain Graph domain events", () => {
       },
     };
 
-    logGraphConnectionChanged(logger, {
+    logGraphCxChanged(logger, {
       action: "CREATED",
-      connectionId: "connection-001",
-      connectionName: "Demo manufacturer connection",
+      graphCxId: "graph-cx-001",
+      graphCxName: "Demo manufacturer connection",
     });
-    logGraphConnectionResult(logger, {
+    logGraphCxResult(logger, {
       action: "CREATED",
-      connectionId: "connection-001",
-      connectionName: "Demo manufacturer connection",
+      graphCxId: "graph-cx-001",
+      graphCxName: "Demo manufacturer connection",
       correlationId: "scg:execution-001",
       ingested: 3,
       message: "Indexed 3 current package objects.",
@@ -36,7 +36,7 @@ describe("Supplychain Graph domain events", () => {
     });
 
     logGraphPublishResult(logger, {
-      connectionId: "connection-001",
+      graphCxId: "graph-cx-001",
       correlationId: "scg:execution-001",
       ingested: 3,
       sourceEpicId: "MFG-17",
@@ -45,7 +45,7 @@ describe("Supplychain Graph domain events", () => {
     });
     logRovoCommentResult(logger, {
       commentId: "10001",
-      connectionId: "connection-001",
+      graphCxId: "graph-cx-001",
       sourceEpicId: "MFG-17",
       status: "commented",
       version: "1",
@@ -68,16 +68,16 @@ describe("Supplychain Graph domain events", () => {
     expect(records).toEqual([
       expect.objectContaining({
         action: "CREATED",
-        connectionId: "connection-001",
-        connectionName: "Demo manufacturer connection",
-        event: "scg.graph.connection.changed",
+        graphCxId: "graph-cx-001",
+        graphCxName: "Demo manufacturer connection",
+        event: "scg.graph-cx.changed",
       }),
       expect.objectContaining({
         action: "CREATED",
-        connectionId: "connection-001",
-        connectionName: "Demo manufacturer connection",
+        graphCxId: "graph-cx-001",
+        graphCxName: "Demo manufacturer connection",
         correlationId: "scg:execution-001",
-        event: "scg.graph.connection.completed",
+        event: "scg.graph-cx.completed",
         ingested: 3,
         message: "Indexed 3 current package objects.",
         sourceEpicId: "MFG-17",
@@ -85,7 +85,7 @@ describe("Supplychain Graph domain events", () => {
         success: true,
       }),
       expect.objectContaining({
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
         correlationId: "scg:execution-001",
         event: "scg.graph.publish.completed",
         ingested: 3,
@@ -95,7 +95,7 @@ describe("Supplychain Graph domain events", () => {
       }),
       expect.objectContaining({
         commentId: "10001",
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
         event: "scg.rovo.comment.completed",
         sourceEpicId: "MFG-17",
         status: "commented",

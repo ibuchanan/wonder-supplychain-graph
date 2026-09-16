@@ -11,8 +11,8 @@ import { logger } from "./logging";
 import {
   logAppInstalled,
   logAppUpgraded,
-  logGraphConnectionChanged,
-  logGraphConnectionResult,
+  logGraphCxChanged,
+  logGraphCxResult,
 } from "./observability/domain-events";
 
 // Re-exported for repository-wide Forge handler contract tests; the manifest
@@ -25,13 +25,16 @@ import { commentOnOriginatingEpicFromRovo } from "./collaboration/forge-rovo-com
 export { receivePeerEvent } from "./collaboration/forge-peer-event-receiver";
 export { receiveBootstrapRequest } from "./pairing/forge-bootstrap-receiver";
 
-import { type OnConfigChangeResponse, onConfigChange } from "./cx-management";
+import {
+  applyGraphCxChange,
+  type GraphCxChangeResponse,
+} from "./graph-cx-management";
 import {
   type PublishPackageToGraphInput,
   publishPackageToGraph as publishDemoPackageToGraph,
 } from "./projection/forge-demo-projection-action";
-import { kvsPackageConnectionStore } from "./projection/kvs-connection-store";
-import { readConnectionChangeRequest } from "./projection/read-connection-change-request";
+import { kvsGraphCxStore } from "./projection/kvs-graph-cx-store";
+import { readGraphCxChangeRequest } from "./projection/read-graph-cx-change-request";
 import {
   type PublishWorkPackageActionInput,
   publishWorkPackage as publishAutomationWorkPackage,
@@ -101,14 +104,14 @@ export async function onUpgraded(event: ForgeLifecycleEvent): Promise<void> {
   });
 }
 
-export async function onPackageConnectionChange(
+export async function onGraphCxChange(
   event: unknown,
-): Promise<OnConfigChangeResponse> {
-  const request = readConnectionChangeRequest(event);
+): Promise<GraphCxChangeResponse> {
+  const request = readGraphCxChangeRequest(event);
   if (request.isErr()) {
     logger.info(
       {
-        event: "scg.graph.connection.rejected",
+        event: "scg.graph-cx.rejected",
         reason: request.error.code,
       },
       "Supplychain Graph connection change rejected",
@@ -119,22 +122,22 @@ export async function onPackageConnectionChange(
     };
   }
 
-  logGraphConnectionChanged(logger, {
+  logGraphCxChanged(logger, {
     action: request.value.action,
-    connectionId: request.value.connectionId,
-    connectionName: request.value.name,
+    graphCxId: request.value.graphCxId,
+    graphCxName: request.value.name,
   });
-  let response: OnConfigChangeResponse;
+  let response: GraphCxChangeResponse;
   try {
-    response = await onConfigChange(
-      { graph, store: kvsPackageConnectionStore },
+    response = await applyGraphCxChange(
+      { graph, store: kvsGraphCxStore },
       request.value,
     );
   } catch {
-    logGraphConnectionResult(logger, {
+    logGraphCxResult(logger, {
       action: request.value.action,
-      connectionId: request.value.connectionId,
-      connectionName: request.value.name,
+      graphCxId: request.value.graphCxId,
+      graphCxName: request.value.name,
       message: "Graph projection failed.",
       reason: "graph-write-failed",
       status: "failed",
@@ -142,9 +145,8 @@ export async function onPackageConnectionChange(
     });
     return { message: "Graph projection failed.", success: false };
   }
-  const currentPackage = (
-    await kvsPackageConnectionStore.read(request.value.connectionId)
-  ).currentPackage;
+  const currentPackage = (await kvsGraphCxStore.read(request.value.graphCxId))
+    .currentPackage;
   const ingested = /^Indexed (\d+) current package object/.exec(
     response.message,
   )?.[1];
@@ -152,10 +154,10 @@ export async function onPackageConnectionChange(
     response.message,
   )?.[1];
 
-  logGraphConnectionResult(logger, {
+  logGraphCxResult(logger, {
     action: request.value.action,
-    connectionId: request.value.connectionId,
-    connectionName: request.value.name,
+    graphCxId: request.value.graphCxId,
+    graphCxName: request.value.name,
     ...(currentPackage
       ? {
           correlationId: currentPackage.correlationId,

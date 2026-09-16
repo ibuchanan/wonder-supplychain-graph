@@ -136,7 +136,7 @@ modules:
       urlFormat: v2
   function:
     - key: onConnectionChange
-      handler: index.onPackageConnectionChange
+      handler: index.onGraphCxChange
     - key: publishWorkPackage
       handler: index.publishWorkPackage
     - key: publishPackageToGraph

@@ -72,7 +72,7 @@ describe("commentOnOriginatingEpic", () => {
         { jira, store },
         {
           commentText: "Please confirm the material tolerance before release.",
-          connectionId: "connection-001",
+          graphCxId: "graph-cx-001",
         },
       ),
     );
@@ -105,7 +105,7 @@ describe("commentOnOriginatingEpic", () => {
 
     const result = await commentOnOriginatingEpic(
       { jira, store },
-      { commentText: "   ", connectionId: "connection-001" },
+      { commentText: "   ", graphCxId: "graph-cx-001" },
     );
 
     expect(result.isErr()).toBe(true);
@@ -135,7 +135,7 @@ describe("commentOnOriginatingEpic", () => {
       { jira, store },
       {
         commentText: "Please confirm the material tolerance before release.",
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
       },
     );
 
@@ -143,7 +143,7 @@ describe("commentOnOriginatingEpic", () => {
     if (result.isErr()) {
       expect(result.error).toEqual({
         code: "no-current-package",
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
       });
     }
     expect(requests).toEqual([]);

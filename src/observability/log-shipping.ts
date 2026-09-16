@@ -70,7 +70,7 @@ const permittedDataFields = new Set([
   "appId",
   "appVersion",
   "commentId",
-  "connectionId",
+  "graphCxId",
   "event",
   "eventType",
   "ingested",

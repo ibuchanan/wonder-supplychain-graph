@@ -3,7 +3,7 @@ import { err, ok, type Result } from "@forge-ahead/errors";
 import type { SupplierReceiptState } from "../receipt/apply-command";
 
 export interface CurrentPackageStore {
-  readonly read: (connectionId: string) => Promise<SupplierReceiptState>;
+  readonly read: (graphCxId: string) => Promise<SupplierReceiptState>;
 }
 
 export interface OriginatingPackageProvenance {
@@ -17,12 +17,12 @@ export interface OriginatingPackageProvenance {
 
 export interface NoCurrentPackageError {
   readonly code: "no-current-package";
-  readonly connectionId: string;
+  readonly graphCxId: string;
 }
 
 export interface PackageProvenanceUnavailableError {
   readonly code: "package-provenance-unavailable";
-  readonly connectionId: string;
+  readonly graphCxId: string;
 }
 
 export type OriginatingPackageError =
@@ -31,13 +31,13 @@ export type OriginatingPackageError =
 
 export async function resolveOriginatingPackage(
   store: CurrentPackageStore,
-  connectionId: string,
+  graphCxId: string,
 ): Promise<Result<OriginatingPackageProvenance, OriginatingPackageError>> {
-  const state = await store.read(connectionId);
+  const state = await store.read(graphCxId);
   const currentPackage = state.currentPackage;
 
   if (!currentPackage) {
-    return err({ code: "no-current-package", connectionId });
+    return err({ code: "no-current-package", graphCxId });
   }
 
   const pairing = state.pairings.find(
@@ -48,7 +48,7 @@ export async function resolveOriginatingPackage(
   );
 
   if (!pairing) {
-    return err({ code: "package-provenance-unavailable", connectionId });
+    return err({ code: "package-provenance-unavailable", graphCxId });
   }
 
   return ok({
@@ -88,7 +88,7 @@ export interface CommentOnOriginatingEpicDependencies {
 
 export interface CommentOnOriginatingEpicRequest {
   readonly commentText: string;
-  readonly connectionId: string;
+  readonly graphCxId: string;
 }
 
 export interface CommentTextRequiredError {
@@ -122,7 +122,7 @@ function commentBody(
 
 export async function commentOnOriginatingEpic(
   { jira, store }: CommentOnOriginatingEpicDependencies,
-  { commentText, connectionId }: CommentOnOriginatingEpicRequest,
+  { commentText, graphCxId }: CommentOnOriginatingEpicRequest,
 ): Promise<
   Result<CommentOnOriginatingEpicResult, CommentOnOriginatingEpicError>
 > {
@@ -132,7 +132,7 @@ export async function commentOnOriginatingEpic(
     return err({ code: "comment-text-required" });
   }
 
-  const provenance = await resolveOriginatingPackage(store, connectionId);
+  const provenance = await resolveOriginatingPackage(store, graphCxId);
 
   if (provenance.isErr()) {
     return err(provenance.error);

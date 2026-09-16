@@ -32,7 +32,7 @@ describe("promoteDemoPackage", () => {
       async read() {
         return emptyState();
       },
-      async write(_connectionId, state) {
+      async write(_graphCxId, state) {
         writes.push(state);
       },
     };
@@ -41,7 +41,7 @@ describe("promoteDemoPackage", () => {
       await promoteDemoPackage(
         { store },
         {
-          connectionId: "connection-001",
+          graphCxId: "graph-cx-001",
           correlationId: "corr-publish-001",
           idempotencyKey: "automation-run-001",
           publishedAt: "2026-08-05T12:00:00.000Z",
@@ -52,7 +52,7 @@ describe("promoteDemoPackage", () => {
     );
 
     expect(result).toEqual({
-      connectionId: "connection-001",
+      graphCxId: "graph-cx-001",
       outcome: "published",
       sourceEpicId: "MFG-17",
       version: "1",

@@ -25,7 +25,7 @@ export interface PackageGraphPort {
 export type PackageProjectionVisibility = "container" | "everyone";
 
 export interface PackageIngestionRequest {
-  readonly connectionId: string;
+  readonly graphCxId: string;
   readonly state: SupplierReceiptState;
   /** Defaults to paired-container visibility for normal connector ingestion. */
   readonly visibility?: PackageProjectionVisibility;
@@ -98,7 +98,8 @@ export async function ingestPackageProjection(
     // Suppression must remove what an earlier authorized state indexed.
     if (currentPackage) {
       await graph.deleteObjectsByProperties({
-        connectionId: request.connectionId,
+        // The Forge Graph API names this field connectionId.
+        connectionId: request.graphCxId,
         objectType: PACKAGE_OBJECT_TYPE,
         properties: { pairingId: currentPackage.pairingId },
       });
@@ -111,7 +112,8 @@ export async function ingestPackageProjection(
   const { pairingId } = currentPackage as NonNullable<typeof currentPackage>;
 
   await graph.setObjects({
-    connectionId: request.connectionId,
+    // The Forge Graph API names this field connectionId.
+    connectionId: request.graphCxId,
     objects: projection.objects.map((object) =>
       toWorkItemObject(object, request.visibility ?? "container"),
     ),

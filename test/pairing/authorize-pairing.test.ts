@@ -47,7 +47,7 @@ const state: SiteRelationshipSetupState = {
 const pairing: DestinationPeerPairing = {
   allowedOperations: [],
   automationWebhookUrl: "https://automation.example/webhook",
-  connectionId: "connection-001",
+  graphCxId: "graph-cx-001",
   pairedEpicKey: "GREEN-1",
   pairingId: "pairing-001",
   relationshipId: "relationship-001",

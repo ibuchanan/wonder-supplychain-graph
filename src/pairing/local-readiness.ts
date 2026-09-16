@@ -13,7 +13,7 @@ export interface LocalReadiness {
 }
 
 export interface LocalReadinessInput {
-  readonly activeConnectionId?: string;
+  readonly activeGraphCxId?: string;
   readonly failure?: { readonly code: string };
   readonly pairings: PeerPairingState["pairings"];
   readonly role?: LocalRole;
@@ -45,7 +45,7 @@ export function determineLocalReadiness(
     (pairing) =>
       pairing.role === "destination" &&
       pairing.status === "active" &&
-      pairing.connectionId === input.activeConnectionId,
+      pairing.graphCxId === input.activeGraphCxId,
   )
     ? { status: "ready" }
     : { status: "waiting-for-pairing" };

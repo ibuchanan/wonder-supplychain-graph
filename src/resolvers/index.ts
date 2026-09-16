@@ -42,7 +42,7 @@ import {
   decideSiteRelationshipNomination,
   nominateSiteRelationship,
 } from "../pairing/site-relationship-nomination";
-import { kvsPackageConnectionStore } from "../projection/kvs-connection-store";
+import { kvsGraphCxStore } from "../projection/kvs-graph-cx-store";
 
 const resolver = new Resolver();
 
@@ -197,7 +197,7 @@ resolver.define("getInstallationReadiness", () =>
     readDurableState: async () => {
       await Promise.all([
         kvsPeerPairingStore.read(),
-        kvsPackageConnectionStore.getActiveConnectionId(),
+        kvsGraphCxStore.getActiveGraphCxId(),
       ]);
     },
   }),
@@ -209,13 +209,13 @@ resolver.define("getLocalReadiness", async () => {
     configuredRole === "source" || configuredRole === "destination"
       ? configuredRole
       : undefined;
-  const [pairingState, activeConnectionId] = await Promise.all([
+  const [pairingState, activeGraphCxId] = await Promise.all([
     kvsPeerPairingStore.read(),
-    kvsPackageConnectionStore.getActiveConnectionId(),
+    kvsGraphCxStore.getActiveGraphCxId(),
   ]);
 
   return determineLocalReadiness({
-    ...(activeConnectionId ? { activeConnectionId } : {}),
+    ...(activeGraphCxId ? { activeGraphCxId } : {}),
     pairings: pairingState.pairings,
     ...(role ? { role } : {}),
   });

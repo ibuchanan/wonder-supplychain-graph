@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { onConfigChange } from "../../src/cx-management";
+import { applyGraphCxChange } from "../../src/graph-cx-management";
 import type { PackageGraphPort } from "../../src/projection/ingest-package-projection";
 import type { SupplierReceiptState } from "../../src/receipt/apply-command";
 
@@ -18,32 +18,32 @@ describe("active graph connection lifecycle", () => {
       setObjects: async () => ({ success: true }),
     };
     const store = {
-      clearActiveConnectionId: async () => {
+      clearActiveGraphCxId: async () => {
         calls.push("clear-active");
       },
       forget: async () => {
         calls.push("forget");
       },
-      getActiveConnectionId: async () => undefined,
+      getActiveGraphCxId: async () => undefined,
       read: async () => {
         calls.push("read");
         return emptyState;
       },
-      setActiveConnectionId: async (connectionId: string) => {
-        calls.push(`activate:${connectionId}`);
+      setActiveGraphCxId: async (graphCxId: string) => {
+        calls.push(`activate:${graphCxId}`);
       },
     };
 
-    await onConfigChange(
+    await applyGraphCxChange(
       { graph, store },
       {
         action: "CREATED",
         configProperties: {},
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
         name: "Supplychain Graph Package",
       },
     );
 
-    expect(calls).toEqual(["activate:connection-001", "read"]);
+    expect(calls).toEqual(["activate:graph-cx-001", "read"]);
   });
 });

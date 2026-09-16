@@ -39,7 +39,7 @@ describe("determineLocalReadiness", () => {
   it("reports waiting for pairing for a destination with a connection but no local Pairing", () => {
     expect(
       determineLocalReadiness({
-        activeConnectionId: "connection-001",
+        activeGraphCxId: "graph-cx-001",
         pairings: [],
         role: "destination",
       }),
@@ -49,10 +49,10 @@ describe("determineLocalReadiness", () => {
   it("reports ready for a destination Pairing bound to its active graph connection", () => {
     expect(
       determineLocalReadiness({
-        activeConnectionId: "connection-001",
+        activeGraphCxId: "graph-cx-001",
         pairings: [
           {
-            connectionId: "connection-001",
+            graphCxId: "graph-cx-001",
             pairedEpicKey: "SUP-42",
             pairingId: "demo-pairing-001",
             role: "destination",

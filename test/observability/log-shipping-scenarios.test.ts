@@ -18,9 +18,9 @@ const sentinels = {
 const emittedEventTypes = [
   "scg.app.installed",
   "scg.app.upgraded",
-  "scg.graph.connection.changed",
-  "scg.graph.connection.completed",
-  "scg.graph.connection.rejected",
+  "scg.graph-cx.changed",
+  "scg.graph-cx.completed",
+  "scg.graph-cx.rejected",
   "scg.graph.publish.completed",
   "scg.peer.request.denied",
   "scg.peer.event.flow",

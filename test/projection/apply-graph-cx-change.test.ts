@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  onConfigChange,
-  type PackageConnectionStore,
-} from "../../src/cx-management";
+  applyGraphCxChange,
+  type GraphCxStore,
+} from "../../src/graph-cx-management";
 import type { PackageGraphPort } from "../../src/projection/ingest-package-projection";
 import type { SupplierReceiptState } from "../../src/receipt/apply-command";
 
@@ -53,36 +53,36 @@ function recordingDependencies() {
       return { success: true };
     },
   };
-  const store: PackageConnectionStore = {
-    clearActiveConnectionId: async () => {
-      calls.push("store.clearActiveConnectionId");
+  const store: GraphCxStore = {
+    clearActiveGraphCxId: async () => {
+      calls.push("store.clearActiveGraphCxId");
     },
     forget: async () => {
       calls.push("store.forget");
     },
-    getActiveConnectionId: async () => undefined,
+    getActiveGraphCxId: async () => undefined,
     read: async () => {
       calls.push("store.read");
       return activeSupplierState();
     },
-    setActiveConnectionId: async () => {
-      calls.push("store.setActiveConnectionId");
+    setActiveGraphCxId: async () => {
+      calls.push("store.setActiveGraphCxId");
     },
   };
 
   return { calls, graph, store };
 }
 
-describe("onConfigChange", () => {
+describe("applyGraphCxChange", () => {
   it("indexes the current package when the connection is created", async () => {
     const { calls, graph, store } = recordingDependencies();
 
-    const response = await onConfigChange(
+    const response = await applyGraphCxChange(
       { graph, store },
       {
         action: "CREATED",
         configProperties: {},
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
         name: "scg-package-connector",
       },
     );
@@ -92,7 +92,7 @@ describe("onConfigChange", () => {
       success: true,
     });
     expect(calls).toEqual([
-      "store.setActiveConnectionId",
+      "store.setActiveGraphCxId",
       "store.read",
       "graph.setObjects",
     ]);
@@ -101,7 +101,7 @@ describe("onConfigChange", () => {
   it("reports suppression without indexing when no authorized package exists", async () => {
     const { calls, graph, store } = recordingDependencies();
 
-    const response = await onConfigChange(
+    const response = await applyGraphCxChange(
       {
         graph,
         store: {
@@ -115,7 +115,7 @@ describe("onConfigChange", () => {
       {
         action: "UPDATED",
         configProperties: {},
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
         name: "scg-package-connector",
       },
     );
@@ -124,18 +124,18 @@ describe("onConfigChange", () => {
       message: "Suppressed discovery: no-current-package.",
       success: true,
     });
-    expect(calls).toEqual(["store.setActiveConnectionId"]);
+    expect(calls).toEqual(["store.setActiveGraphCxId"]);
   });
 
   it("forgets the stored connection when the connection is deleted", async () => {
     const { calls, graph, store } = recordingDependencies();
 
-    const response = await onConfigChange(
+    const response = await applyGraphCxChange(
       { graph, store },
       {
         action: "DELETED",
         configProperties: {},
-        connectionId: "connection-001",
+        graphCxId: "graph-cx-001",
         name: "scg-package-connector",
       },
     );
@@ -144,6 +144,6 @@ describe("onConfigChange", () => {
       message: "Forgot the connection.",
       success: true,
     });
-    expect(calls).toEqual(["store.clearActiveConnectionId", "store.forget"]);
+    expect(calls).toEqual(["store.clearActiveGraphCxId", "store.forget"]);
   });
 });

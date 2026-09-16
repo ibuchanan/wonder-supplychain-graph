@@ -33,7 +33,7 @@ function dependencies(): DemoPackageGraphDependencies & {
     async read() {
       return state;
     },
-    async write(_connectionId, nextState) {
+    async write(_graphCxId, nextState) {
       state = nextState;
     },
   };
@@ -57,7 +57,7 @@ describe("publishDemoPackageToGraph", () => {
       await publishDemoPackageToGraph(
         { graph, store },
         {
-          connectionId: "connection-001",
+          graphCxId: "graph-cx-001",
           correlationId: "corr-publish-001",
           idempotencyKey: "automation-run-001",
           publishedAt: "2026-08-05T12:00:00.000Z",
@@ -100,7 +100,7 @@ describe("publishDemoPackageToGraph", () => {
   it("updates stable graph object IDs when the package is re-published", async () => {
     const { graph, store } = dependencies();
     const first = {
-      connectionId: "connection-001",
+      graphCxId: "graph-cx-001",
       correlationId: "corr-publish-001",
       idempotencyKey: "automation-run-001",
       publishedAt: "2026-08-05T12:00:00.000Z",

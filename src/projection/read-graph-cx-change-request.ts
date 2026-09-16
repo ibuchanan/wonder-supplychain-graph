@@ -1,28 +1,31 @@
 import { err, ok, type Result } from "@forge-ahead/errors";
 
-import type { OnConfigChangeRequest } from "../cx-management";
+import type { GraphCxChangeRequest } from "../graph-cx-management";
 
-export interface InvalidConnectionChangeRequestError {
-  readonly code: "invalid-connection-change-request";
+export interface InvalidGraphCxChangeRequestError {
+  readonly code: "invalid-graph-cx-change-request";
 }
 
-type ConnectionChangeAction = OnConfigChangeRequest["action"];
+type GraphCxChangeAction = GraphCxChangeRequest["action"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function isAction(value: unknown): value is ConnectionChangeAction {
+function isAction(value: unknown): value is GraphCxChangeAction {
   return value === "CREATED" || value === "DELETED" || value === "UPDATED";
 }
 
-function asConnectionChangeRequest(
+function asGraphCxChangeRequest(
   value: unknown,
-): OnConfigChangeRequest | undefined {
+): GraphCxChangeRequest | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
 
+  // `connectionId` is the platform's field name on the graph-connector payload,
+  // not ours, so it is read as sent and renamed to the domain's term here. This
+  // parser is the only place the platform's spelling appears.
   return isAction(value["action"]) &&
     typeof value["connectionId"] === "string" &&
     typeof value["name"] === "string" &&
@@ -30,7 +33,7 @@ function asConnectionChangeRequest(
     ? {
         action: value["action"],
         configProperties: value["configProperties"],
-        connectionId: value["connectionId"],
+        graphCxId: value["connectionId"],
         name: value["name"],
       }
     : undefined;
@@ -40,19 +43,19 @@ function asConnectionChangeRequest(
  * Reads the direct connector payload and the Forge event wrapper documented for
  * graph-connector connection changes.
  */
-export function readConnectionChangeRequest(
+export function readGraphCxChangeRequest(
   event: unknown,
-): Result<OnConfigChangeRequest, InvalidConnectionChangeRequestError> {
-  const direct = asConnectionChangeRequest(event);
+): Result<GraphCxChangeRequest, InvalidGraphCxChangeRequestError> {
+  const direct = asGraphCxChangeRequest(event);
   if (direct) {
     return ok(direct);
   }
 
   const wrapped = isRecord(event)
-    ? asConnectionChangeRequest(event["body"])
+    ? asGraphCxChangeRequest(event["body"])
     : undefined;
 
   return wrapped
     ? ok(wrapped)
-    : err({ code: "invalid-connection-change-request" });
+    : err({ code: "invalid-graph-cx-change-request" });
 }

@@ -60,7 +60,7 @@ describe("resolveOriginatingPackage", () => {
     };
 
     const result = expectOk(
-      await resolveOriginatingPackage(store, "connection-001"),
+      await resolveOriginatingPackage(store, "graph-cx-001"),
     );
 
     expect(result).toEqual({

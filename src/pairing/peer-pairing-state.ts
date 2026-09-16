@@ -23,7 +23,7 @@ export interface SourcePeerPairing extends PairingAuthorization {
 
 export interface DestinationPeerPairing extends PairingAuthorization {
   readonly automationWebhookUrl: string;
-  readonly connectionId: string;
+  readonly graphCxId: string;
   readonly pairedEpicKey: string;
   readonly pairingId: string;
   readonly role: "destination";

@@ -3,7 +3,7 @@ import { graph } from "@forge/teamwork-graph";
 import { logger } from "../logging";
 import { logGraphPublishResult } from "../observability/domain-events";
 import { createActionExecutionMetadata } from "../publication/action-execution-metadata";
-import { kvsPackageConnectionStore } from "./kvs-connection-store";
+import { kvsGraphCxStore } from "./kvs-graph-cx-store";
 import type { DemoPackagePromotionRequest } from "./promote-demo-package";
 import {
   type DemoPackageGraphResult,
@@ -58,9 +58,9 @@ export async function publishPackageToGraph(
   payload: PublishPackageToGraphInput,
 ): Promise<PublishPackageToGraphResult> {
   const metadata = createActionExecutionMetadata(payload.sourceEpicId);
-  const connectionId = await kvsPackageConnectionStore.getActiveConnectionId();
+  const graphCxId = await kvsGraphCxStore.getActiveGraphCxId();
 
-  if (!connectionId) {
+  if (!graphCxId) {
     logGraphPublishResult(logger, {
       correlationId: metadata.correlationId,
       reason: "no-active-connection",
@@ -78,16 +78,16 @@ export async function publishPackageToGraph(
   const actionRequest: DemoPackagePromotionRequest = {
     ...payload,
     ...metadata,
-    connectionId,
+    graphCxId,
   };
   const outcome = await publishDemoPackageToGraph(
-    { graph, store: kvsPackageConnectionStore },
+    { graph, store: kvsGraphCxStore },
     actionRequest,
   );
 
   if (outcome.isErr()) {
     logGraphPublishResult(logger, {
-      connectionId,
+      graphCxId,
       correlationId: actionRequest.correlationId,
       reason: outcome.error.code,
       sourceEpicId: payload.sourceEpicId,
@@ -103,7 +103,7 @@ export async function publishPackageToGraph(
 
   const result = toActionResult(outcome.value);
   logGraphPublishResult(logger, {
-    connectionId,
+    graphCxId,
     correlationId: actionRequest.correlationId,
     ...(result.status === "indexed"
       ? { ingested: result.ingested }

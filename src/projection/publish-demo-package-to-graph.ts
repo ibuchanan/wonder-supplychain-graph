@@ -40,9 +40,9 @@ export async function publishDemoPackageToGraph(
     return err(promotion.error);
   }
 
-  const state = await store.read(request.connectionId);
+  const state = await store.read(request.graphCxId);
   const ingestion = await ingestPackageProjection(graph, {
-    connectionId: request.connectionId,
+    graphCxId: request.graphCxId,
     state,
     // The demo action must be discoverable to the demo user through Rovo.
     visibility: "everyone",

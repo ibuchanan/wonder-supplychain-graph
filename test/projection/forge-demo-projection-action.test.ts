@@ -24,7 +24,7 @@ describe("publishPackageToGraph", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     storedValues.clear();
-    storedValues.set("active-graph-connection-id", "connection-001");
+    storedValues.set("active-graph-cx-id", "graph-cx-001");
     vi.mocked(kvs.get).mockImplementation(
       async (key) => storedValues.get(key) as never,
     );
