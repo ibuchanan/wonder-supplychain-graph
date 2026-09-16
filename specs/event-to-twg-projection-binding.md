@@ -4,8 +4,12 @@
 **Related specifications:**
 
 - [`event-streaming.md`](./event-streaming.md)
-- [`event-streaming-poc-implementation.md`](./event-streaming-poc-implementation.md)
-- [`app-spec-v1.md`](./app-spec-v1.md)
+- [`../CONTEXT.md`](../CONTEXT.md) — the domain's ubiquitous language
+
+The former `event-streaming-poc-implementation.md` and `app-spec-v1.md` have
+been retired. `app-spec-v1.md` specified an `apiRoute` peer transport with
+mutual 3LO grants that the implementation does not use; its glossary moved to
+`CONTEXT.md`.
 
 ---
 
