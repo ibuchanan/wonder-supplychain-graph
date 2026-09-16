@@ -124,7 +124,7 @@ describe("Status page", () => {
     expect(duplicated).toEqual([]);
   });
 
-  it("separates PeerCXs from audit outcomes into two tabs", () => {
+  it("separates connections from audit outcomes into two tabs", () => {
     const page = render(
       <StatusPage
         configurationUrls={{}}
@@ -134,10 +134,86 @@ describe("Status page", () => {
       />,
     );
 
+    // "Connections" is what an administrator calls these. PeerCX is the
+    // precise domain term, not admin-facing vocabulary.
     expect(elementsOfType(page, "Tab").map(textOf)).toEqual([
-      "PeerCXs",
+      "Connections",
       "Recent audit outcomes",
     ]);
+  });
+
+  it("gives every derived status a lozenge appearance", () => {
+    // A status with no appearance renders an undefined prop, so the admin sees
+    // an unstyled lozenge rather than being told what state the PeerCX is in.
+    const statuses = [
+      "active",
+      "confirming",
+      "declined",
+      "expired",
+      "invalidated",
+      "invited",
+      "proposed",
+      "revoked",
+    ] as const;
+
+    const page = render(
+      <StatusPage
+        configurationUrls={{}}
+        onRevoke={() => undefined}
+        overview={{
+          auditOutcomes: [],
+          peerCxs: statuses.map((status) => ({
+            agreedOperations: [],
+            pairingCount: 0,
+            peerCxId: `peer-cx-${status}`,
+            status,
+            termsVersion: "v1",
+          })),
+        }}
+        readiness={{ status: "ready" }}
+      />,
+    );
+
+    const appearances = elementsOfType(page, "Lozenge")
+      .filter((lozenge) => statuses.includes(textOf(lozenge) as never))
+      .map((lozenge) => lozenge.props["appearance"]);
+
+    expect(appearances).toHaveLength(statuses.length);
+    expect(appearances).not.toContain(undefined);
+  });
+
+  it("renders an invited PeerCX that has no counterpart or agreement end", () => {
+    // An Invitation names a recipient rather than a site, so those cells have
+    // nothing to show and must read as absent instead of blank.
+    const page = render(
+      <StatusPage
+        configurationUrls={{}}
+        onRevoke={() => undefined}
+        overview={{
+          auditOutcomes: [],
+          peerCxs: [
+            {
+              agreedOperations: ["starter.delivery"],
+              pairingCount: 0,
+              peerCxId: "invitation-002",
+              safeLabel: "swift-connection",
+              status: "invited",
+              termsVersion: "v1",
+            },
+          ],
+        }}
+        readiness={{ status: "ready" }}
+      />,
+    );
+
+    const [peerCxTable] = elementsOfType(page, "DynamicTable");
+    const rendered = textOf(peerCxTable as Element);
+
+    // The safe label stands in for the counterpart that is not yet known, and
+    // the absent agreement end reads as an em dash rather than as blank.
+    expect(rendered).toContain("swift-connection");
+    expect(rendered).toContain("—");
+    expect(rendered).not.toContain("undefined");
   });
 
   it("keeps readiness above the tabs, where either tab can see it", () => {
@@ -183,7 +259,7 @@ describe("Status page", () => {
       "This tenant's own records only.",
     );
     expect(emptyStatesIn(peerCxs as Element)).toEqual([
-      "No PeerCX is recorded on this site.",
+      "No connection is recorded on this site.",
     ]);
     expect(textOf(audit as Element)).toContain(
       "Non-content evidence retained by this site.",
@@ -193,7 +269,7 @@ describe("Status page", () => {
     ]);
   });
 
-  it("sends an admin with no Site PeerCX to PeerCX setup by name", () => {
+  it("sends an admin with no PeerCX to PeerCX setup by name", () => {
     const page = render(
       <StatusPage
         configurationUrls={{ "peer-cx": "/peer-cx-setup" }}
@@ -207,7 +283,7 @@ describe("Status page", () => {
     const [emptyState] = emptyViewsIn(peerCxs as Element);
 
     expect(linksIn(emptyState as Element)).toEqual([
-      { href: "/peer-cx-setup", text: "Create a PeerCX" },
+      { href: "/peer-cx-setup", text: "Create a connection" },
     ]);
   });
 

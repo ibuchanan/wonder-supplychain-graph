@@ -25,11 +25,15 @@ export interface InstallationReadiness {
   readonly status: InstallationReadinessStatus;
 }
 
-export type PeerCxAgreementStatus =
+/** Mirrors the derived PeerCxStatus the overview resolver returns. */
+export type PeerCxStatus =
   | "active"
+  | "confirming"
+  | "declined"
   | "expired"
-  | "failed"
-  | "pending"
+  | "invalidated"
+  | "invited"
+  | "proposed"
   | "revoked";
 
 /**
@@ -39,11 +43,14 @@ export type PeerCxAgreementStatus =
  */
 export interface PeerCxOverview {
   readonly agreedOperations: readonly string[];
-  readonly agreementEndsAt: string;
-  readonly counterpartSiteAri: string;
+  /** Absent until an agreement is recorded: an invitation has no lease. */
+  readonly agreementEndsAt?: string;
+  /** Absent while invited: an Invitation names a recipient, not a site. */
+  readonly counterpartSiteAri?: string;
   readonly pairingCount: number;
   readonly peerCxId: string;
-  readonly status: PeerCxAgreementStatus;
+  readonly safeLabel?: string;
+  readonly status: PeerCxStatus;
   readonly termsVersion: string;
 }
 
@@ -77,14 +84,23 @@ export interface StatusPageProps {
   readonly readiness: InstallationReadiness | undefined;
 }
 
+/**
+ * Exchanging is `success`; an ended PeerCX is `removed`; anything still in
+ * setup is `inprogress`, so an administrator can tell "not finished yet" from
+ * "will not happen". Typed against the full status union, so a status added to
+ * the domain cannot reach a screen without an appearance.
+ */
 const peerCxAppearance: Record<
-  PeerCxAgreementStatus,
-  "default" | "removed" | "success"
+  PeerCxStatus,
+  "default" | "inprogress" | "removed" | "success"
 > = {
   active: "success",
+  confirming: "inprogress",
+  declined: "removed",
   expired: "removed",
-  failed: "removed",
-  pending: "default",
+  invalidated: "removed",
+  invited: "inprogress",
+  proposed: "inprogress",
   revoked: "removed",
 };
 
@@ -131,22 +147,22 @@ export const StatusPage = ({
 
     <Tabs id="status-sections">
       <TabList>
-        <Tab>PeerCXs</Tab>
+        <Tab>Connections</Tab>
         <Tab>Recent audit outcomes</Tab>
       </TabList>
       <TabPanel>
         <Stack space="space.200">
           <Text>
             This tenant's own records only. Revoking is local and immediate, and
-            blocks every Pairing under that peerCx.
+            blocks every Pairing under that connection.
           </Text>
           <DynamicTable
             emptyView={
               <Stack space="space.100">
-                <Text>No PeerCX is recorded on this site.</Text>
+                <Text>No connection is recorded on this site.</Text>
                 {configurationUrls["peer-cx"] ? (
                   <Link href={configurationUrls["peer-cx"]}>
-                    Create a PeerCX
+                    Create a connection
                   </Link>
                 ) : null}
               </Stack>
@@ -163,7 +179,11 @@ export const StatusPage = ({
             }}
             rows={(overview?.peerCxs ?? []).map((peerCx) => ({
               cells: [
-                { content: peerCx.counterpartSiteAri },
+                // An invited PeerCX has no counterpart site yet, so its safe
+                // label stands in as the only thing that identifies it.
+                {
+                  content: peerCx.counterpartSiteAri ?? peerCx.safeLabel ?? "—",
+                },
                 {
                   content: (
                     <Lozenge appearance={peerCxAppearance[peerCx.status]}>
@@ -172,7 +192,7 @@ export const StatusPage = ({
                   ),
                 },
                 { content: peerCx.agreedOperations.join(", ") },
-                { content: peerCx.agreementEndsAt },
+                { content: peerCx.agreementEndsAt ?? "—" },
                 { content: String(peerCx.pairingCount) },
                 {
                   content:
