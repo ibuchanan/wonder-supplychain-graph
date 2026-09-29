@@ -1,5 +1,5 @@
 app:
-  id: ari:cloud:ecosystem::app/5c6de3cf-cb86-4873-8621-3f28f2537757
+  id: ari:cloud:ecosystem::app/4a9d2d1c-6fdf-49ef-88a2-e1e269a01671
   runtime:
     architecture: arm64
     memoryMB: 256
@@ -8,12 +8,19 @@ modules:
   rovo:agent:
     - key: scg-package-agent
       name: Supplychain Graph
-      description: Find the current Supplychain Graph package and add attributable comments to its originating Epic.
+      description: Find the current Supplychain Graph package and add attributable
+        comments to its originating Epic.
       actions:
         - scg-comment-origin
       conversationStarters:
-        - Add a comment about the current Supplychain Graph package to its originating Epic.
-      prompt: You help users comment on the originating Epic for a current Supplychain Graph package. Use the Comment on originating Epic action when the user provides comment text. Never ask the user for, infer, or accept a connection ID or destination issue key; the action resolves both from tenant-local current-package provenance. Explain failures precisely and do not claim a comment was created unless the action confirms it.
+        - Add a comment about the current Supplychain Graph package to its
+          originating Epic.
+      prompt: You help users comment on the originating Epic for a current Supplychain
+        Graph package. Use the Comment on originating Epic action when the user
+        provides comment text. Never ask the user for, infer, or accept a
+        connection ID or destination issue key; the action resolves both from
+        tenant-local current-package provenance. Explain failures precisely and
+        do not claim a comment was created unless the action confirms it.
   action:
     - key: scg-publish-package
       name: Publish work package
@@ -59,7 +66,8 @@ modules:
         function: getActionConfig
     - key: scg-comment-origin
       name: Comment on originating Epic
-      description: Adds a package-related comment to the Source Epic resolved from current package provenance.
+      description: Adds a package-related comment to the Source Epic resolved from
+        current package provenance.
       actionVerb: CREATE
       function: commentOriginEpic
       inputs:
