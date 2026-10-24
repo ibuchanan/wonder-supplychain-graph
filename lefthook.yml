@@ -39,3 +39,5 @@ pre-push:
       run: npm run lint
     test:
       run: npm run test
+    size:
+      run: npm run size:check

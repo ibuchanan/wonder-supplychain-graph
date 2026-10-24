@@ -33,6 +33,8 @@ const deniedResponses = Object.freeze({
  */
 const durableDenials: Readonly<Record<string, LifecycleEventType>> =
   Object.freeze({
+    // This is an error-code mapping, not a credential.
+    // ast-grep-ignore: review-hardcoded-secret
     "invalid-hmac-secret": "peer.authentication-failed",
     "invalid-hmac-signature": "peer.authentication-failed",
     "invalid-hmac-timestamp": "peer.authentication-failed",

@@ -28,7 +28,11 @@ if [[ ! $secret =~ ^[A-Za-z0-9+/]{43}=$ ]]; then
   exit 1
 fi
 
-forge variables set --encrypt \
-  --environment "$forge_environment" \
-  SHARED_SECRET "$secret"
+# Store in the configured provider first so future allowlist uploads use the
+# same value. stdin keeps the generated secret out of command arguments.
+printf '%s' "$secret" | secretspec set SHARED_SECRET --from-file - \
+  --reason 'Generate development peer HMAC secret'
+unset secret
+SECRETSPEC_REASON='Upload generated development peer HMAC secret' \
+  fence-rider variables --environment "$forge_environment"
 printf 'Set encrypted SHARED_SECRET for Forge environment %s.\n' "$forge_environment"

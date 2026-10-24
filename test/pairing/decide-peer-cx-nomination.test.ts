@@ -169,7 +169,7 @@ describe("decidePeerCxNomination", () => {
     ],
   ] as const)(
     "invalidates the pending decision when %s, requiring a new invitation",
-    (override) => {
+    (override, _reason) => {
       const result = decidePeerCxNomination(nominatedState(), {
         ...approveCommand,
         ...override,

@@ -12,7 +12,11 @@ const senderIdentity = {
 };
 
 const event = {
-  data: { issueKey: "GREEN-1", pairingId: "pairing-001", updatedFields: [] },
+  data: {
+    issueKey: "GREEN-1",
+    pairingId: "pairing-001",
+    updatedFields: [] as const,
+  },
   datacontenttype: "application/json",
   id: "event-001",
   source: senderIdentity.siteAri,
@@ -20,7 +24,7 @@ const event = {
   subject: "issue/GREEN-1",
   time: "2026-09-15T12:00:00.000Z",
   type: "scg:work-package:queued",
-};
+} as const;
 
 const envelope = {
   createdAt: "2026-09-15T12:00:00.000Z",

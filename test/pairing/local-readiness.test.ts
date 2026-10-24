@@ -20,8 +20,10 @@ describe("determineLocalReadiness", () => {
       determineLocalReadiness({
         pairings: [
           {
+            allowedOperations: [],
             pairedEpicKey: "SUP-3",
             pairingId: "pairing-001",
+            peerCxId: "peer-cx-001",
             peerEventUrl:
               "https://supplier.example/forge/webtrigger/peer-event",
             role: "source",
@@ -52,9 +54,12 @@ describe("determineLocalReadiness", () => {
         activeGraphCxId: "graph-cx-001",
         pairings: [
           {
+            allowedOperations: [],
+            automationWebhookUrl: "https://automation.example/webhook",
             graphCxId: "graph-cx-001",
             pairedEpicKey: "SUP-42",
             pairingId: "demo-pairing-001",
+            peerCxId: "peer-cx-001",
             role: "destination",
             sourceEpicKey: "MFG-17",
             status: "active",

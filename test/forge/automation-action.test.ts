@@ -12,7 +12,7 @@ describe("publish work package Automation Action", () => {
         key: "scg-publish-package-provider",
       },
     ]);
-    expect(modules.action).toEqual(
+    expect(modules["action"]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           actionVerb: "CREATE",

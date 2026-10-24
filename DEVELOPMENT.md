@@ -8,7 +8,10 @@ and architecture decisions live in [`specs/`](specs/).
 - Node.js 24 and npm, matching [`.nvmrc`](.nvmrc).
 - The Forge CLI, authenticated only when you need to register, deploy, install,
   tunnel, or inspect a hosted app.
-- SecretSpec when running the Forge scripts that read `FORGE_*` configuration.
+- Bun 1.4.3+ for the Fence Rider development dependency (installed from its
+  private GitHub repository; Git access is required).
+- SecretSpec 0.21.1+ with your chosen provider configured. Fence Rider resolves
+  the full profile for Forge lint as well as deployment and installation.
 
 ## First-time setup
 
@@ -25,7 +28,8 @@ The repository commits `package-lock.json`; use npm to keep it current.
 | --- | --- |
 | `npm run test` | Run project-owned tests once. |
 | `npm run test:watch` | Re-run project-owned tests while editing. |
-| `npm run typecheck` | Type-check production application TypeScript. |
+| `npm run typecheck` | Type-check application and test TypeScript. |
+| `npm run size:check` | Build and enforce the 80 kB compressed application-output budget. |
 | `npm run lint` | Run prelint checks, Biome, Forge lint, and type-checking. |
 | `npm run format` | Apply Biome formatting. |
 | `npm run format:check` | Verify formatting without writing. |
@@ -34,6 +38,15 @@ The repository commits `package-lock.json`; use npm to keep it current.
 
 The `vendor/` directory is reference material, not a workspace. Root commands
 must not lint, type-check, or run its test suites.
+
+Forge workflows use Fence Rider. Generator commands are captured with `&&`
+before executing their value-free scripts; generation failure stops the workflow.
+Error-code strings and the manifest's reviewed dynamic-peer egress and classic
+Jira scopes have narrowly scoped `ast-grep-ignore` comments.
+
+The 80 kB size budget replaces the starter's 10 kB placeholder and measures the
+compressed compiled application output, not Forge's deployed bundle. It is
+checked during pre-push alongside tests and lint.
 
 ## Forge baseline
 
@@ -65,8 +78,11 @@ encrypted Forge variable without printing it:
 npm run forge:variables:generate-shared-secret
 ```
 
-The script generates exactly 32 random bytes, base64-encodes them, and sets
-`SHARED_SECRET` with `forge variables set --encrypt`. The Peer POC readiness
+The script generates exactly 32 random bytes, base64-encodes them, stores the
+value in your SecretSpec provider via stdin, then runs `fence-rider variables`
+for an encrypted Forge upload. A provider write failure prevents upload. If upload
+fails, the new provider value remains; retry the upload before deploying.
+The Peer POC readiness
 page uses trusted Forge runtime identity and fails closed when local prerequisites
 are unavailable; it never displays the secret or a secret-derived fingerprint. It
 prefers Homebrew
@@ -80,11 +96,23 @@ commit, or copy it into application configuration, webtrigger URLs, or logs.
 Future Pairing setup in the Forge admin flow will supply the non-secret
 counterpart endpoint and relationship state.
 
-`npm run forge:install` and `npm run forge:upgrade` require the configured
-Forge product and sites. `npm run forge:uninstall` attempts both sites before
-returning failure for an unexpected uninstall error; an already-absent
-installation is a successful no-op. Keep real credentials and secret values
-outside the repository.
+Upload configured runtime values with `npm run forge:variables:set`. Only names
+in `[scopes.runtime].secrets` are uploaded, and every value is encrypted. The
+`:set-encrypted` and `:set:secretspec` scripts are aliases for the same allowlisted
+upload. They no longer accept arbitrary `KEY VALUE` arguments; set values in your
+provider, then upload. Use `-- --environment staging` to override the environment.
+Upload failures are not transactional; deploy separately to the same environment
+after a successful upload to activate changes.
+
+`npm run forge:install` and `npm run forge:upgrade` use local-only
+`SCG_SOURCE_SITE` and `SCG_DESTINATION_SITE` from the active SecretSpec profile.
+Both must be present before either installation changes. The adapter supplies
+`FORGE_SITE` per site, so do not add a provider declaration for `FORGE_SITE`.
+Product and environment remain profile-controlled. Installs are non-interactive;
+upgrades explicitly add `--upgrade`. Neither adds automatic scope consent.
+`npm run forge:uninstall` attempts both sites before returning failure for an
+unexpected uninstall error; an already-absent installation is a successful no-op.
+Keep real credentials and secret values outside the repository.
 
 ## Testing expectations
 

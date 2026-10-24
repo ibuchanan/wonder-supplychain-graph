@@ -159,7 +159,7 @@ function findExportedFunctionNames(sourceFile: ts.SourceFile): string[] {
 
 function isExportedStatement(statement: ts.Statement): boolean {
   return Boolean(
-    ts.getCombinedModifierFlags(statement as ts.Declaration) &
+    ts.getCombinedModifierFlags(statement as unknown as ts.Declaration) &
       ts.ModifierFlags.Export,
   );
 }
@@ -206,12 +206,21 @@ describe("Frontend Invoke Validation", () => {
     // 1. Declared as standalone functions in manifest.yml
     // 2. Defined in a resolver that's used by the module
     const missingFunctions: string[] = [];
-    const resolversPath = join(projectRoot, "src/resolvers/index.ts");
-    const resolverDefinitions = directoryExists(
-      join(projectRoot, "src/resolvers"),
-    )
-      ? findResolverDefinitions(parseSourceFile(resolversPath))
-      : new Set<string>();
+    const resolversDir = join(projectRoot, "src/resolvers");
+    const resolverDefinitions = new Set<string>();
+
+    if (directoryExists(resolversDir)) {
+      // Scan all TypeScript files in resolvers directory for define() calls
+      const resolverFiles = getAllTypeScriptFiles(resolversDir);
+      for (const resolverFile of resolverFiles) {
+        const definitions = findResolverDefinitions(
+          parseSourceFile(resolverFile),
+        );
+        for (const definition of definitions) {
+          resolverDefinitions.add(definition);
+        }
+      }
+    }
 
     for (const invoked of invokeCalls) {
       const inManifest = declaredFunctions.includes(invoked.functionName);
@@ -239,9 +248,20 @@ describe("Frontend Invoke Validation", () => {
     const missingExports: string[] = [];
 
     // Check regular function declarations
-    const declaredFunctions = manifest.modules.function || [];
-    for (const func of declaredFunctions) {
-      const handlerName = func.handler.split(".")[1]; // Extract "functionName" from "index.functionName"
+    const declaredFunctions =
+      (manifest.modules as Record<string, unknown>)["function"] || [];
+    for (const func of declaredFunctions as Array<{
+      handler: string;
+      key: string;
+    }>) {
+      const parts = func.handler.split(".");
+      const handlerName = parts[1]; // Extract "functionName" from "index.functionName"
+      if (!handlerName) {
+        missingExports.push(
+          `Function "${func.key}" (handler: ${func.handler}) has invalid handler format`,
+        );
+        continue;
+      }
 
       if (!exportedFunctionNames.includes(handlerName)) {
         missingExports.push(

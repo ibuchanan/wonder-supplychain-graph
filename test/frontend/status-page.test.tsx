@@ -36,7 +36,8 @@ const populated: AdministratorOverview = {
       counterpartSiteAri: "ari:cloud:platform::site/counterpart",
       pairingCount: 1,
       peerCxId: "peer-cx-1",
-      status: "active",
+      status: "active" as const,
+      termsVersion: "v1",
     },
   ],
 };
@@ -73,7 +74,7 @@ function textOf(node: Node): string {
  */
 function emptyViewsIn(node: Node): readonly Element[] {
   return elementsOfType(node, "DynamicTable").map((table) =>
-    render(table.props.emptyView as React.ReactElement),
+    render(table.props["emptyView"] as React.ReactElement),
   );
 }
 
@@ -83,7 +84,7 @@ function emptyStatesIn(node: Node): readonly string[] {
 
 function linksIn(node: Node): readonly { href: string; text: string }[] {
   return elementsOfType(node, "Link").map((link) => ({
-    href: link.props.href as string,
+    href: link.props["href"] as string,
     text: textOf(link),
   }));
 }

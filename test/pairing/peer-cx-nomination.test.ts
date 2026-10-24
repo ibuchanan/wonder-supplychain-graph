@@ -34,7 +34,6 @@ const nominateCommand: NominatePeerCxCommand = {
   localIdentity: blueIdentity,
   localReadiness: "ready",
   operation: "peer-cx.nominate",
-  direction: "blue-to-green",
   receiverEndpointStatus: "configured",
   peerCxId: "peer-cx-001",
   requestId: "request-001",

@@ -94,7 +94,7 @@ describe("evaluatePeerCxAuthorization", () => {
       },
       "the PeerCX differs",
     ],
-  ] as const)("denies authorization when %s", (peerCx) => {
+  ] as const)("denies authorization when %s", (peerCx, _reason) => {
     expect(
       evaluatePeerCxAuthorization(peerCx, {
         counterpartSiteAri: "ari:cloud:jira::site/supplier-001",

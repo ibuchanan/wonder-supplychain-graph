@@ -17,7 +17,11 @@ describe("peer event receiver Forge wiring", () => {
         readonly urlFormat?: string;
       }[];
     };
-    const external = manifest.permissions?.external as {
+    const external = (
+      (manifest as unknown as Record<string, unknown>)["permissions"] as
+        | Record<string, unknown>
+        | undefined
+    )?.["external"] as {
       readonly fetch?: {
         readonly backend?: readonly { readonly address: string }[];
       };

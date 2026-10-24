@@ -12,11 +12,29 @@ vi.mock("@forge/api", () => ({
   })),
 }));
 vi.mock("@forge/kvs", () => ({ kvs: { get: vi.fn(), set: vi.fn() } }));
-vi.mock("../../src/logging", () => ({ logger: { info: vi.fn() } }));
+vi.mock("../../src/logging", () => ({
+  logger: { info: vi.fn() },
+}));
 
-import { receivePeerEvent } from "../../src/collaboration/forge-peer-event-receiver";
+import { receivePeerEvent as receivePeerEventOriginal } from "../../src/collaboration/forge-peer-event-receiver";
 import { signPeerRequest } from "../../src/collaboration/peer-hmac-auth";
 import { logger } from "../../src/logging";
+
+function receivePeerEvent(
+  request: Partial<Parameters<typeof receivePeerEventOriginal>[0]>,
+) {
+  return receivePeerEventOriginal(
+    {
+      headers: {},
+      method: "POST",
+      path: "/peer-event",
+      queryParameters: {},
+      userPath: "",
+      ...request,
+    },
+    { installContext: "green-cloud-id" },
+  );
+}
 
 const secret = Buffer.from("0123456789abcdef0123456789abcdef").toString(
   "base64",
@@ -110,6 +128,7 @@ function mockStores(
         }
         claimed.add(key);
       }
+      return undefined;
     },
   );
 }
@@ -158,7 +177,13 @@ describe("receivePeerEvent", () => {
 
     await receivePeerEvent(signedRequest());
 
-    const records = vi.mocked(logger.info).mock.calls.map(([fields]) => fields);
+    const records = vi
+      .mocked(logger.info)
+      .mock.calls.map(([fields]) => fields)
+      .filter(
+        (fields): fields is Record<string, unknown> =>
+          typeof fields === "object" && fields !== null,
+      );
     const trace = records.filter(
       (fields) => fields["event"] === "scg.peer.event.flow",
     );
@@ -188,7 +213,13 @@ describe("receivePeerEvent", () => {
 
     await receivePeerEvent(signedRequest());
 
-    const records = vi.mocked(logger.info).mock.calls.map(([fields]) => fields);
+    const records = vi
+      .mocked(logger.info)
+      .mock.calls.map(([fields]) => fields)
+      .filter(
+        (fields): fields is Record<string, unknown> =>
+          typeof fields === "object" && fields !== null,
+      );
     const arrival = records.find(
       (fields) =>
         fields["event"] === "scg.peer.event.flow" &&

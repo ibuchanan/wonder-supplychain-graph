@@ -93,7 +93,9 @@ export function getNodeContext(
 export function getJsxTagName(
   node: ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxOpeningElement,
 ): string {
-  const tagName = node.tagName;
+  const tagName = ts.isJsxElement(node)
+    ? node.openingElement.tagName
+    : node.tagName;
 
   if (ts.isIdentifier(tagName)) {
     return tagName.text;
@@ -104,6 +106,7 @@ export function getJsxTagName(
     return "PropertyAccessExpression";
   }
 
+  // For namespaced or other JSX expressions
   return "Unknown";
 }
 
@@ -128,7 +131,9 @@ export function getJsxAttributes(
   ) {
     for (const attr of openingElement.attributes.properties) {
       if (ts.isJsxAttribute(attr)) {
-        const name = attr.name.text;
+        const name = ts.isIdentifier(attr.name)
+          ? attr.name.text
+          : attr.name.name.text;
         const value = attr.initializer;
 
         if (!value) {
@@ -481,7 +486,7 @@ export function findExportedNames(sourceFile: ts.SourceFile): Set<string> {
     }
 
     const isExported = Boolean(
-      ts.getCombinedModifierFlags(statement as ts.Declaration) &
+      ts.getCombinedModifierFlags(statement as unknown as ts.Declaration) &
         ts.ModifierFlags.Export,
     );
 

@@ -6,7 +6,7 @@ describe("Rovo demo graph discovery Automation Action", () => {
   it("exposes a publish-and-index action with graph connection inputs", () => {
     const modules = loadManifest().modules as Record<string, unknown>;
 
-    expect(modules.action).toEqual(
+    expect(modules["action"]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           actionVerb: "CREATE",

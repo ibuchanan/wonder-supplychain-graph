@@ -14,7 +14,7 @@ vi.mock("../../src/logging", () => ({ logger: { info: vi.fn() } }));
 
 import { signPeerRequest } from "../../src/collaboration/peer-hmac-auth";
 import { logger } from "../../src/logging";
-import { receiveBootstrapRequest } from "../../src/pairing/forge-bootstrap-receiver";
+import { receiveBootstrapRequest as receiveBootstrapRequestHandler } from "../../src/pairing/forge-bootstrap-receiver";
 
 const secret = Buffer.from("0123456789abcdef0123456789abcdef").toString(
   "base64",
@@ -85,6 +85,22 @@ function signedRequest(body = JSON.stringify(nominationRequest)) {
       Object.entries(headers ?? {}).map(([key, value]) => [key, [value]]),
     ),
   };
+}
+
+function receiveBootstrapRequest(
+  request: Partial<Parameters<typeof receiveBootstrapRequestHandler>[0]>,
+) {
+  return receiveBootstrapRequestHandler(
+    {
+      headers: {},
+      method: "POST",
+      path: "/bootstrap",
+      queryParameters: {},
+      userPath: "",
+      ...request,
+    },
+    { installContext: "green-cloud-id" },
+  );
 }
 
 describe("receiveBootstrapRequest", () => {
@@ -393,12 +409,13 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
           }
           consumed.add(key);
         }
+        return undefined;
       },
     );
     vi.mocked(kvs.get).mockImplementation(async (key: string) =>
       consumed.has(key)
         ? ({ consumedAt: timestamp } as never)
-        : ((await readState?.(key)) as never),
+        : ((await readState?.(key, {})) as never),
     );
 
     const first = await receiveBootstrapRequest(
@@ -451,11 +468,12 @@ describe("receiveBootstrapRequest bilateral confirmation", () => {
             throw new Error("key already exists");
           }
           claimed.add(key);
-          return;
+          return undefined;
         }
         if (key === "peer-cx-setup-state") {
           stored = value;
         }
+        return undefined;
       },
     );
 

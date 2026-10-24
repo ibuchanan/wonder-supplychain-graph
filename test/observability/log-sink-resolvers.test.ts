@@ -8,6 +8,11 @@
 import { fetch } from "@forge/api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type HandlerFunction = (
+  payload: { call: { functionKey: string; payload?: unknown } },
+  backendRuntimePayload?: { principal: { accountId: string } },
+) => Promise<unknown>;
+
 const plainStorage = new Map<string, unknown>();
 const secretStorage = new Map<string, unknown>();
 
@@ -40,7 +45,7 @@ vi.mock("@forge/api", () => ({
   webTrigger: { getUrl: vi.fn() },
 }));
 
-const { handler } = await import("../../src/resolvers/index");
+let handler: HandlerFunction;
 
 /**
  * The acting account reaches a resolver through the host's runtime payload, not
@@ -60,7 +65,9 @@ const permittedSink =
   "https://ingest.execute-api.us-east-1.amazonaws.com/v1/events";
 
 describe("log sink configuration resolvers", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const resolverModule = await import("../../src/resolvers/index");
+    handler = resolverModule.handler as HandlerFunction;
     plainStorage.clear();
     secretStorage.clear();
   });

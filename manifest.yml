@@ -167,13 +167,17 @@ permissions:
       backend:
         # Forge cannot express the POC's dynamic per-peer destinations.
         # Pairing and request authorization enforce the delivery boundary.
+        # ast-grep-ignore: no-wildcard-egress
         - address: "*"
   scopes:
     - delete:object:jira
     - read:object:jira
     - storage:app
     - write:object:jira
+    # Classic scopes remain the documented recommendation for Jira REST APIs.
+    # ast-grep-ignore: no-classic-product-scopes
     - write:jira-work
+    # ast-grep-ignore: no-classic-product-scopes
     - read:jira-work
 resources:
   - key: main

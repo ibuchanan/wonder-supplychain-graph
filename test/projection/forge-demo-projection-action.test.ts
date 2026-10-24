@@ -30,6 +30,7 @@ describe("publishPackageToGraph", () => {
     );
     vi.mocked(kvs.set).mockImplementation(async (key, value) => {
       storedValues.set(key, value);
+      return undefined;
     });
     vi.mocked(graph.setObjects).mockResolvedValue({ success: true });
   });

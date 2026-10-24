@@ -1,4 +1,5 @@
 import type { Result } from "@forge-ahead/errors";
+import { describe, expect, it } from "vitest";
 
 import {
   applyDeliveryFailureCommand,
@@ -112,7 +113,7 @@ describe("applyPublicationCommand", () => {
       state: "preflight-failed",
     });
     expect(result.deliveryRequests).toEqual([]);
-    expect(result.auditEvents[0].reason).toBe("invalid-publication-pairing");
+    expect(result.auditEvents[0]?.reason).toBe("invalid-publication-pairing");
     expect(result.nextState).toEqual(state);
   });
 
@@ -132,7 +133,9 @@ describe("applyPublicationCommand", () => {
       state: "preflight-failed",
     });
     expect(result.deliveryRequests).toEqual([]);
-    expect(result.auditEvents[0].reason).toBe("automation-user-not-authorized");
+    expect(result.auditEvents[0]?.reason).toBe(
+      "automation-user-not-authorized",
+    );
     expect(result.nextState).toEqual(state);
   });
 
@@ -172,12 +175,20 @@ describe("applyPublicationCommand", () => {
   it.each([
     {
       name: "a publisher that no longer has Source Epic access",
-      preflight: { sourceAccess: "denied" },
+      preflight: {
+        sourceAccess: "denied" as const,
+        publishingAuthority: "granted" as const,
+        schema: "valid" as const,
+      },
       reason: "source-epic-access-denied",
     },
     {
       name: "a configured Automation user without publishing authority",
-      preflight: { publishingAuthority: "denied" },
+      preflight: {
+        publishingAuthority: "denied" as const,
+        sourceAccess: "granted" as const,
+        schema: "valid" as const,
+      },
       reason: "publishing-authority-denied",
     },
   ])(

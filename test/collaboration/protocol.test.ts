@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { V1_PEER_OPERATIONS } from "../../src/collaboration/protocol";
 
 describe("V1 peer protocol", () => {

@@ -18,19 +18,27 @@ describe("Teamwork Graph connector wiring", () => {
 
     expect(connectors).toHaveLength(1);
 
-    const [connector] = connectors;
+    const [connector] = connectors as unknown as Array<Record<string, unknown>>;
 
-    expect(connector.key).toBe("scg-package-connector");
-    expect(connector.name).toBeTruthy();
-    expect(connector.icons?.light).toBeTruthy();
-    expect(connector.icons?.dark).toBeTruthy();
-    expect(connector.objectTypes).toEqual([
+    expect(connector?.["key"]).toBe("scg-package-connector");
+    expect(connector?.["name"]).toBeTruthy();
+    expect(
+      (connector?.["icons"] as Record<string, unknown>)?.["light"],
+    ).toBeTruthy();
+    expect(
+      (connector?.["icons"] as Record<string, unknown>)?.["dark"],
+    ).toBeTruthy();
+    expect(connector?.["objectTypes"]).toEqual([
       "atlassian:work-item",
       "atlassian:document",
     ]);
     // The datasource block is mandatory, and onConnectionChange within it is
     // required so suppression runs when the PeerCX becomes unavailable.
-    expect(connector.datasource?.onConnectionChange?.function).toBeTruthy();
+    expect(
+      (connector?.["datasource"] as Record<string, unknown>)?.[
+        "onConnectionChange"
+      ] as Record<string, unknown> | undefined,
+    ).toHaveProperty("function");
 
     const scopes = new Set(getManifestScopes(manifest));
 

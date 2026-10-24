@@ -8,7 +8,7 @@ describe("lifecycle logging manifest", () => {
       modules: Record<string, unknown>;
     };
 
-    expect(manifest.modules.trigger).toEqual(
+    expect(manifest.modules["trigger"]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           events: ["avi:forge:installed:app"],

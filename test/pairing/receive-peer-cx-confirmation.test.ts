@@ -53,6 +53,7 @@ const confirmation: ConfirmationRequest = {
   confirmedIdentity: blueIdentity,
   correlationId: "correlation-001",
   createdAt: "2026-09-14T19:10:00.000Z",
+  direction: "blue-to-green",
   idempotencyKey: "correlation-001:confirm",
   intendedReceiverSiteAri: greenIdentity.siteAri,
   leaseEndsAt: terms.expiresAt,

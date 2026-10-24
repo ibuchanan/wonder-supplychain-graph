@@ -46,6 +46,7 @@ function invited(): {
     request: {
       correlationId: invitation.correlationId,
       createdAt: "2026-09-14T18:00:00.000Z",
+      direction: "blue-to-green",
       idempotencyKey: "nominate-001",
       intendedReceiverSiteAri: greenSiteAri,
       invitationReference: invitation.reference,
@@ -185,7 +186,7 @@ describe("receivePeerCxNomination", () => {
     ],
     [{ termsVersion: "v2" }, "the immutable terms version differs"],
     [{ expiresAt: "2027-09-21T12:00:00.000Z" }, "the expiry differs"],
-  ] as const)("denies a nomination when %s", (termsOverride) => {
+  ] as const)("denies a nomination when %s", (termsOverride, _reason) => {
     const { invitations, request } = invited();
 
     const result = receivePeerCxNomination(

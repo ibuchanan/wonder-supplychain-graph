@@ -6,7 +6,7 @@
 
     /* Runtime Targets: Derived from the Node 18 environment and Webpack config */
     "target": "ES2022",
-    "module": "CommonJS",
+    "module": "ESNext",
     "moduleResolution": "Node",
     "lib": ["ES2022"],
 

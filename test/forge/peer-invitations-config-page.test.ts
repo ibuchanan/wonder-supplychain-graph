@@ -58,7 +58,7 @@ describe("Peer invitations configuration page", () => {
       false,
     );
     expect(scripts).not.toHaveProperty("build:peer-invitations");
-    expect(scripts.build).not.toContain("vite");
-    expect(scripts.clean).not.toContain("static/peer-invitations");
+    expect(String(scripts["build"])).not.toContain("vite");
+    expect(String(scripts["clean"])).not.toContain("static/peer-invitations");
   });
 });

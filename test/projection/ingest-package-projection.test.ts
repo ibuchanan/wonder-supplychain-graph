@@ -102,24 +102,29 @@ describe("ingestPackageProjection", () => {
       "pairing-001:MFG-17",
       "pairing-001:MFG-18",
     ]);
-    expect(request.objects[0].displayName).toBe("Supplier release package");
-    expect(request.objects[0].description).toContain(
-      "Approved supplier release package.",
-    );
-    expect(request.objects[0].description).toContain("Source Epic: MFG-17");
-    expect(request.objects[0].description).toContain("Package version: 1");
-    expect(request.objects[0].description).toContain(
-      "Published: 2026-08-03T16:00:00.000Z",
-    );
-    expect(request.objects[0]["atlassian:work-item"]).toEqual({
+
+    const obj0 = request.objects[0];
+    const obj1 = request.objects[1];
+
+    expect(obj0).toBeDefined();
+    if (!obj0 || !obj1) {
+      expect.fail("Expected both projected work items");
+    }
+    expect(obj0.displayName).toBe("Supplier release package");
+    expect(obj0.description).toContain("Approved supplier release package.");
+    expect(obj0.description).toContain("Source Epic: MFG-17");
+    expect(obj0.description).toContain("Package version: 1");
+    expect(obj0.description).toContain("Published: 2026-08-03T16:00:00.000Z");
+    expect(obj0["atlassian:work-item"]).toEqual({
       status: "In Progress",
       subtype: "epic",
     });
-    expect(request.objects[1]["atlassian:work-item"]).toEqual({
+    expect(obj1).toBeDefined();
+    expect(obj1["atlassian:work-item"]).toEqual({
       status: "To Do",
       subtype: "task",
     });
-    expect(request.objects[0].permissions).toEqual({
+    expect(obj0.permissions).toEqual({
       accessControls: [{ principals: [{ id: "SUP-42", type: "CONTAINER" }] }],
     });
   });

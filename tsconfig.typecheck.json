@@ -3,6 +3,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
+    "rootDir": ".",
 
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
@@ -10,5 +11,6 @@
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "exactOptionalPropertyTypes": true
-  }
+  },
+  "include": ["src", "test"]
 }

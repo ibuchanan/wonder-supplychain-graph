@@ -78,10 +78,14 @@ describe("authorizePairing", () => {
   });
 
   it("refuses a pairing unless its PeerCX is active and in lease", () => {
+    const peerCx = state.peerCxs[0];
+    if (!peerCx) {
+      expect.fail("Expected the active PeerCX fixture");
+    }
     for (const status of ["revoked", "expired", "pending", "failed"] as const) {
       expect(
         authorizePairing(
-          { ...state, peerCxs: [{ ...state.peerCxs[0]!, status }] },
+          { ...state, peerCxs: [{ ...peerCx, status }] },
           { pairings: [] },
           command,
         ),
@@ -113,7 +117,7 @@ describe("authorizePairing", () => {
         { pairings: [] },
         {
           ...command,
-          allowedOperations: ["snapshot.candidate.deliver"],
+          allowedOperations: ["candidate.cancel"],
         },
       ),
     ).toMatchObject({ error: { code: "operation-not-agreed" } });

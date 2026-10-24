@@ -15,7 +15,7 @@ describe("Rovo originating Epic comment action", () => {
         }),
       ]),
     );
-    expect(modules.action).toEqual(
+    expect(modules["action"]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           actionVerb: "CREATE",

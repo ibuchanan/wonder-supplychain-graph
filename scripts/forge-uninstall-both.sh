@@ -4,13 +4,15 @@
 
 set -u
 
+command=$(fence-rider uninstall) || exit $?
+
 uninstall_site() {
   local label=$1
   local site=$2
   local output
   local status
 
-  if output=$(forge uninstall --site "$site" --product "$FORGE_PRODUCT" --environment "$FORGE_ENVIRONMENT" 2>&1); then
+  if output=$(FORGE_SITE="$site" sh -c "$command" sh 2>&1); then
     if [[ -n "$output" ]]; then
       printf '%s\n' "$output"
     fi

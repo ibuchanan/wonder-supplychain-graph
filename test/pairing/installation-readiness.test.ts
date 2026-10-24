@@ -17,21 +17,23 @@ describe("evaluateInstallationReadiness", () => {
     });
   });
 
-  it.each([
-    [{ secret: undefined }, "the encrypted secret is unavailable"],
-    [{ siteAri: undefined }, "the site identity is unavailable"],
-    [
-      { installationAri: undefined },
-      "the installation identity is unavailable",
-    ],
-    [{ environmentAri: undefined }, "the environment identity is unavailable"],
-    [{ durableStateAvailable: false }, "durable state is unavailable"],
-  ] as const)("blocks readiness when %s", (override) => {
+  it.each(["secret", "siteAri", "installationAri", "environmentAri"] as const)(
+    "blocks readiness when %s is unavailable",
+    (key) => {
+      const { [key]: _missing, ...input } = readyInput;
+      expect(evaluateInstallationReadiness(input)).toEqual({
+        status: "blocked",
+      });
+    },
+  );
+
+  it("blocks readiness when durable state is unavailable", () => {
     expect(
-      evaluateInstallationReadiness({ ...readyInput, ...override }),
-    ).toEqual({
-      status: "blocked",
-    });
+      evaluateInstallationReadiness({
+        ...readyInput,
+        durableStateAvailable: false,
+      }),
+    ).toEqual({ status: "blocked" });
   });
 
   it("blocks a non-canonical base64 secret even when its decoded length is allowed", () => {

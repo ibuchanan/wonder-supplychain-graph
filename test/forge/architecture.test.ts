@@ -11,15 +11,22 @@
  */
 
 import { join } from "node:path";
-import { type ProjectFiles, projectFiles } from "archunit";
+import { projectFiles } from "archunit";
 import { beforeAll, describe, expect, it } from "vitest";
 import { findLocalImports, parseSourceFile } from "./ast-helpers";
 import { directoryExists } from "./filesystem-helpers";
 
+// ArchUnit registers this matcher at runtime but declares only its legacy
+// global VitestAssertion interface, not Vitest's current module interface.
+declare module "vitest" {
+  interface Assertion<R extends void | Promise<void> = void, T = unknown>
+    extends VitestAssertion {}
+}
+
 describe("Forge Architecture", () => {
   // Cache projectFiles() result to speed up tests
   // This scans the filesystem once instead of per-test
-  let cachedProjectFiles: ProjectFiles;
+  let cachedProjectFiles: ReturnType<typeof projectFiles>;
 
   beforeAll(() => {
     cachedProjectFiles = projectFiles();

@@ -4,9 +4,18 @@
  * bridge is what lets a test import UI Kit components at all; no test relies on
  * it answering calls, so it never returns anything useful.
  */
+
+declare global {
+  var __bridge: {
+    callBridge: () => Promise<never>;
+  };
+}
+
 globalThis.__bridge = {
   callBridge: () =>
     Promise.reject(
       new Error("No Atlassian host is available in tests. Pass data as props."),
     ),
 };
+
+export {};

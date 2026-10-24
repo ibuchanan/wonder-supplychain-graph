@@ -19,11 +19,21 @@ function parseHandlerReference(handler: string): {
   exportName: string;
 } {
   if (handler.includes("#")) {
-    const [filePath, exportName] = handler.split("#");
+    const parts = handler.split("#");
+    const filePath = parts[0];
+    const exportName = parts[1];
+    if (!filePath || !exportName) {
+      throw new Error(`Invalid handler reference: ${handler}`);
+    }
     return { filePath, exportName };
   }
 
-  const [modulePath, exportName] = handler.split(".");
+  const parts = handler.split(".");
+  const modulePath = parts[0];
+  const exportName = parts[1];
+  if (!modulePath || !exportName) {
+    throw new Error(`Invalid handler reference: ${handler}`);
+  }
   return { filePath: `src/${modulePath}.ts`, exportName };
 }
 

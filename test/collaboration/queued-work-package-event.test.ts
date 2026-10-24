@@ -1,4 +1,5 @@
 import type { Result } from "@forge-ahead/errors";
+import { describe, expect, it } from "vitest";
 
 import {
   createQueuedWorkPackageEvent,

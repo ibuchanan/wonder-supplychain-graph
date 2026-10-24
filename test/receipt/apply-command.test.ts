@@ -1,4 +1,5 @@
 import type { Result } from "@forge-ahead/errors";
+import { describe, expect, it } from "vitest";
 
 import {
   applySupplierCandidateCancellationCommand,
@@ -262,7 +263,7 @@ describe("applySupplierReceiptCommand", () => {
       pairingId: "pairing-001",
       sourceEpicId: "MFG-17",
     });
-    expect(result.nextState).toBeUndefined();
+    expect(result).not.toHaveProperty("nextState");
     expect(state.currentPackage?.version).toBe("1");
   });
 

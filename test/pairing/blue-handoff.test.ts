@@ -33,12 +33,18 @@ describe("buildBlueHandoff", () => {
       "https://blue.example/apps/join-peer-invitation?token=secret",
       "the URL includes configured query data",
     ],
-  ])("returns a copyable manual bundle when %s", (blueNavigationUrl) => {
-    expect(
-      buildBlueHandoff(invitation, { approvedBlueOrigins, blueNavigationUrl }),
-    ).toEqual({
-      bundle: invitation,
-      kind: "manual-copy",
-    });
-  });
+  ] as const)(
+    "returns a copyable manual bundle when %s",
+    (blueNavigationUrl, _reason) => {
+      expect(
+        buildBlueHandoff(invitation, {
+          approvedBlueOrigins,
+          ...(blueNavigationUrl ? { blueNavigationUrl } : {}),
+        }),
+      ).toEqual({
+        bundle: invitation,
+        kind: "manual-copy",
+      });
+    },
+  );
 });
