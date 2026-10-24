@@ -67,6 +67,7 @@ describe("invitation workflow", () => {
       nextState,
       invitation.reference,
       "tina-green-account",
+      invitationRequest.createdAt,
     );
 
     expect(result.isOk()).toBe(true);
